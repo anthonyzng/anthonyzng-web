@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "Anthony Ng — 全端及 AI 開發者"
+  },
+  "nav": {
+    "home": "首頁",
+    "experience": "工作經驗",
+    "projects": "項目作品",
+    "skills": "技能",
+    "contact": "聯絡",
+    "primary": "主要導覽",
+    "skipToContent": "跳至主要內容",
+    "menu": "選單",
+    "openMenu": "開啟選單",
+    "closeMenu": "關閉選單"
+  },
+  "theme": {
+    "toLight": "切換至淺色模式",
+    "toDark": "切換至深色模式"
+  },
+  "language": {
+    "switchTo": "切換語言至{{name}}"
+  },
+  "home": {
+    "eyebrow": "作品集",
+    "nameFirst": "Anthony",
+    "nameLast": "Ng",
+    "roles": {
+      "fullStack": "全端軟件開發者",
+      "ai": "AI 開發者",
+      "manager": "軟件開發助理經理"
+    },
+    "intro": "我設計並開發端到端的軟件——由可擴展的後端、AI 驅動的功能，到精緻的使用者介面——並帶領團隊將產品推出。",
+    "scrollCue": "向下捲動",
+    "statement": {
+      "label": "簡介"
+    }
+  },
+  "sections": {
+    "counter": "{{current}} / {{total}}",
+    "comingSoon": "內容即將推出。",
+    "experience": {
+      "title": "工作經驗",
+      "tagline": "歷任職位與職責一覽。"
+    },
+    "projects": {
+      "title": "項目作品",
+      "tagline": "精選作品及其背後的技術。"
+    },
+    "skills": {
+      "title": "技能",
+      "tagline": "程式語言、框架與工具。"
+    },
+    "contact": {
+      "title": "聯絡",
+      "tagline": "如有查詢、合作項目或工作機會，歡迎聯絡。"
+    }
+  },
+  "notFound": {
+    "title": "找不到頁面",
+    "body": "你要找的頁面不存在。",
+    "back": "返回首頁"
+  },
+  "footer": {
+    "rights": "© {{year}} Anthony Ng。版權所有。"
+  }
+}

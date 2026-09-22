@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "Anthony Ng — Full Stack & AI Developer"
+  },
+  "nav": {
+    "home": "Home",
+    "experience": "Experience",
+    "projects": "Projects",
+    "skills": "Skills",
+    "contact": "Contact",
+    "primary": "Primary navigation",
+    "skipToContent": "Skip to content",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "theme": {
+    "toLight": "Switch to light mode",
+    "toDark": "Switch to dark mode"
+  },
+  "language": {
+    "switchTo": "Switch language to {{name}}"
+  },
+  "home": {
+    "eyebrow": "Portfolio",
+    "nameFirst": "Anthony",
+    "nameLast": "Ng",
+    "roles": {
+      "fullStack": "Full Stack Software Developer",
+      "ai": "AI Developer",
+      "manager": "Assistant Manager, Software Development"
+    },
+    "intro": "I design and build end-to-end software — from scalable backends and AI-powered features to polished interfaces — and lead teams that ship them.",
+    "scrollCue": "Scroll",
+    "statement": {
+      "label": "In brief"
+    }
+  },
+  "sections": {
+    "counter": "{{current}} / {{total}}",
+    "comingSoon": "Content coming soon.",
+    "experience": {
+      "title": "Experience",
+      "tagline": "A timeline of roles and responsibilities."
+    },
+    "projects": {
+      "title": "Projects",
+      "tagline": "Selected work and the technology behind it."
+    },
+    "skills": {
+      "title": "Skills",
+      "tagline": "Languages, frameworks and tools."
+    },
+    "contact": {
+      "title": "Contact",
+      "tagline": "Questions, projects or opportunities: get in touch."
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you are looking for does not exist.",
+    "back": "Back to home"
+  },
+  "footer": {
+    "rights": "© {{year}} Anthony Ng. All rights reserved."
+  }
+}

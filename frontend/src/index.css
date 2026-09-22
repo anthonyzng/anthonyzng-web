@@ -1,0 +1,258 @@
+@import 'tailwindcss';
+
+/* Dark mode is driven by data-theme on <html>, set before first paint in index.html. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Design tokens. Components use the semantic Tailwind colours below
+ * (bg-bg, text-fg, text-muted, border-line, text-accent, ...), never raw hex.
+ * Contrast (WCAG AA): fg/muted/accent all >= 4.5:1 against bg and surface in both themes.
+ */
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --fg: #0f172a;
+  --muted: #475569;
+  --line: #e2e8f0;
+  --accent: #047857;
+  --accent-fg: #ffffff;
+  color-scheme: light;
+
+  /* Header height: the header, html scroll-padding-top and the hero min-height all read this. */
+  --header-h: 4rem;
+}
+
+[data-theme='dark'] {
+  --bg: #0b1120;
+  --surface: #111a2e;
+  --fg: #f1f5f9;
+  --muted: #94a3b8;
+  --line: #1e293b;
+  --accent: #34d399;
+  --accent-fg: #0b1120;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+}
+
+@theme {
+  --font-sans: 'Inter Variable', 'Noto Sans TC Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Noto Sans TC Variable', monospace;
+
+  /* Fluid display sizes for editorial headings */
+  --text-display: clamp(2.75rem, 1.5rem + 5vw, 6rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.035em;
+  --text-headline: clamp(2rem, 1.25rem + 3vw, 3.5rem);
+  --text-headline--line-height: 1.1;
+  --text-headline--letter-spacing: -0.025em;
+
+  /* Masthead name: ~192px at 1280x800, ~76px at 375; the svh cap keeps short landscape screens in check.
+     The floor is width-aware, so a larger default font size cannot push the name past a narrow screen. */
+  --text-mega: clamp(min(4.5rem, 19vw), min(1rem + 16vw, 24svh), 15rem);
+  --text-mega--line-height: 0.86;
+  --text-mega--letter-spacing: -0.05em;
+  --text-title: clamp(1.375rem, 1rem + 1.6vw, 2.25rem);
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.01em;
+  --text-statement: clamp(1.75rem, 1.1rem + 2.6vw, 3.25rem);
+  --text-statement--line-height: 1.18;
+  --text-statement--letter-spacing: -0.02em;
+  --text-ghost: clamp(7rem, 22vw, 20rem);
+  --text-ghost--line-height: 1;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Clip box for masked text reveals. The padding leaves room for descenders and CJK glyphs;
+   the negative margin cancels it so line spacing is unchanged. Only the vertical axis needs clipping:
+   where overflow: clip exists the horizontal axis stays visible, so wider text (user text-spacing
+   overrides, 1.4.12) is never cut at the side. Older browsers keep overflow: hidden, because pairing
+   visible with hidden would turn the box into a horizontal scroller. */
+@utility mask-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: var(--mask-pad, 0.14em);
+  margin-bottom: calc(var(--mask-pad, 0.14em) * -1);
+
+  @supports (overflow: clip) {
+    overflow: visible clip;
+  }
+}
+
+@utility mask-pad-mega {
+  --mask-pad: 0.18em;
+}
+
+/* svh with a vh fallback (declared first). */
+@utility min-h-hero {
+  min-height: calc(100vh - var(--header-h));
+  min-height: calc(100svh - var(--header-h));
+}
+
+/* Mono uppercase labels. CJK must not be spaced wide. */
+@utility tracking-label {
+  letter-spacing: 0.2em;
+
+  &:lang(zh-Hant) {
+    letter-spacing: 0.08em;
+  }
+}
+
+/* Placeholder "image" texture; it makes the image-plane parallax visible. */
+@utility bg-hatch {
+  background-image: repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 14px);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* The single header offset for Lenis, scrollIntoView and native anchors.
+       Never set scroll-behavior: smooth here (it fights Lenis), and do not add scroll-margin-top
+       to sections: Lenis and browsers add both. */
+    scroll-padding-top: var(--header-h);
+  }
+
+  /* Negative tracking and tight leading crush CJK and clip the masks. */
+  html:lang(zh-Hant) {
+    --text-display--letter-spacing: 0em;
+    --text-display--line-height: 1.15;
+    --text-headline--letter-spacing: 0em;
+    --text-headline--line-height: 1.25;
+    --text-title--letter-spacing: 0em;
+    --text-statement--letter-spacing: 0em;
+    --text-statement--line-height: 1.45;
+  }
+
+  /* Native scroll lock while the mobile menu is open (Lenis, when present, is stopped as well). */
+  html:has(dialog.mobile-menu[open]) {
+    overflow: hidden;
+  }
+
+  /* SplitText line masks in the statement: same descender room as .mask-line. */
+  [data-split] > div {
+    padding-bottom: 0.14em;
+    margin-bottom: -0.14em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Only the hero layers and the ghost numerals. */
+    [data-speed] {
+      will-change: transform;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .ghost-numeral {
+      display: none;
+    }
+  }
+
+  @media print {
+    [data-speed],
+    [data-intro],
+    [data-reveal],
+    [data-reveal-inner],
+    [data-plane],
+    [data-split] * {
+      transform: none !important;
+      opacity: 1 !important;
+    }
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    transition:
+      background-color 250ms ease,
+      color 250ms ease;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  /* Delays too: a staggered @starting-style entrance (the mobile menu labels) would otherwise hold its
+     hidden starting state for the whole delay. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Scroll cue: a transform-only loop, at most 3 iterations (WCAG 2.2.2); it rests visible at the top of its track. */
+@keyframes scroll-cue {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(400%);
+  }
+}
+
+.scroll-cue-segment {
+  animation: scroll-cue 1.6s var(--ease-out-expo) 1.2s 3 backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue-segment {
+    animation: none;
+  }
+}
+
+/*
+ * Mobile menu motion is CSS only. Browsers without @starting-style / allow-discrete open instantly,
+ * and the global reduced-motion rule above makes it instant.
+ */
+@layer components {
+  .mobile-menu {
+    opacity: 1;
+    transition:
+      opacity 300ms var(--ease-out-expo),
+      overlay 300ms allow-discrete,
+      display 300ms allow-discrete;
+  }
+
+  .mobile-menu:not([open]) {
+    opacity: 0;
+  }
+
+  .mobile-menu::backdrop {
+    background: transparent;
+  }
+
+  .mobile-menu[open] .menu-link-label {
+    transition: transform 600ms var(--ease-out-expo) calc(var(--i, 0) * 50ms + 50ms);
+  }
+
+  @starting-style {
+    .mobile-menu[open] {
+      opacity: 0;
+    }
+
+    .mobile-menu[open] .menu-link-label {
+      transform: translateY(100%);
+    }
+  }
+}

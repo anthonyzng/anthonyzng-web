@@ -82,9 +82,9 @@ Each tier runs in its **own Docker container** so they can be scaled or moved in
 | Database   | PostgreSQL |
 | Proxy/TLS  | Caddy (automatic Let's Encrypt certificates) |
 | CI/CD      | GitHub Actions: lint/test → build images → push to GHCR → deploy to GCP VM over SSH |
-| Admin auth | `TBD` (proposed: single admin account, JWT in httpOnly cookie) |
-| Contact    | Bot protection `TBD` (proposed: Cloudflare Turnstile); email delivery `TBD` |
-| Analytics  | Self-hosted Umami in its own container (proposed, pending confirmation) |
+| Admin auth | Single admin account, Argon2 password hash, JWT in httpOnly cookie, login rate limiting (TOTP 2FA later). Admin UI at `owwsolution.com/admin` |
+| Contact    | Cloudflare Turnstile (bot protection) + Resend (email from `noreply@owwsolution.com`). Every message is also stored in the DB. Recipient comes from env var `CONTACT_TO_EMAIL` (value kept in `CLAUDE.local.md`, never committed) |
+| Analytics  | Self-hosted Umami in its own container (own database in the same PostgreSQL instance) |
 
 ---
 
@@ -97,6 +97,7 @@ anthonyzng-web/
 ├── docker-compose.yml          # production stack
 ├── docker-compose.dev.yml      # local dev overrides (hot reload)
 ├── .env.example                # every required env var, placeholder values only
+├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
 │   ├── settings.json           # project plugins
 │   └── commands/do_pr.md       # /do_pr command
@@ -156,9 +157,11 @@ Owner assigns a task
 ### 4.3 GitHub account
 - Use **only** the GitHub account `anthonyzng`. Never use `API-Anthony-Ng`.
 - SSH uses `~/.ssh/id_ed25519_anthonyzng` (already configured in `~/.ssh/config`).
+- GitHub MCP (`.mcp.json`) authenticates with a fine-grained PAT scoped to this repo only, read from the Windows user env var `GITHUB_PAT`. Never print, log, or commit its value. When it expires (90 days), ask the owner to create a new one.
 
 ### 4.4 Security
 - **Before creating, using, or storing any key, token, password, or credential, ask the owner for authorisation.** This covers GitHub tokens, GCP service accounts, SSH deploy keys, GitHub Actions secrets, DNS changes, firewall rules, and API keys.
+- **Any task that involves personal data (emails, phone numbers, addresses, ID numbers, CV details, contact-form submissions, etc.) requires the owner's approval before acting**, including reading, storing, moving, publishing, or committing it.
 - This repo is **public**. This file is committed, so never put private details in it; use `CLAUDE.local.md` (git-ignored) for those.
 - Never commit secrets. They live in `.env` (git-ignored) or GitHub Actions secrets; keep `.env.example` in sync with placeholders.
 
@@ -187,18 +190,34 @@ Owner assigns a task
 
 ---
 
-## 6. Commands (fill in once scaffolded)
+## 6. Commands
 
 ```bash
-# Full stack locally
+# Frontend (run inside frontend/)
+npm install
+npm run dev          # http://localhost:5173 (also the "frontend" entry in .claude/launch.json)
+npm run typecheck    # tsc -b
+npm run lint         # oxlint
+npm test             # vitest (jsdom + Testing Library)
+npm run build        # typecheck + production build to dist/
+
+# Full stack locally (from Phase 6)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
-# Frontend only
-cd frontend && npm install && npm run dev
-
-# Backend only
+# Backend only (from Phase 4)
 cd backend && uvicorn app.main:app --reload
 ```
+
+Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
+
+## 6.1 Frontend implementation notes
+
+- **Routing**: every public page lives under a language prefix, `/en/...` or `/zh-hant/...` (`src/components/LanguageLayout.tsx`). `/` redirects using the saved language (`localStorage.lang`) or the browser language. The URL is the source of truth for the active language. The admin panel will live at `/admin` without a prefix.
+- **i18n**: locale config in `src/i18n/languages.ts`; UI strings in `src/i18n/locales/{en,zh-Hant}.json`. Every key must exist in both files.
+- **Theme**: `data-theme="light|dark"` on `<html>`, set before first paint by the inline script in `index.html`, then managed by `src/theme/useTheme.ts`. Follows the OS until the user toggles; the choice is saved in `localStorage.theme`.
+- **Design tokens**: defined once in `src/index.css` (CSS variables + Tailwind v4 `@theme`). Use the semantic utilities `bg-bg`, `bg-surface`, `text-fg`, `text-muted`, `border-line`, `text-accent`, `bg-accent`, `text-accent-fg`, and the `text-display` / `text-headline` sizes. Never use raw hex values in components. All text tokens are verified >= 4.5:1 contrast in both themes; re-check when changing a colour.
+- **Fonts**: self-hosted via Fontsource (Inter Variable, Noto Sans TC Variable, IBM Plex Mono), with no Google Fonts requests.
+- **Animation**: GSAP + ScrollTrigger + SplitText (registered only in `src/animations/gsap.ts`; import gsap from there) and Lenis. `SmoothScrollProvider` (a pathless layout route in `App.tsx`, so it survives language switches) owns the single Lenis instance: `autoRaf: false`, driven by `gsap.ticker` with `lagSmoothing(0)`, `lenis.on('scroll', ScrollTrigger.update)`, no scrollerProxy or normalizeScroll, destroyed on unmount. Sections consume hooks in `src/animations/` (`useHeroIntro`, `useParallax`, `useSectionReveal`, `useStatementReveal`, `useScrollProgress`, `useActiveSection`, `useScrollTo`, `useHashScroll`); motion numbers live in `motion.ts`. Rules: the static DOM is the final state (no CSS ever hides content); from-states exist only inside a matched `gsap.matchMedia()` branch that requires `(prefers-reduced-motion: no-preference)`, and each branch runs through `runSafely()`, which reverts on error; animate only transform/opacity; parallax targets outer `[data-speed]` wrappers, intro and reveal tweens target inner elements, and GSAP targets never carry Tailwind translate/scale/rotate classes; exactly one pin (Statement, only on fine-pointer desktops at least `md` (48rem) wide and 600px tall where Lenis drives the wheel; on a child, never the root; `refreshPriority: 1` so it is refreshed before the triggers below it; no `anticipatePin`). `useScrollAnchor` keeps the reader's section when a breakpoint change rebuilds the matchMedia branches. Header offset: `--header-h` feeds `html { scroll-padding-top }` (Lenis and `scrollIntoView` both honour it) and `headerOffset()` in JS; never hard-code 64. Anchors: `SectionLink` renders a real `/lang#id` href; on the home page it smooth-scrolls via `useScrollTo` and focuses the section's `h2[tabindex="-1"]`; from other pages it navigates with router state that makes `useHashScroll` focus that heading; deep links land via `useHashScroll` before the first paint (no focus move); after a language switch focus returns to the language switcher, and the switch lands on the region being read (a section or the statement) at the same reading progress (`readingPosition.ts`; router state, applied on PUSH only, never replayed on Back/reload). JS media queries use the same unit as Tailwind (`MD_UP` / `BELOW_MD` in `media.ts`); never write px width queries. Reduced motion: no Lenis, no intro, parallax, pin, split or progress rule; native instant anchors. Touch tablets: no pin (the unpinned line reveal). Mobile (below `md`): no pin, halved parallax, no x-shear, native touch scroll (`syncTouch: false`); the menu is a native `<dialog>` with CSS-only motion.
 
 ---
 
@@ -239,7 +258,4 @@ cd backend && uvicorn app.main:app --reload
 
 ## 10. Open Questions (TBD)
 
-- Admin authentication method
-- Contact form: bot protection provider and email delivery provider; destination inbox
-- Analytics provider (proposed: self-hosted Umami container)
 - Localised content storage model (decide in Phase 4)
