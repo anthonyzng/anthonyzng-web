@@ -97,6 +97,7 @@ anthonyzng-web/
 ├── docker-compose.yml          # production stack
 ├── docker-compose.dev.yml      # local dev overrides (hot reload)
 ├── .env.example                # every required env var, placeholder values only
+├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
 │   ├── settings.json           # project plugins
 │   └── commands/do_pr.md       # /do_pr command
@@ -156,6 +157,7 @@ Owner assigns a task
 ### 4.3 GitHub account
 - Use **only** the GitHub account `anthonyzng`. Never use `API-Anthony-Ng`.
 - SSH uses `~/.ssh/id_ed25519_anthonyzng` (already configured in `~/.ssh/config`).
+- GitHub MCP (`.mcp.json`) authenticates with a fine-grained PAT scoped to this repo only, read from the Windows user env var `GITHUB_PAT`. Never print, log, or commit its value. When it expires (90 days), ask the owner to create a new one.
 
 ### 4.4 Security
 - **Before creating, using, or storing any key, token, password, or credential, ask the owner for authorisation.** This covers GitHub tokens, GCP service accounts, SSH deploy keys, GitHub Actions secrets, DNS changes, firewall rules, and API keys.
