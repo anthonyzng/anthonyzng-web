@@ -9,6 +9,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    css: false,
+    // Stylesheets stay out of jsdom; only ?raw imports keep their text, so a test can check a CSS rule.
+    css: { include: [/\.css\?raw$/] },
   },
 })
