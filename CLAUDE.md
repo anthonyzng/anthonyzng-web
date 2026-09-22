@@ -82,9 +82,9 @@ Each tier runs in its **own Docker container** so they can be scaled or moved in
 | Database   | PostgreSQL |
 | Proxy/TLS  | Caddy (automatic Let's Encrypt certificates) |
 | CI/CD      | GitHub Actions: lint/test → build images → push to GHCR → deploy to GCP VM over SSH |
-| Admin auth | `TBD` (proposed: single admin account, JWT in httpOnly cookie) |
-| Contact    | Bot protection `TBD` (proposed: Cloudflare Turnstile); email delivery `TBD` |
-| Analytics  | Self-hosted Umami in its own container (proposed, pending confirmation) |
+| Admin auth | Single admin account, Argon2 password hash, JWT in httpOnly cookie, login rate limiting (TOTP 2FA later). Admin UI at `owwsolution.com/admin` |
+| Contact    | Cloudflare Turnstile (bot protection) + Resend (email from `noreply@owwsolution.com`). Every message is also stored in the DB. Recipient comes from env var `CONTACT_TO_EMAIL` (value kept in `CLAUDE.local.md`, never committed) |
+| Analytics  | Self-hosted Umami in its own container (own database in the same PostgreSQL instance) |
 
 ---
 
@@ -241,7 +241,4 @@ cd backend && uvicorn app.main:app --reload
 
 ## 10. Open Questions (TBD)
 
-- Admin authentication method
-- Contact form: bot protection provider and email delivery provider; destination inbox
-- Analytics provider (proposed: self-hosted Umami container)
 - Localised content storage model (decide in Phase 4)
