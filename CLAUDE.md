@@ -190,18 +190,33 @@ Owner assigns a task
 
 ---
 
-## 6. Commands (fill in once scaffolded)
+## 6. Commands
 
 ```bash
-# Full stack locally
+# Frontend (run inside frontend/)
+npm install
+npm run dev          # http://localhost:5173 (also the "frontend" entry in .claude/launch.json)
+npm run typecheck    # tsc -b
+npm run lint         # oxlint
+npm test             # vitest (jsdom + Testing Library)
+npm run build        # typecheck + production build to dist/
+
+# Full stack locally (from Phase 6)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
-# Frontend only
-cd frontend && npm install && npm run dev
-
-# Backend only
+# Backend only (from Phase 4)
 cd backend && uvicorn app.main:app --reload
 ```
+
+Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
+
+## 6.1 Frontend implementation notes
+
+- **Routing**: every public page lives under a language prefix, `/en/...` or `/zh-hant/...` (`src/components/LanguageLayout.tsx`). `/` redirects using the saved language (`localStorage.lang`) or the browser language. The URL is the source of truth for the active language. The admin panel will live at `/admin` without a prefix.
+- **i18n**: locale config in `src/i18n/languages.ts`; UI strings in `src/i18n/locales/{en,zh-Hant}.json`. Every key must exist in both files.
+- **Theme**: `data-theme="light|dark"` on `<html>`, set before first paint by the inline script in `index.html`, then managed by `src/theme/useTheme.ts`. Follows the OS until the user toggles; the choice is saved in `localStorage.theme`.
+- **Design tokens**: defined once in `src/index.css` (CSS variables + Tailwind v4 `@theme`). Use the semantic utilities `bg-bg`, `bg-surface`, `text-fg`, `text-muted`, `border-line`, `text-accent`, `bg-accent`, `text-accent-fg`, and the `text-display` / `text-headline` sizes. Never use raw hex values in components. All text tokens are verified >= 4.5:1 contrast in both themes; re-check when changing a colour.
+- **Fonts**: self-hosted via Fontsource (Inter Variable, Noto Sans TC Variable, IBM Plex Mono), with no Google Fonts requests.
 
 ---
 

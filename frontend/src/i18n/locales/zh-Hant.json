@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "title": "Anthony Ng — 全端及 AI 開發者"
+  },
+  "nav": {
+    "home": "首頁",
+    "experience": "工作經驗",
+    "projects": "項目作品",
+    "skills": "技能",
+    "contact": "聯絡",
+    "primary": "主要導覽",
+    "skipToContent": "跳至主要內容"
+  },
+  "theme": {
+    "toLight": "切換至淺色模式",
+    "toDark": "切換至深色模式"
+  },
+  "language": {
+    "switchTo": "切換語言至{{name}}"
+  },
+  "home": {
+    "eyebrow": "作品集",
+    "name": "Anthony Ng",
+    "roles": {
+      "fullStack": "全端軟件開發者",
+      "ai": "AI 開發者",
+      "manager": "軟件開發助理經理"
+    },
+    "intro": "我設計並開發端到端的軟件——由可擴展的後端、AI 驅動的功能，到精緻的使用者介面——並帶領團隊將產品推出。",
+    "comingSoon": "完整網站正在建設中。"
+  },
+  "notFound": {
+    "title": "找不到頁面",
+    "body": "你要找的頁面不存在。",
+    "back": "返回首頁"
+  },
+  "footer": {
+    "rights": "© {{year}} Anthony Ng。版權所有。"
+  }
+}
