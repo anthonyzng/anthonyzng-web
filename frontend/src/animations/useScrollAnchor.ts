@@ -1,39 +1,7 @@
 import type Lenis from 'lenis'
 import { useEffect } from 'react'
-import { gsap, headerOffset, ScrollTrigger } from './gsap'
-
-interface ScrollAnchor {
-  /** The child of <main> under the reading line (the bottom edge of the sticky header). */
-  element: Element
-  /** How far the reading line is into that element, from 0 to 1. */
-  progress: number
-}
-
-function readAnchor(): ScrollAnchor | null {
-  const main = document.getElementById('main')
-  if (!main) return null
-  const line = headerOffset()
-  let anchor: ScrollAnchor | null = null
-  for (const element of main.children) {
-    const { top, height } = element.getBoundingClientRect()
-    if (anchor && top > line) break
-    anchor = { element, progress: height > 0 ? gsap.utils.clamp(0, 1, (line - top) / height) : 0 }
-  }
-  return anchor
-}
-
-function restoreAnchor({ element, progress }: ScrollAnchor, lenis: Lenis | null): void {
-  if (!element.isConnected) return
-  const { top, height } = element.getBoundingClientRect()
-  const target = Math.max(0, window.scrollY + top - headerOffset() + progress * height)
-  if (lenis) {
-    // ScrollTrigger moved the page natively, so Lenis's position and limit are stale.
-    lenis.resize()
-    lenis.scrollTo(target, { immediate: true, force: true })
-    return
-  }
-  window.scrollTo(0, target)
-}
+import { ScrollTrigger } from './gsap'
+import { readAnchor, restoreAnchor } from './readingPosition'
 
 /**
  * Keeps the reader in place when a breakpoint change rebuilds gsap.matchMedia branches (crossing

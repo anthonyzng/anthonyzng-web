@@ -1,0 +1,432 @@
+{
+  "$comment": "Seed for `python -m app.seed` (upsert by slug, idempotent). Mirrors the frontend's static content (frontend/src/content/*.ts + the content.* subtree of both locale files) in the storage shapes of Phase 4: translations = {\"en\", \"zh-Hant\"} objects, tags = proper-noun strings or {\"en\", \"zh-Hant\"} term objects, dates = YYYY-MM (end null = present).",
+  "experience": [
+    {
+      "slug": "sksys",
+      "sortOrder": 0,
+      "company": "BABYSOFT o/a SKSYS Corporation",
+      "start": "2023-11",
+      "end": null,
+      "tech": [
+        "TypeScript",
+        "JavaScript",
+        "Node.js",
+        "Express",
+        "REST APIs",
+        "PWA",
+        "Agile",
+        "Jira"
+      ],
+      "translations": {
+        "en": {
+          "role": "Software Developer / Assistant Manager",
+          "location": "Markham, ON, Canada",
+          "bullets": [
+            "Built a Progressive Web App with a component-based TypeScript front end, integrated with Node.js / Express back-end services over REST APIs.",
+            "Led the UI revamp of a telecom service application, improving usability and operational efficiency.",
+            "Acted as technical point of contact and escalation for complex issues, coordinating with project managers in an Agile team.",
+            "Diagnosed and resolved network, hardware and operating-system issues remotely and on-site, keeping systems available."
+          ]
+        },
+        "zh-Hant": {
+          "role": "軟件開發員 / 助理經理",
+          "location": "加拿大安大略省萬錦市",
+          "bullets": [
+            "以組件化的 TypeScript 前端開發漸進式網頁應用程式（PWA），並透過 REST API 與 Node.js / Express 後端服務整合。",
+            "主導電訊服務應用程式的介面改版，提升易用性及營運效率。",
+            "擔任複雜技術問題的對接及升級聯絡人，在敏捷團隊中與項目經理協調。",
+            "遠端及現場診斷並解決網絡、硬件與作業系統問題，維持系統正常運作。"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "hactl",
+      "sortOrder": 1,
+      "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
+      "start": "2021-08",
+      "end": "2022-10",
+      "tech": [
+        "Microsoft Azure",
+        {
+          "en": "Data pipelines",
+          "zh-Hant": "數據管道"
+        },
+        "Power BI",
+        {
+          "en": "Enterprise applications",
+          "zh-Hant": "企業應用系統"
+        }
+      ],
+      "translations": {
+        "en": {
+          "role": "Senior IT Coordinator",
+          "location": "Hong Kong",
+          "bullets": [
+            "Implemented a hybrid-cloud data platform on Microsoft Azure with a data pipeline and Power BI reporting, optimizing operational time by at least 10% and reducing resource loss by at least 5%.",
+            "Improved and maintained mission-critical enterprise applications (COSAC-Plus, COSAC-Mobile) through UI revamp projects.",
+            "Coordinated cross-functional teams and authored documentation and guidelines for smooth handovers."
+          ]
+        },
+        "zh-Hant": {
+          "role": "高級資訊科技協調員",
+          "location": "香港",
+          "bullets": [
+            "在 Microsoft Azure 上建置混合雲數據平台，包括數據管道及 Power BI 報表，令營運時間優化最少 10%，資源損耗減少最少 5%。",
+            "透過介面改版項目，改善及維護關鍵企業應用系統（COSAC-Plus、COSAC-Mobile）。",
+            "協調跨部門團隊，並編寫文件及指引，確保交接順利。"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "ivc",
+      "sortOrder": 2,
+      "company": "IVC Consulting Group",
+      "start": "2020-08",
+      "end": "2021-04",
+      "tech": [
+        "ABAP",
+        "SAP ERP"
+      ],
+      "translations": {
+        "en": {
+          "role": "ABAP Programmer",
+          "location": "Hong Kong",
+          "bullets": [
+            "Developed and enhanced SAP ERP module programs and provided technical support.",
+            "Partnered with business analysts to gather requirements and advise on change impacts and technical limitations."
+          ]
+        },
+        "zh-Hant": {
+          "role": "ABAP 程式開發員",
+          "location": "香港",
+          "bullets": [
+            "開發及優化 SAP ERP 模組程式，並提供技術支援。",
+            "與業務分析師合作收集需求，就變更影響及技術限制提供建議。"
+          ]
+        }
+      }
+    }
+  ],
+  "projects": [
+    {
+      "slug": "slotOne",
+      "sortOrder": 0,
+      "placeholder": true,
+      "url": null,
+      "tech": [],
+      "translations": {
+        "en": {
+          "title": null,
+          "summary": null
+        },
+        "zh-Hant": {
+          "title": null,
+          "summary": null
+        }
+      }
+    },
+    {
+      "slug": "slotTwo",
+      "sortOrder": 1,
+      "placeholder": true,
+      "url": null,
+      "tech": [],
+      "translations": {
+        "en": {
+          "title": null,
+          "summary": null
+        },
+        "zh-Hant": {
+          "title": null,
+          "summary": null
+        }
+      }
+    }
+  ],
+  "skillGroups": [
+    {
+      "slug": "frontend",
+      "sortOrder": 0,
+      "items": [
+        "React",
+        "Next.js",
+        "Angular",
+        "TypeScript",
+        "JavaScript",
+        "HTML5",
+        "CSS3",
+        "Tailwind CSS",
+        "jQuery",
+        {
+          "en": "Responsive UI/UX",
+          "zh-Hant": "響應式 UI/UX"
+        }
+      ],
+      "translations": {
+        "en": {
+          "label": "Front-end"
+        },
+        "zh-Hant": {
+          "label": "前端"
+        }
+      }
+    },
+    {
+      "slug": "backend",
+      "sortOrder": 1,
+      "items": [
+        "Node.js / Express",
+        "Java / Spring Boot",
+        "Python / Flask",
+        "REST APIs",
+        "Microservices",
+        "ABAP",
+        "NGINX"
+      ],
+      "translations": {
+        "en": {
+          "label": "Back-end"
+        },
+        "zh-Hant": {
+          "label": "後端"
+        }
+      }
+    },
+    {
+      "slug": "data",
+      "sortOrder": 2,
+      "items": [
+        "PostgreSQL",
+        "MySQL",
+        "MS SQL",
+        "Oracle SQL",
+        "MongoDB",
+        {
+          "en": "Data pipelines",
+          "zh-Hant": "數據管道"
+        },
+        "Power BI"
+      ],
+      "translations": {
+        "en": {
+          "label": "Databases & data"
+        },
+        "zh-Hant": {
+          "label": "數據庫與數據"
+        }
+      }
+    },
+    {
+      "slug": "cloud",
+      "sortOrder": 3,
+      "items": [
+        "Microsoft Azure",
+        "Docker",
+        "Kubernetes",
+        "CI/CD",
+        "Linux",
+        "Git",
+        "Bitbucket"
+      ],
+      "translations": {
+        "en": {
+          "label": "Cloud & DevOps"
+        },
+        "zh-Hant": {
+          "label": "雲端與 DevOps"
+        }
+      }
+    },
+    {
+      "slug": "ai",
+      "sortOrder": 4,
+      "items": [
+        {
+          "en": "LLM-assisted development",
+          "zh-Hant": "LLM 輔助開發"
+        },
+        {
+          "en": "AI coding agents (Claude Code)",
+          "zh-Hant": "AI 編程代理（Claude Code）"
+        },
+        {
+          "en": "Prompt design",
+          "zh-Hant": "提示詞設計"
+        },
+        {
+          "en": "AI workflow automation",
+          "zh-Hant": "AI 工作流程自動化"
+        }
+      ],
+      "translations": {
+        "en": {
+          "label": "AI development"
+        },
+        "zh-Hant": {
+          "label": "AI 開發"
+        }
+      }
+    },
+    {
+      "slug": "ways",
+      "sortOrder": 5,
+      "items": [
+        "Agile / Scrum",
+        "Jira",
+        {
+          "en": "Full SDLC",
+          "zh-Hant": "完整軟件開發生命週期"
+        },
+        {
+          "en": "Technical documentation",
+          "zh-Hant": "技術文件撰寫"
+        },
+        {
+          "en": "Team coordination & mentoring",
+          "zh-Hant": "團隊協調與指導"
+        }
+      ],
+      "translations": {
+        "en": {
+          "label": "Ways of working"
+        },
+        "zh-Hant": {
+          "label": "工作方式"
+        }
+      }
+    }
+  ],
+  "education": [
+    {
+      "slug": "uwe",
+      "sortOrder": 0,
+      "school": "University of the West of England, Bristol",
+      "year": "2020",
+      "translations": {
+        "en": {
+          "degree": "BSc (Hons) Information Technology — First Class Honours"
+        },
+        "zh-Hant": {
+          "degree": "資訊科技（榮譽）理學士 — 一級榮譽"
+        }
+      }
+    }
+  ],
+  "certifications": [
+    {
+      "slug": "az900",
+      "sortOrder": 0,
+      "name": "Microsoft Azure Fundamentals (AZ-900)",
+      "inProgress": false
+    },
+    {
+      "slug": "ccna",
+      "sortOrder": 1,
+      "name": "CCNA Routing & Switching",
+      "inProgress": false
+    },
+    {
+      "slug": "pmp",
+      "sortOrder": 2,
+      "name": "PMP",
+      "inProgress": true
+    }
+  ],
+  "spokenLanguages": [
+    {
+      "slug": "english",
+      "sortOrder": 0,
+      "translations": {
+        "en": {
+          "name": "English"
+        },
+        "zh-Hant": {
+          "name": "英文"
+        }
+      }
+    },
+    {
+      "slug": "mandarin",
+      "sortOrder": 1,
+      "translations": {
+        "en": {
+          "name": "Mandarin"
+        },
+        "zh-Hant": {
+          "name": "普通話"
+        }
+      }
+    },
+    {
+      "slug": "cantonese",
+      "sortOrder": 2,
+      "translations": {
+        "en": {
+          "name": "Cantonese"
+        },
+        "zh-Hant": {
+          "name": "廣東話"
+        }
+      }
+    }
+  ],
+  "contactLinks": [
+    {
+      "slug": "email",
+      "sortOrder": 0,
+      "href": "mailto:anthonyzng075@gmail.com",
+      "display": "anthonyzng075@gmail.com",
+      "translations": {
+        "en": {
+          "label": "Email"
+        },
+        "zh-Hant": {
+          "label": "電郵"
+        }
+      }
+    },
+    {
+      "slug": "linkedin",
+      "sortOrder": 1,
+      "href": "https://www.linkedin.com/in/anthonyzng/",
+      "display": "linkedin.com/in/anthonyzng",
+      "translations": {
+        "en": {
+          "label": "LinkedIn"
+        },
+        "zh-Hant": {
+          "label": "LinkedIn"
+        }
+      }
+    },
+    {
+      "slug": "github",
+      "sortOrder": 2,
+      "href": "https://github.com/anthonyzng",
+      "display": "github.com/anthonyzng",
+      "translations": {
+        "en": {
+          "label": "GitHub"
+        },
+        "zh-Hant": {
+          "label": "GitHub"
+        }
+      }
+    }
+  ],
+  "siteTexts": [
+    {
+      "slug": "contact_location",
+      "translations": {
+        "en": {
+          "text": "Ontario, Canada"
+        },
+        "zh-Hant": {
+          "text": "加拿大安大略省"
+        }
+      }
+    }
+  ]
+}

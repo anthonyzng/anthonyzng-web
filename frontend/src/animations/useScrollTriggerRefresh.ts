@@ -3,6 +3,15 @@ import { ScrollTrigger } from './gsap'
 import { MOTION_QUERY, watchMedia } from './media'
 
 /**
+ * The safe refresh the hook below schedules: ScrollTrigger debounces it through its resize delay
+ * and, if the reader is scrolling, waits for scrollEnd. Also for other late layout changes that
+ * must never force a re-measure mid-scroll, such as the API content replacing the static snapshot.
+ */
+export function scheduleScrollTriggerRefresh(): void {
+  ScrollTrigger.refresh(true)
+}
+
+/**
  * Requests a ScrollTrigger refresh whenever trigger positions may have moved: web fonts finishing
  * (including the Noto Sans TC subsets that load lazily once Chinese text first appears), a theme or
  * language change on <html>, and a reduced-motion preference change.
@@ -16,7 +25,7 @@ export function useScrollTriggerRefresh(): void {
   useEffect(() => {
     let disposed = false
     const schedule = () => {
-      if (!disposed) ScrollTrigger.refresh(true)
+      if (!disposed) scheduleScrollTriggerRefresh()
     }
 
     const fonts = typeof document === 'undefined' ? undefined : document.fonts

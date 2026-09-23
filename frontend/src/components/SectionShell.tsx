@@ -13,7 +13,7 @@ interface SectionShellProps {
 
 /**
  * Shared layout of a home page section: ghost numeral, drawn rule, sticky counter, masked heading,
- * tagline, placeholder content and a "coming soon" line. `overflow-clip` contains the ghost without
+ * tagline and the section's own content. `overflow-clip` contains the ghost without
  * creating a scroll container (so the CSS-sticky counter still works); `isolate` keeps the ghost
  * behind the content even where overflow: clip is unsupported.
  */
@@ -63,7 +63,6 @@ export function SectionShell({ id, headingSize = 'headline', children }: Section
               {t(`sections.${id}.tagline`)}
             </p>
             <div className="mt-14 md:mt-20">{children}</div>
-            <p className="mt-12 font-mono text-sm text-muted">{t('sections.comingSoon')}</p>
           </div>
         </div>
       </div>

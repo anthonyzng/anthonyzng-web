@@ -38,7 +38,6 @@
   },
   "sections": {
     "counter": "{{current}} / {{total}}",
-    "comingSoon": "內容即將推出。",
     "experience": {
       "title": "工作經驗",
       "tagline": "歷任職位與職責一覽。"
@@ -54,6 +53,128 @@
     "contact": {
       "title": "聯絡",
       "tagline": "如有查詢、合作項目或工作機會，歡迎聯絡。"
+    }
+  },
+  "content": {
+    "techOf": "技術：{{name}}",
+    "terms": {
+      "responsiveUi": "響應式 UI/UX",
+      "dataPipelines": "數據管道",
+      "enterpriseApplications": "企業應用系統",
+      "llmAssisted": "LLM 輔助開發",
+      "codingAgents": "AI 編程代理（Claude Code）",
+      "promptDesign": "提示詞設計",
+      "workflowAutomation": "AI 工作流程自動化",
+      "fullSdlc": "完整軟件開發生命週期",
+      "documentation": "技術文件撰寫",
+      "mentoring": "團隊協調與指導"
+    },
+    "experience": {
+      "present": "至今",
+      "sksys": {
+        "role": "軟件開發員 / 助理經理",
+        "location": "加拿大安大略省萬錦市",
+        "bullets": {
+          "pwa": "以組件化的 TypeScript 前端開發漸進式網頁應用程式（PWA），並透過 REST API 與 Node.js / Express 後端服務整合。",
+          "revamp": "主導電訊服務應用程式的介面改版，提升易用性及營運效率。",
+          "escalation": "擔任複雜技術問題的對接及升級聯絡人，在敏捷團隊中與項目經理協調。",
+          "support": "遠端及現場診斷並解決網絡、硬件與作業系統問題，維持系統正常運作。"
+        }
+      },
+      "hactl": {
+        "role": "高級資訊科技協調員",
+        "location": "香港",
+        "bullets": {
+          "platform": "在 Microsoft Azure 上建置混合雲數據平台，包括數據管道及 Power BI 報表，令營運時間優化最少 10%，資源損耗減少最少 5%。",
+          "enterprise": "透過介面改版項目，改善及維護關鍵企業應用系統（COSAC-Plus、COSAC-Mobile）。",
+          "coordination": "協調跨部門團隊，並編寫文件及指引，確保交接順利。"
+        }
+      },
+      "ivc": {
+        "role": "ABAP 程式開發員",
+        "location": "香港",
+        "bullets": {
+          "sap": "開發及優化 SAP ERP 模組程式，並提供技術支援。",
+          "requirements": "與業務分析師合作收集需求，就變更影響及技術限制提供建議。"
+        }
+      }
+    },
+    "projects": {
+      "note": "精選項目內容正在整理中。",
+      "visit": "查看項目",
+      "placeholder": {
+        "badge": "預留位置",
+        "title": "項目 {{index}}",
+        "summary": "此位置將會介紹項目內容、所用技術及成果。"
+      }
+    },
+    "skills": {
+      "groups": {
+        "frontend": "前端",
+        "backend": "後端",
+        "data": "數據庫與數據",
+        "cloud": "雲端與 DevOps",
+        "ai": "AI 開發",
+        "ways": "工作方式"
+      },
+      "credentials": {
+        "title": "學歷與專業資格",
+        "education": {
+          "label": "學歷",
+          "uwe": "資訊科技（榮譽）理學士 — 一級榮譽"
+        },
+        "certifications": {
+          "label": "專業資格",
+          "inProgress": "（進行中）"
+        },
+        "languages": {
+          "label": "語言",
+          "english": "英文",
+          "mandarin": "普通話",
+          "cantonese": "廣東話"
+        }
+      }
+    },
+    "contact": {
+      "labels": {
+        "email": "電郵",
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "location": "所在地"
+      },
+      "location": "加拿大安大略省"
+    }
+  },
+  "contactForm": {
+    "title": "發送訊息",
+    "intro": "所有欄位均為必填。",
+    "name": "姓名",
+    "email": "電郵地址",
+    "message": "訊息",
+    "honeypot": "請留空此欄位",
+    "submit": "傳送訊息",
+    "submitting": "傳送中…",
+    "success": {
+      "title": "訊息已傳送",
+      "body": "多謝你的訊息，我會盡快回覆。",
+      "again": "再傳送一則訊息"
+    },
+    "errors": {
+      "nameRequired": "請輸入姓名。",
+      "nameTooLong": "姓名不可超過 100 個字元。",
+      "emailRequired": "請輸入電郵地址。",
+      "emailInvalid": "請輸入有效的電郵地址。",
+      "emailTooLong": "電郵地址不可超過 254 個字元。",
+      "messageRequired": "請輸入訊息。",
+      "messageTooShort": "訊息最少需要 10 個字元。",
+      "messageTooLong": "訊息不可超過 5000 個字元。",
+      "fieldInvalid": "請檢查此欄位。",
+      "turnstileRequired": "請完成驗證。",
+      "fixFields": "請檢查標示的欄位。",
+      "rateLimited": "嘗試次數過多，請稍後再試。",
+      "rateLimitedIn_one": "嘗試次數過多，請於 {{count}} 分鐘後再試。",
+      "rateLimitedIn_other": "嘗試次數過多，請於 {{count}} 分鐘後再試。",
+      "generic": "發生錯誤，訊息未能傳送。請再試一次，或透過以上方式聯絡我。"
     }
   },
   "notFound": {

@@ -64,7 +64,6 @@ describe('HomePage (static path: no motion)', () => {
       expect(within(region).getByRole('heading', { level: 2, name: title })).toHaveAttribute('tabindex', '-1')
       expect(within(region).getByText(tagline)).toBeInTheDocument()
     }
-    expect(screen.getAllByText('Content coming soon.')).toHaveLength(4)
     expect(screen.getByText('04 / 04')).toBeInTheDocument()
   })
 
@@ -95,7 +94,7 @@ describe('HomePage (static path: no motion)', () => {
       expect(await screen.findByRole('heading', { level: 2, name: title })).toBeInTheDocument()
     }
     expect(screen.getByRole('heading', { level: 2, name: '簡介' })).toBeInTheDocument()
-    expect(screen.getAllByText('內容即將推出。')).toHaveLength(4)
+    expect(screen.getByText('精選項目內容正在整理中。')).toBeInTheDocument()
   })
 
   it('leaves no hidden or transformed inline styles without motion', async () => {

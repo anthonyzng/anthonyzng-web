@@ -24,6 +24,13 @@ describe('JS media queries', () => {
 })
 
 describe('index.css', () => {
+  it('shows a scrubbed reveal in full while something inside it has focus', () => {
+    // Otherwise a keyboard user can tab into a form or link that is still translucent and displaced.
+    const rule = /\[data-reveal-inner\]:focus-within\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(rule).toContain('opacity: 1 !important')
+    expect(rule).toContain('transform: none !important')
+  })
+
   it('makes every transition and animation instant under reduced motion, delays included', () => {
     const rule = /@media \(prefers-reduced-motion: reduce\) \{\s*\*,[^}]*\}/.exec(css)?.[0] ?? ''
     for (const declaration of [
