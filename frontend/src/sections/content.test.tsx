@@ -144,7 +144,7 @@ describe('section content', () => {
   })
 
   describe('Contact', () => {
-    it('links every approved channel in order, says where the owner is and that the form is still coming', async () => {
+    it('links every approved channel in order, says where the owner is and offers the form', async () => {
       renderAt('/en')
       await screen.findByRole('heading', { level: 1 })
       const contact = region('Contact')
@@ -160,7 +160,10 @@ describe('section content', () => {
         expect(within(contact).getByText(label)).toBeInTheDocument()
       }
       expect(within(contact).getByText('Ontario, Canada')).toBeInTheDocument()
-      expect(within(contact).getByText(i18n.t('content.contact.formNote'))).toBeInTheDocument()
+      // The form replaced the "on its way" note.
+      expect(within(contact).getByRole('form', { name: 'Send a message' })).toBeInTheDocument()
+      expect(within(contact).getByRole('button', { name: 'Send message' })).toBeInTheDocument()
+      expect(within(contact).queryByText(/on the way/i)).not.toBeInTheDocument()
     })
   })
 

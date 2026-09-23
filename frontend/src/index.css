@@ -6,7 +6,8 @@
 /*
  * Design tokens. Components use the semantic Tailwind colours below
  * (bg-bg, text-fg, text-muted, border-line, text-accent, ...), never raw hex.
- * Contrast (WCAG AA): fg/muted/accent all >= 4.5:1 against bg and surface in both themes.
+ * Contrast (WCAG AA): fg/muted/accent/error all >= 4.5:1 against bg and surface in both themes.
+ * --error is for form validation only: the one place the neutral-plus-accent palette needs a second signal.
  */
 :root {
   --bg: #f8fafc;
@@ -16,6 +17,7 @@
   --line: #e2e8f0;
   --accent: #047857;
   --accent-fg: #ffffff;
+  --error: #b91c1c;
   color-scheme: light;
 
   /* Header height: the header, html scroll-padding-top and the hero min-height all read this. */
@@ -30,6 +32,7 @@
   --line: #1e293b;
   --accent: #34d399;
   --accent-fg: #0b1120;
+  --error: #f87171;
   color-scheme: dark;
 }
 
@@ -41,6 +44,7 @@
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  --color-error: var(--error);
 }
 
 @theme {
@@ -154,6 +158,14 @@
     .ghost-numeral {
       display: none;
     }
+  }
+
+  /* A scrubbed reveal never hides what has focus: tabbing or clicking into a half-revealed item
+     (a contact link, the contact form) shows it at full strength at once. !important outranks the
+     inline styles GSAP writes; once focus leaves, the scrub state applies again. */
+  [data-reveal-inner]:focus-within {
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   @media print {

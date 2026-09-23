@@ -1,0 +1,82 @@
+[project]
+name = "anthonyzng-web-backend"
+version = "0.1.0"
+description = "FastAPI backend for owwsolution.com: localized content API, contact endpoint and admin auth."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "sqlalchemy[asyncio]>=2.0.36",
+  "asyncpg>=0.30",
+  "alembic>=1.14",
+  "pydantic>=2.11",
+  "pydantic-settings>=2.7",
+  "email-validator>=2.2",
+  "argon2-cffi>=23.1",
+  "pyjwt>=2.10",
+  "httpx>=0.28",
+]
+
+[dependency-groups]
+dev = [
+  "ruff>=0.9",
+  "mypy>=1.14",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.25",
+  "asyncpg-stubs>=0.30",
+]
+
+[tool.uv]
+# Virtual project: the `app` package is run in place (uvicorn, alembic, pytest), never built or installed.
+package = false
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W", "F", "I", "B", "UP", "N", "SIM", "RUF", "ASYNC", "PT", "T20", "C4", "PIE", "RET",
+  "ISC", "ARG", "DTZ", "LOG", "G", "FA", "PL", "TRY", "ERA",
+]
+ignore = [
+  "PLR2004",  # magic values are fine in validators and tests
+  "TRY003",   # long exception messages inline
+  "RUF012",   # SQLAlchemy / pydantic class attributes are not mutable defaults in the usual sense
+  "ISC001",   # conflicts with the formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app/seed/__main__.py" = ["T201"]     # the CLI prints its per-table counts
+"alembic/versions/*" = ["E501"]       # long CHECK expressions are clearer on one line
+"tests/**" = ["ARG001", "PLR0913", "PLR0917"]
+
+[tool.ruff.lint.pylint]
+max-args = 8  # FastAPI handlers receive every dependency as a parameter
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+known-third-party = ["alembic"]  # the local alembic/ directory is not the package
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests", "alembic/env.py"]
+exclude = ['^\.venv/']
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["error::DeprecationWarning:app.*"]

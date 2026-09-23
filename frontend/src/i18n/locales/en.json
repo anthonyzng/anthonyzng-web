@@ -142,8 +142,39 @@
         "github": "GitHub",
         "location": "Based in"
       },
-      "location": "Ontario, Canada",
-      "formNote": "A contact form is on the way. Until it lands, the channels above are the fastest way to reach me."
+      "location": "Ontario, Canada"
+    }
+  },
+  "contactForm": {
+    "title": "Send a message",
+    "intro": "All fields are required.",
+    "name": "Name",
+    "email": "Email address",
+    "message": "Message",
+    "honeypot": "Leave this field empty",
+    "submit": "Send message",
+    "submitting": "Sending…",
+    "success": {
+      "title": "Message sent",
+      "body": "Thanks for reaching out. I will get back to you soon.",
+      "again": "Send another message"
+    },
+    "errors": {
+      "nameRequired": "Please enter your name.",
+      "nameTooLong": "Your name must be 100 characters or fewer.",
+      "emailRequired": "Please enter your email address.",
+      "emailInvalid": "Please enter a valid email address.",
+      "emailTooLong": "Your email address must be 254 characters or fewer.",
+      "messageRequired": "Please enter a message.",
+      "messageTooShort": "Your message must be at least 10 characters.",
+      "messageTooLong": "Your message must be 5000 characters or fewer.",
+      "fieldInvalid": "Please check this field.",
+      "turnstileRequired": "Please complete the verification.",
+      "fixFields": "Please check the highlighted fields.",
+      "rateLimited": "Too many attempts. Please try again later.",
+      "rateLimitedIn_one": "Too many attempts. Please try again in {{count}} minute.",
+      "rateLimitedIn_other": "Too many attempts. Please try again in {{count}} minutes.",
+      "generic": "Something went wrong and your message was not sent. Please try again, or use the channels above."
     }
   },
   "notFound": {

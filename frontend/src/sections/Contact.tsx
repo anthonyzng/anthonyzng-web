@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
+import { ContactForm } from '../components/ContactForm'
 import { RevealItem } from '../components/RevealItem'
 import { SectionShell } from '../components/SectionShell'
-import { CONTACT_LINKS } from '../content/contact'
+import { useResolvedContent } from '../content/contentContext'
 
 interface ContactRow {
   id: string
@@ -22,20 +23,19 @@ const VALUE_LINK =
   'transition-colors duration-200 hover:decoration-accent'
 
 /**
- * The closing beat, with a display-size heading: how to reach the owner today, and a note that the
- * form is still on its way.
+ * The closing beat, with a display-size heading: the direct channels first, then the form.
+ * Channels and location arrive resolved for the active locale; the "Based in" row is dropped when
+ * the location is unset rather than shown empty.
  */
 export function Contact() {
   const { t } = useTranslation()
+  const { contact } = useResolvedContent()
 
   const rows: ContactRow[] = [
-    ...CONTACT_LINKS.map((link) => ({
-      id: link.id,
-      label: t(`content.contact.labels.${link.id}`),
-      value: link.display,
-      href: link.href,
-    })),
-    { id: 'location', label: t('content.contact.labels.location'), value: t('content.contact.location'), href: null },
+    ...contact.links.map((link) => ({ id: link.id, label: link.label, value: link.display, href: link.href })),
+    ...(contact.location
+      ? [{ id: 'location', label: t('content.contact.labels.location'), value: contact.location, href: null }]
+      : []),
   ]
 
   return (
@@ -63,8 +63,8 @@ export function Contact() {
           ))}
         </ul>
 
-        <RevealItem className="mt-12">
-          <p className="max-w-xl text-lg text-muted text-pretty">{t('content.contact.formNote')}</p>
+        <RevealItem className="mt-14 border-t border-line pt-10 md:mt-20">
+          <ContactForm />
         </RevealItem>
       </div>
     </SectionShell>

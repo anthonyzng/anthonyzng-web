@@ -7,8 +7,8 @@
  * - a descriptive term (`term('dataPipelines')`), which is ordinary prose and must be translated;
  *   its text lives under `content.terms.<id>` in both locale files.
  *
- * Both forms stay serialisable, so Phase 4 can return them from the API unchanged
- * (`"React"` / `{"term":"dataPipelines"}`).
+ * The static modules keep both forms; `resolveStaticContent` (content/resolved.ts) turns them into
+ * plain text for the active locale, exactly as the API resolves its rows before serving them.
  */
 export interface TermTag {
   readonly term: string

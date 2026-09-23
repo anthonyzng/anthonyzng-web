@@ -1,5 +1,6 @@
 import { useActiveSection } from '../animations/useActiveSection'
 import { useHashScroll } from '../animations/useHashScroll'
+import { ContentProvider } from '../content/ContentProvider'
 import { Contact } from '../sections/Contact'
 import { Experience } from '../sections/Experience'
 import { Hero } from '../sections/Hero'
@@ -14,13 +15,14 @@ export function HomePage() {
   useHashScroll()
 
   return (
-    <>
+    // One content snapshot for the four sections: static at once, the API's once it answers.
+    <ContentProvider>
       <Hero />
       <Statement />
       <Experience />
       <Projects />
       <Skills />
       <Contact />
-    </>
+    </ContentProvider>
   )
 }

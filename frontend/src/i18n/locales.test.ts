@@ -55,6 +55,15 @@ describe('locales', () => {
       expect(keys.has('home.name')).toBe(false)
       // The sections carry real content now, so the shared "coming soon" line is gone.
       expect(keys.has('sections.comingSoon')).toBe(false)
+      // The contact form shipped, so the "form is on the way" note is gone with it.
+      expect(keys.has('content.contact.formNote')).toBe(false)
+    }
+  })
+
+  it('carries the contact form copy in both languages', () => {
+    for (const key of ['contactForm.title', 'contactForm.submit', 'contactForm.success.body', 'contactForm.errors.generic']) {
+      expect(enKeys.has(key), `en: ${key}`).toBe(true)
+      expect(zhKeys.get(key), key).not.toEqual(enKeys.get(key))
     }
   })
 
@@ -78,13 +87,7 @@ describe('locales', () => {
  * until both locales carry its text.
  */
 function contentKeys(): string[] {
-  const keys = [
-    'content.techOf',
-    'content.experience.present',
-    'content.projects.note',
-    'content.contact.location',
-    'content.contact.formNote',
-  ]
+  const keys = ['content.techOf', 'content.experience.present', 'content.projects.note', 'content.contact.location']
 
   // Chips are either proper nouns (no key) or terms translated under content.terms.<id>.
   const tags = (items: readonly Tag[]) => items.map(tagKey).filter((key): key is string => key !== null)

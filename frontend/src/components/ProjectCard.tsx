@@ -1,24 +1,25 @@
 import { useTranslation } from 'react-i18next'
-import type { Project } from '../content/projects'
+import type { ResolvedProject } from '../content/resolved'
 import { TagList } from './TagList'
 
 interface ProjectCardProps {
-  project: Project
+  project: ResolvedProject
   /** One-based position, used to number the reserved slots ("Project 1", "Project 2"). */
   index: number
 }
 
 /**
  * One project card: image frame, title, summary, tech tags and an optional link.
- * A `placeholder` project is a reserved slot — it says so on a badge and describes nothing, so a
+ * A `placeholder` project is a reserved slot: it says so on a badge and describes nothing, so a
  * visitor can never mistake it for real work. The hatch plane keeps the frame's parallax alive and
  * is where a real screenshot will drop in.
  */
 export function ProjectCard({ project, index }: ProjectCardProps) {
   const { t } = useTranslation()
-  const base = `content.projects.items.${project.id}`
-  const title = project.placeholder ? t('content.projects.placeholder.title', { index }) : t(`${base}.title`)
-  const summary = project.placeholder ? t('content.projects.placeholder.summary') : t(`${base}.summary`)
+  // A real project always carries its own copy; a null title or summary is treated as a slot anyway.
+  const title = project.placeholder || project.title === null ? t('content.projects.placeholder.title', { index }) : project.title
+  const summary =
+    project.placeholder || project.summary === null ? t('content.projects.placeholder.summary') : project.summary
 
   return (
     <article className="flex h-full flex-col border border-line bg-surface">

@@ -142,8 +142,39 @@
         "github": "GitHub",
         "location": "所在地"
       },
-      "location": "加拿大安大略省",
-      "formNote": "聯絡表單即將推出，暫時可透過以上方式聯絡我。"
+      "location": "加拿大安大略省"
+    }
+  },
+  "contactForm": {
+    "title": "發送訊息",
+    "intro": "所有欄位均為必填。",
+    "name": "姓名",
+    "email": "電郵地址",
+    "message": "訊息",
+    "honeypot": "請留空此欄位",
+    "submit": "傳送訊息",
+    "submitting": "傳送中…",
+    "success": {
+      "title": "訊息已傳送",
+      "body": "多謝你的訊息，我會盡快回覆。",
+      "again": "再傳送一則訊息"
+    },
+    "errors": {
+      "nameRequired": "請輸入姓名。",
+      "nameTooLong": "姓名不可超過 100 個字元。",
+      "emailRequired": "請輸入電郵地址。",
+      "emailInvalid": "請輸入有效的電郵地址。",
+      "emailTooLong": "電郵地址不可超過 254 個字元。",
+      "messageRequired": "請輸入訊息。",
+      "messageTooShort": "訊息最少需要 10 個字元。",
+      "messageTooLong": "訊息不可超過 5000 個字元。",
+      "fieldInvalid": "請檢查此欄位。",
+      "turnstileRequired": "請完成驗證。",
+      "fixFields": "請檢查標示的欄位。",
+      "rateLimited": "嘗試次數過多，請稍後再試。",
+      "rateLimitedIn_one": "嘗試次數過多，請於 {{count}} 分鐘後再試。",
+      "rateLimitedIn_other": "嘗試次數過多，請於 {{count}} 分鐘後再試。",
+      "generic": "發生錯誤，訊息未能傳送。請再試一次，或透過以上方式聯絡我。"
     }
   },
   "notFound": {

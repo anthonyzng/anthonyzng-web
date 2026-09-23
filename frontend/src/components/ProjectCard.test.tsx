@@ -1,32 +1,27 @@
 import { render, screen, within } from '@testing-library/react'
 import { beforeAll, describe, expect, it } from 'vitest'
-import type { Project } from '../content/projects'
-import { term } from '../content/tags'
+import type { ResolvedProject } from '../content/resolved'
 import i18n from '../i18n'
 import { ProjectCard } from './ProjectCard'
 
 /**
  * The real-project branch of the card, which no page exercises yet: every shipped project is still a
- * reserved slot. A fabricated project keeps the key paths, the link and the chips under test, so the
- * owner's first real write-up cannot reach the site through an unverified code path.
+ * reserved slot. A fabricated project (in the resolved shape the API and the static snapshot share)
+ * keeps the title, summary, link and chips under test, so the owner's first real write-up cannot
+ * reach the site through an unverified code path.
  */
-const REAL: Project = {
+const REAL: ResolvedProject = {
   id: 'demo',
   placeholder: false,
-  tech: ['React', term('dataPipelines')],
+  title: 'Demo project',
+  summary: 'What it does.',
+  tech: ['React', 'Data pipelines'],
   url: 'https://example.com/demo',
 }
 
 describe('ProjectCard (real project)', () => {
   beforeAll(async () => {
     await i18n.changeLanguage('en')
-    i18n.addResourceBundle(
-      'en',
-      'translation',
-      { content: { projects: { items: { demo: { title: 'Demo project', summary: 'What it does.' } } } } },
-      true,
-      true,
-    )
   })
 
   it('renders the title, summary, chips and link from the project itself', () => {
@@ -53,8 +48,14 @@ describe('ProjectCard (real project)', () => {
   })
 
   it('renders no link when the project has no url', () => {
-    render(<ProjectCard project={{ ...REAL, url: undefined }} index={1} />)
+    render(<ProjectCard project={{ ...REAL, url: null }} index={1} />)
     expect(screen.queryAllByRole('link')).toHaveLength(0)
     expect(screen.getByRole('heading', { level: 3, name: 'Demo project' })).toBeInTheDocument()
+  })
+
+  it('falls back to the slot copy for a project that arrives without its own text', () => {
+    render(<ProjectCard project={{ ...REAL, title: null, summary: null }} index={2} />)
+    expect(screen.getByRole('heading', { level: 3, name: 'Project 2' })).toBeInTheDocument()
+    expect(screen.getByText(i18n.t('content.projects.placeholder.summary'))).toBeInTheDocument()
   })
 })
