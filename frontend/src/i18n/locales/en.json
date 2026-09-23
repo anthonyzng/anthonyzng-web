@@ -38,7 +38,6 @@
   },
   "sections": {
     "counter": "{{current}} / {{total}}",
-    "comingSoon": "Content coming soon.",
     "experience": {
       "title": "Experience",
       "tagline": "A timeline of roles and responsibilities."
@@ -54,6 +53,96 @@
     "contact": {
       "title": "Contact",
       "tagline": "Questions, projects or opportunities: get in touch."
+    }
+  },
+  "content": {
+    "techOf": "Technologies: {{name}}",
+    "terms": {
+      "responsiveUi": "Responsive UI/UX",
+      "dataPipelines": "Data pipelines",
+      "enterpriseApplications": "Enterprise applications",
+      "llmAssisted": "LLM-assisted development",
+      "codingAgents": "AI coding agents (Claude Code)",
+      "promptDesign": "Prompt design",
+      "workflowAutomation": "AI workflow automation",
+      "fullSdlc": "Full SDLC",
+      "documentation": "Technical documentation",
+      "mentoring": "Team coordination & mentoring"
+    },
+    "experience": {
+      "present": "Present",
+      "sksys": {
+        "role": "Software Developer / Assistant Manager",
+        "location": "Markham, ON, Canada",
+        "bullets": {
+          "pwa": "Built a Progressive Web App with a component-based TypeScript front end, integrated with Node.js / Express back-end services over REST APIs.",
+          "revamp": "Led the UI revamp of a telecom service application, improving usability and operational efficiency.",
+          "escalation": "Acted as technical point of contact and escalation for complex issues, coordinating with project managers in an Agile team.",
+          "support": "Diagnosed and resolved network, hardware and operating-system issues remotely and on-site, keeping systems available."
+        }
+      },
+      "hactl": {
+        "role": "Senior IT Coordinator",
+        "location": "Hong Kong",
+        "bullets": {
+          "platform": "Implemented a hybrid-cloud data platform on Microsoft Azure with a data pipeline and Power BI reporting, optimizing operational time by at least 10% and reducing resource loss by at least 5%.",
+          "enterprise": "Improved and maintained mission-critical enterprise applications (COSAC-Plus, COSAC-Mobile) through UI revamp projects.",
+          "coordination": "Coordinated cross-functional teams and authored documentation and guidelines for smooth handovers."
+        }
+      },
+      "ivc": {
+        "role": "ABAP Programmer",
+        "location": "Hong Kong",
+        "bullets": {
+          "sap": "Developed and enhanced SAP ERP module programs and provided technical support.",
+          "requirements": "Partnered with business analysts to gather requirements and advise on change impacts and technical limitations."
+        }
+      }
+    },
+    "projects": {
+      "note": "Selected projects are being written up.",
+      "visit": "View project",
+      "placeholder": {
+        "badge": "Placeholder",
+        "title": "Project {{index}}",
+        "summary": "This slot is reserved for a write-up of the work, the stack behind it and the result."
+      }
+    },
+    "skills": {
+      "groups": {
+        "frontend": "Front-end",
+        "backend": "Back-end",
+        "data": "Databases & data",
+        "cloud": "Cloud & DevOps",
+        "ai": "AI development",
+        "ways": "Ways of working"
+      },
+      "credentials": {
+        "title": "Credentials",
+        "education": {
+          "label": "Education",
+          "uwe": "BSc (Hons) Information Technology — First Class Honours"
+        },
+        "certifications": {
+          "label": "Certifications",
+          "inProgress": " (in progress)"
+        },
+        "languages": {
+          "label": "Languages",
+          "english": "English",
+          "mandarin": "Mandarin",
+          "cantonese": "Cantonese"
+        }
+      }
+    },
+    "contact": {
+      "labels": {
+        "email": "Email",
+        "github": "GitHub",
+        "location": "Based in"
+      },
+      "location": "Ontario, Canada",
+      "formNote": "A contact form is on the way. Until it lands, the channels above are the fastest way to reach me."
     }
   },
   "notFound": {

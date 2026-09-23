@@ -1,20 +1,24 @@
+import { useTranslation } from 'react-i18next'
+import { ProjectCard } from '../components/ProjectCard'
 import { RevealItem } from '../components/RevealItem'
 import { SectionShell } from '../components/SectionShell'
-import { Skeleton } from '../components/Skeleton'
-
-const CARDS = [0, 1, 2, 3] as const
+import { PROJECTS } from '../content/projects'
 
 /**
- * Placeholder 2x2 card grid. The even-column offset is a static stagger on the untransformed
- * trigger wrapper (never on a GSAP target); the hatch planes inside the cards get parallax.
+ * The finished card grid, currently holding reserved slots: the write-ups are not ready, and the
+ * note plus each card's badge say so. The even-column offset is a static stagger on the
+ * untransformed trigger wrapper (never on a GSAP target); the hatch plane inside a card gets parallax.
  */
 export function Projects() {
+  const { t } = useTranslation()
+
   return (
     <SectionShell id="projects">
-      <div aria-hidden="true" className="grid gap-8 md:grid-cols-2 md:pb-24">
-        {CARDS.map((card) => (
-          <RevealItem key={card} className="md:even:translate-y-24">
-            <Skeleton variant="card" />
+      <p className="font-mono text-sm text-muted">{t('content.projects.note')}</p>
+      <div className="mt-10 grid gap-8 md:grid-cols-2 md:pb-24">
+        {PROJECTS.map((project, index) => (
+          <RevealItem key={project.id} className="md:even:translate-y-24">
+            <ProjectCard project={project} index={index + 1} />
           </RevealItem>
         ))}
       </div>
