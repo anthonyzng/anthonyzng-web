@@ -138,6 +138,7 @@
     "contact": {
       "labels": {
         "email": "Email",
+        "linkedin": "LinkedIn",
         "github": "GitHub",
         "location": "Based in"
       },

@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../App'
+import { CONTACT_EMAIL, CONTACT_LINKS } from '../content/contact'
 import { EXPERIENCE } from '../content/experience'
 import { CERTIFICATIONS, EDUCATION, SKILL_GROUPS, SPOKEN_LANGUAGES } from '../content/skills'
 import { isTerm, type Tag } from '../content/tags'
@@ -32,13 +33,6 @@ describe('section content', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
     document.documentElement.dataset.theme = 'light'
-    // The address is build-time configuration, not a property of the checkout: state the unset case
-    // explicitly, so a developer's own frontend/.env cannot decide what these tests assert.
-    vi.stubEnv('VITE_CONTACT_EMAIL', '')
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
   })
 
   describe('Experience', () => {
@@ -150,39 +144,23 @@ describe('section content', () => {
   })
 
   describe('Contact', () => {
-    it('links GitHub, says where the owner is and that the form is still coming', async () => {
+    it('links every approved channel in order, says where the owner is and that the form is still coming', async () => {
       renderAt('/en')
       await screen.findByRole('heading', { level: 1 })
       const contact = region('Contact')
 
-      expect(within(contact).getByRole('link', { name: 'github.com/anthonyzng' })).toHaveAttribute(
-        'href',
-        'https://github.com/anthonyzng',
+      // Email first, shown in full as a mailto link, then the profiles.
+      const links = within(contact).getAllByRole('link')
+      expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual(
+        CONTACT_LINKS.map((link) => [link.display, link.href]),
       )
+      expect(links[0]).toHaveAttribute('href', `mailto:${CONTACT_EMAIL}`)
+      expect(links[0]).toHaveTextContent(CONTACT_EMAIL)
+      for (const label of ['Email', 'LinkedIn', 'GitHub', 'Based in']) {
+        expect(within(contact).getByText(label)).toBeInTheDocument()
+      }
       expect(within(contact).getByText('Ontario, Canada')).toBeInTheDocument()
       expect(within(contact).getByText(i18n.t('content.contact.formNote'))).toBeInTheDocument()
-      // No LinkedIn URL was supplied, so no LinkedIn row is invented.
-      expect(within(contact).queryByText(/linkedin/i)).not.toBeInTheDocument()
-    })
-
-    it('omits the email row while no address is configured', async () => {
-      renderAt('/en')
-      await screen.findByRole('heading', { level: 1 })
-      const contact = region('Contact')
-      expect(within(contact).queryByText('Email')).not.toBeInTheDocument()
-      expect(contact.querySelector('a[href^="mailto:"]')).toBeNull()
-    })
-
-    it('shows the configured address in full, as a mailto link', async () => {
-      vi.stubEnv('VITE_CONTACT_EMAIL', ' someone@example.com ')
-      renderAt('/en')
-      await screen.findByRole('heading', { level: 1 })
-      const contact = region('Contact')
-      expect(within(contact).getByText('Email')).toBeInTheDocument()
-      expect(within(contact).getByRole('link', { name: 'someone@example.com' })).toHaveAttribute(
-        'href',
-        'mailto:someone@example.com',
-      )
     })
   })
 

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { RevealItem } from '../components/RevealItem'
 import { SectionShell } from '../components/SectionShell'
-import { CONTACT_LINKS, contactEmail } from '../content/contact'
+import { CONTACT_LINKS } from '../content/contact'
 
 interface ContactRow {
   id: string
@@ -23,15 +23,12 @@ const VALUE_LINK =
 
 /**
  * The closing beat, with a display-size heading: how to reach the owner today, and a note that the
- * form is still on its way. The email address is never committed — it arrives through
- * VITE_CONTACT_EMAIL and its row is simply left out while that is unset (see content/contact.ts).
+ * form is still on its way.
  */
 export function Contact() {
   const { t } = useTranslation()
-  const email = contactEmail()
 
   const rows: ContactRow[] = [
-    ...(email ? [{ id: 'email', label: t('content.contact.labels.email'), value: email, href: `mailto:${email}` }] : []),
     ...CONTACT_LINKS.map((link) => ({
       id: link.id,
       label: t(`content.contact.labels.${link.id}`),
