@@ -41,6 +41,8 @@ class ContactMessage(Base):
     )
     delivery_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    """When the owner opened it in the admin panel; NULL = unread."""
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

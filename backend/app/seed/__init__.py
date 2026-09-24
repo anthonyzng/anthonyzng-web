@@ -1,7 +1,12 @@
-"""Content seed: `content.json` mirrors the frontend's static content in the storage shapes.
+"""Content seed: `content.json` bootstraps an empty database with the site's initial content.
 
 `seed_content` upserts every row by slug in one transaction and never deletes rows that are
-absent from the file, so running it repeatedly is a no-op in effect.
+absent from the file (only cover images left without a project), so running it repeatedly is a
+no-op in effect. Once the admin panel is in
+use the database is the source of truth; re-running the seed would overwrite edited rows with
+the file's version, so the command line (`python -m app.seed`) refuses a database that already
+holds content unless forced (`has_content`). Row mapping comes from the shared collection
+registry (`app.services.collections`), the same one the admin API uses.
 """
 
 import json
@@ -9,22 +14,14 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import Field
-from sqlalchemy import func
+from sqlalchemy import case, delete, exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import Base
-from app.models.content import (
-    Certification,
-    ContactLink,
-    EducationEntry,
-    ExperienceEntry,
-    Project,
-    SiteText,
-    SkillGroup,
-    SpokenLanguage,
-)
-from app.schemas.common import TAG_LIST, Localized, StrictCamelModel, Tag
+from app.models.content import Project
+from app.models.stored_file import FILE_KIND_PROJECT_IMAGE, StoredFile
+from app.schemas.common import StrictCamelModel
 from app.schemas.content_write import (
     CertificationIn,
     ContactLinkIn,
@@ -34,6 +31,17 @@ from app.schemas.content_write import (
     SiteTextIn,
     SkillGroupIn,
     SpokenLanguageIn,
+)
+from app.services.collections import (
+    CERTIFICATIONS,
+    CONTACT_LINKS,
+    EDUCATION,
+    EXPERIENCE,
+    LANGUAGES,
+    PROJECTS,
+    SITE_TEXTS,
+    SKILL_GROUPS,
+    Collection,
 )
 
 SEED_PATH = Path(__file__).with_name("content.json")
@@ -51,146 +59,72 @@ class SeedFile(StrictCamelModel):
     site_texts: list[SiteTextIn] = []
 
 
+SEED_SECTIONS: tuple[tuple[str, Collection], ...] = (
+    ("experience", EXPERIENCE),
+    ("projects", PROJECTS),
+    ("skill_groups", SKILL_GROUPS),
+    ("education", EDUCATION),
+    ("certifications", CERTIFICATIONS),
+    ("spoken_languages", LANGUAGES),
+    ("contact_links", CONTACT_LINKS),
+    ("site_texts", SITE_TEXTS),
+)
+"""`SeedFile` attribute -> collection, in seeding order."""
+
+
 def load_seed_file(path: Path = SEED_PATH) -> SeedFile:
     with path.open(encoding="utf-8") as handle:
         return SeedFile.model_validate(json.load(handle))
 
 
-def _tags(tags: list[Tag]) -> list[Any]:
-    dumped: list[Any] = TAG_LIST.dump_python(tags, mode="json", by_alias=True)
-    return dumped
-
-
-def _translations[T](translations: Localized[T]) -> dict[str, Any]:
-    return translations.model_dump(mode="json", by_alias=True)
-
-
 async def _upsert(session: AsyncSession, model: type[Base], rows: list[dict[str, Any]]) -> int:
-    """`INSERT ... ON CONFLICT (slug) DO UPDATE` on every non-key column, `updated_at = now()`."""
+    """`INSERT ... ON CONFLICT (slug) DO UPDATE` on every non-key column, `updated_at = now()`.
+
+    Only the columns the write model knows are written, so a project's cover image survives,
+    unless the file turns that project into a placeholder, which cannot have one.
+    """
     if not rows:
         return 0
     statement = insert(model).values(rows)
     update_columns = [column for column in rows[0] if column != "slug"]
     # Subscript, not getattr: `excluded.items` would be the column collection's method.
-    statement = statement.on_conflict_do_update(
-        index_elements=["slug"],
-        set_={
-            **{column: statement.excluded[column] for column in update_columns},
-            "updated_at": func.now(),
-        },
-    )
+    values: dict[str, Any] = {column: statement.excluded[column] for column in update_columns}
+    values["updated_at"] = func.now()
+    if model is Project:
+        values["image_id"] = case((statement.excluded["placeholder"], None), else_=Project.image_id)
+    statement = statement.on_conflict_do_update(index_elements=["slug"], set_=values)
     await session.execute(statement)
     return len(rows)
 
 
+async def has_content(session: AsyncSession) -> bool:
+    """Whether any table the seed writes already holds a row."""
+    for _attribute, collection in SEED_SECTIONS:
+        if await session.scalar(select(exists().select_from(collection.model))):
+            return True
+    return False
+
+
 async def seed_content(session: AsyncSession, data: SeedFile) -> dict[str, int]:
-    """Upsert every row of `data`; returns the number of rows written per table."""
-    counts = {
-        "experience_entries": await _upsert(
-            session,
-            ExperienceEntry,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "company": item.company,
-                    "start_month": item.start,
-                    "end_month": item.end,
-                    "tech": _tags(item.tech),
-                    "translations": _translations(item.translations),
-                }
-                for item in data.experience
-            ],
-        ),
-        "projects": await _upsert(
-            session,
-            Project,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "placeholder": item.placeholder,
-                    "url": item.url,
-                    "tech": _tags(item.tech),
-                    "translations": _translations(item.translations),
-                }
-                for item in data.projects
-            ],
-        ),
-        "skill_groups": await _upsert(
-            session,
-            SkillGroup,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "items": _tags(item.items),
-                    "translations": _translations(item.translations),
-                }
-                for item in data.skill_groups
-            ],
-        ),
-        "education_entries": await _upsert(
-            session,
-            EducationEntry,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "school": item.school,
-                    "year": item.year,
-                    "translations": _translations(item.translations),
-                }
-                for item in data.education
-            ],
-        ),
-        "certifications": await _upsert(
-            session,
-            Certification,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "name": item.name,
-                    "in_progress": item.in_progress,
-                }
-                for item in data.certifications
-            ],
-        ),
-        "spoken_languages": await _upsert(
-            session,
-            SpokenLanguage,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "translations": _translations(item.translations),
-                }
-                for item in data.spoken_languages
-            ],
-        ),
-        "contact_links": await _upsert(
-            session,
-            ContactLink,
-            [
-                {
-                    "slug": item.slug,
-                    "sort_order": item.sort_order,
-                    "href": item.href,
-                    "display": item.display,
-                    "translations": _translations(item.translations),
-                }
-                for item in data.contact_links
-            ],
-        ),
-        "site_texts": await _upsert(
-            session,
-            SiteText,
-            [
-                {"slug": item.slug, "translations": _translations(item.translations)}
-                for item in data.site_texts
-            ],
-        ),
-    }
+    """Upsert every row of `data`; returns the number of rows written per table.
+
+    A row without `sortOrder` takes its position in the file. A project the file makes a
+    placeholder loses its cover image (a placeholder has none), and cover images no project points
+    at any more are deleted, so `--force` can reset projects that gained an image in the admin.
+    """
+    counts: dict[str, int] = {}
+    for attribute, collection in SEED_SECTIONS:
+        items: list[Any] = getattr(data, attribute)
+        rows = [collection.to_row(item) for item in items]
+        for position, row in enumerate(rows):
+            if "sort_order" in row and row["sort_order"] is None:
+                row["sort_order"] = position
+        counts[collection.model.__tablename__] = await _upsert(session, collection.model, rows)
+    await session.execute(
+        delete(StoredFile).where(
+            StoredFile.kind == FILE_KIND_PROJECT_IMAGE,
+            ~exists().where(Project.image_id == StoredFile.id),
+        )
+    )
     await session.commit()
     return counts

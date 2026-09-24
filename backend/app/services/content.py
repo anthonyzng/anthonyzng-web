@@ -19,6 +19,7 @@ from app.models.content import (
     SkillGroup,
     SpokenLanguage,
 )
+from app.models.stored_file import StoredFile
 from app.schemas.common import TAG_LIST, Locale, Localized, resolve_tags
 from app.schemas.content import (
     CertificationItem,
@@ -41,6 +42,7 @@ from app.schemas.content_write import (
     SkillGroupText,
     SpokenLanguageText,
 )
+from app.services.files import get_cv_ref, image_ref
 
 CACHE_CONTROL = "public, max-age=60"
 
@@ -75,7 +77,13 @@ async def _experience(session: AsyncSession, locale: Locale) -> list[ExperienceI
 
 async def _projects(session: AsyncSession, locale: Locale) -> list[ProjectItem]:
     items: list[ProjectItem] = []
-    for row in await _rows(session, Project, Project.sort_order, Project.slug):
+    # The cover image's metadata only: `stored_files.data` is deferred and never loaded here.
+    result = await session.execute(
+        select(Project, StoredFile)
+        .outerjoin(StoredFile, Project.image_id == StoredFile.id)
+        .order_by(Project.sort_order, Project.slug)
+    )
+    for row, image in result.tuples():
         text = Localized[ProjectText].model_validate(row.translations).get(locale)
         items.append(
             ProjectItem(
@@ -85,6 +93,7 @@ async def _projects(session: AsyncSession, locale: Locale) -> list[ProjectItem]:
                 summary=text.summary,
                 tech=resolve_tags(TAG_LIST.validate_python(row.tech), locale),
                 url=row.url,
+                image=image_ref(image) if image is not None else None,
             )
         )
     return items
@@ -154,6 +163,7 @@ async def build_content_payload(session: AsyncSession, locale: Locale) -> Conten
         projects=await _projects(session, locale),
         skills=await _skills(session, locale),
         contact=await _contact(session, locale),
+        cv=await get_cv_ref(session),
     )
 
 

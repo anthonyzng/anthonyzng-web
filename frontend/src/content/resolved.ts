@@ -1,17 +1,11 @@
-import type { TFunction } from 'i18next'
 import type { LanguageCode } from '../i18n/languages'
-import { CONTACT_LINKS } from './contact'
-import { EXPERIENCE } from './experience'
-import { PROJECTS } from './projects'
-import { CERTIFICATIONS, EDUCATION, SKILL_GROUPS, SPOKEN_LANGUAGES } from './skills'
-import { isTerm, type Tag } from './tags'
 
 /**
  * The one content shape the sections render: every string already in the requested locale, chips
  * resolved to plain text, no i18n keys and no term objects. It is exactly the payload of
- * `GET /api/v1/content?locale=...` (validated by `src/api/schemas.ts`), and `resolveStaticContent`
- * builds the same shape from the static modules plus i18n, so the API and the static fallback render
- * identically and the swap between them changes nothing that is already the same.
+ * `GET /api/v1/content?locale=...` (validated by `src/api/schemas.ts`), and the static fallback is a
+ * saved copy of that payload (`staticContent.ts`), so the API and the fallback render identically
+ * and the swap between them changes nothing that is already the same.
  */
 export type Locale = LanguageCode
 
@@ -33,15 +27,28 @@ export interface ResolvedExperience {
   readonly tech: readonly string[]
 }
 
+/**
+ * A file the API serves (`GET /api/v1/files/<id>`). `url` is a root-relative path on the API
+ * origin; `fileUrl()` (src/api/files.ts) turns it into the address the browser loads.
+ */
+export interface ResolvedImage {
+  readonly url: string
+  /** Pixels of the stored WebP (at most 1600 wide). */
+  readonly width: number
+  readonly height: number
+}
+
 export interface ResolvedProject {
   readonly id: string
-  /** A reserved slot: no title, summary, tech or link of its own. */
+  /** A reserved slot: no title, summary, tech, link or image of its own. */
   readonly placeholder: boolean
   readonly title: string | null
   readonly summary: string | null
   readonly tech: readonly string[]
   /** Absolute http(s) URL, or `null`. */
   readonly url: string | null
+  /** Cover image uploaded in the admin panel, or `null`. */
+  readonly image: ResolvedImage | null
 }
 
 export interface ResolvedSkillGroup {
@@ -78,10 +85,22 @@ export interface ResolvedContactLink {
   readonly display: string
 }
 
+/** The downloadable CV (one PDF, uploaded in the admin panel). */
+export interface ResolvedCv {
+  /** Root-relative path on the API origin, like `ResolvedImage.url`. */
+  readonly url: string
+  /** The name the download is saved under. */
+  readonly filename: string
+  /** Bytes. */
+  readonly size: number
+  /** ISO 8601 upload time. */
+  readonly updatedAt: string
+}
+
 export interface ResolvedContent {
   /** Echoes the request; a payload for another locale than the active one is discarded. */
   readonly locale: Locale
-  /** Newest first. */
+  /** In the order the admin panel sets (newest first by convention). */
   readonly experience: readonly ResolvedExperience[]
   readonly projects: readonly ResolvedProject[]
   readonly skills: {
@@ -95,69 +114,6 @@ export interface ResolvedContent {
     /** Empty when unset. */
     readonly location: string
   }
-}
-
-/**
- * The static snapshot: `src/content/*.ts` plus the i18n prose for `locale`, resolved the way the
- * API resolves its rows. `t` must be the translator of that locale (`useTranslation().t`, or
- * `i18n.getFixedT(locale)`), so the two never disagree.
- */
-export function resolveStaticContent(t: TFunction, locale: Locale): ResolvedContent {
-  const text = (tag: Tag): string => (isTerm(tag) ? t(`content.terms.${tag.term}`) : tag)
-
-  return {
-    locale,
-    experience: EXPERIENCE.map((entry) => {
-      const base = `content.experience.${entry.id}`
-      return {
-        id: entry.id,
-        company: entry.company,
-        role: t(`${base}.role`),
-        location: t(`${base}.location`),
-        start: entry.start,
-        end: entry.end,
-        bullets: entry.bullets.map((key) => t(`${base}.bullets.${key}`)),
-        tech: entry.tech.map(text),
-      }
-    }),
-    projects: PROJECTS.map((project) => {
-      const base = `content.projects.items.${project.id}`
-      return {
-        id: project.id,
-        placeholder: project.placeholder,
-        title: project.placeholder ? null : t(`${base}.title`),
-        summary: project.placeholder ? null : t(`${base}.summary`),
-        tech: project.tech.map(text),
-        url: project.url ?? null,
-      }
-    }),
-    skills: {
-      groups: SKILL_GROUPS.map((group) => ({
-        id: group.id,
-        label: t(`content.skills.groups.${group.id}`),
-        items: group.items.map(text),
-      })),
-      education: EDUCATION.map((entry) => ({
-        id: entry.id,
-        degree: t(`content.skills.credentials.education.${entry.id}`),
-        school: entry.school,
-        year: entry.year,
-      })),
-      certifications: CERTIFICATIONS.map((certification) => ({
-        id: certification.id,
-        name: certification.name,
-        inProgress: certification.inProgress,
-      })),
-      languages: SPOKEN_LANGUAGES.map((id) => ({ id, name: t(`content.skills.credentials.languages.${id}`) })),
-    },
-    contact: {
-      links: CONTACT_LINKS.map((link) => ({
-        id: link.id,
-        label: t(`content.contact.labels.${link.id}`),
-        href: link.href,
-        display: link.display,
-      })),
-      location: t('content.contact.location'),
-    },
-  }
+  /** `null` until a CV is uploaded; the Contact section then offers no download. */
+  readonly cv: ResolvedCv | null
 }

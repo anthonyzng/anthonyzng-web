@@ -19,7 +19,7 @@ export function Experience() {
   const { experience } = useResolvedContent()
 
   return (
-    <SectionShell id="experience">
+    <SectionShell id="experience" motionKey={experience.map((entry) => entry.id).join()}>
       {/* role="list": Tailwind's preflight drops the markers, and WebKit then drops list semantics. */}
       <ol role="list" className="flex flex-col">
         {experience.map((entry) => (

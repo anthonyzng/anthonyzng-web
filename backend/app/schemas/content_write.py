@@ -1,12 +1,15 @@
-"""Write models for content rows: the seed file today, the Phase 5 admin API tomorrow.
+"""Write models for content rows: the seed file and the admin API.
 
 Every model is camelCase, rejects unknown keys and carries a `Localized[...]` `translations`
-object, so a row can only be saved with both locales present.
+object, so a row can only be saved with both locales present. `sortOrder` may be left out: the
+admin API then places a new row itself and keeps an existing row's order (the seed always sends it).
 """
 
+import re
 from typing import Annotated, Self
+from urllib.parse import urlsplit
 
-from pydantic import Field, StringConstraints, model_validator
+from pydantic import AfterValidator, Field, StringConstraints, model_validator
 
 from app.schemas.common import Localized, Month, Slug, StrictCamelModel, Tag
 
@@ -16,12 +19,41 @@ Text1000 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1,
 Text2000 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
 OptionalTitle = Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)] | None
 OptionalSummary = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)] | None
-HttpUrl = Annotated[str, StringConstraints(max_length=2048, pattern=r"^https?://")]
+
+_HOST = re.compile(r"[^\x00-\x20\x7f/\\?#@%:\[\]<>^|]+")
+"""A host name as a browser's URL parser takes it (letters in any script, digits, dots, hyphens)."""
+
+
+def _check_web_url(value: str) -> str:
+    """A full http(s) URL a browser can parse: the public site checks every link with the WHATWG
+    parser and would reject the whole payload, so the API must not store one it would refuse."""
+    if any(character.isspace() for character in value):
+        raise ValueError("A URL cannot contain spaces.")
+    try:
+        parts = urlsplit(value)
+        port_ok = parts.port is None or parts.port > 0
+    except ValueError as exc:  # a malformed [IPv6] host or a port that is not 0-65535
+        raise ValueError("The URL's host or port is not valid.") from exc
+    host = parts.hostname or ""
+    ipv6 = parts.netloc.rsplit("@", 1)[-1].startswith("[")
+    if parts.scheme not in ("http", "https") or not host or not port_ok:
+        raise ValueError("Enter a full http:// or https:// URL.")
+    if not ipv6 and not _HOST.fullmatch(host):
+        raise ValueError("The URL's host is not valid.")
+    return value
+
+
+HttpUrl = Annotated[
+    str,
+    StringConstraints(max_length=2048, pattern=r"^https?://"),
+    AfterValidator(_check_web_url),
+]
 LinkHref = Annotated[
     str, StringConstraints(min_length=1, max_length=2048, pattern=r"^(mailto:|https://|http://)")
 ]
-Year = Annotated[str, StringConstraints(pattern=r"^\d{4}$")]
-SortOrder = Annotated[int, Field(ge=0)]
+Year = Annotated[str, StringConstraints(pattern=r"^[0-9]{4}$")]
+SortOrder = Annotated[int, Field(ge=0, le=2**31 - 1)]
+"""An int4 column; left out (None), the admin API decides."""
 TagList = Annotated[list[Tag], Field(max_length=50)]
 
 
@@ -58,7 +90,7 @@ class SiteTextText(StrictCamelModel):
 
 class ExperienceIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     company: Text200
     start: Month
     end: Month | None
@@ -76,7 +108,7 @@ class ExperienceIn(StrictCamelModel):
 
 class ProjectIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     placeholder: bool
     url: HttpUrl | None
     tech: TagList
@@ -99,14 +131,14 @@ class ProjectIn(StrictCamelModel):
 
 class SkillGroupIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     items: Annotated[list[Tag], Field(min_length=1, max_length=50)]
     translations: Localized[SkillGroupText]
 
 
 class EducationIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     school: Text200
     year: Year
     translations: Localized[EducationText]
@@ -114,20 +146,20 @@ class EducationIn(StrictCamelModel):
 
 class CertificationIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     name: Text200
     in_progress: bool
 
 
 class SpokenLanguageIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     translations: Localized[SpokenLanguageText]
 
 
 class ContactLinkIn(StrictCamelModel):
     slug: Slug
-    sort_order: SortOrder
+    sort_order: SortOrder | None = None
     href: LinkHref
     display: Text200
     translations: Localized[ContactLinkText]

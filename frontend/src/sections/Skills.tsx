@@ -12,7 +12,7 @@ export function Skills() {
   const { skills } = useResolvedContent()
 
   return (
-    <SectionShell id="skills">
+    <SectionShell id="skills" motionKey={skills.groups.map((group) => group.id).join()}>
       <div className="grid gap-x-8 gap-y-12 md:grid-cols-2">
         {skills.groups.map((group) => (
           <RevealItem key={group.id}>

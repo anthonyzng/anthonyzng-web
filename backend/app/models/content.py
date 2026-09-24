@@ -5,10 +5,11 @@ are a plain string (proper noun) or a `{"en", "zh-Hant"}` term object. Shapes ar
 the Pydantic write models; the CHECK constraints only guard the JSON types and the two locales.
 """
 
+import uuid
 from typing import Any
 
-from sqlalchemy import Boolean, CheckConstraint, Index, Integer, Text, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Integer, Text, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import (
@@ -57,7 +58,8 @@ class Project(TimestampMixin, Base):
         json_array_check("tech"),
         translations_check(),
         CheckConstraint(
-            "NOT placeholder OR (url IS NULL AND tech = '[]'::jsonb)", name="placeholder_empty"
+            "NOT placeholder OR (url IS NULL AND tech = '[]'::jsonb AND image_id IS NULL)",
+            name="placeholder_empty",
         ),
         Index("projects_sort_idx", "sort_order", "slug"),
     )
@@ -68,6 +70,13 @@ class Project(TimestampMixin, Base):
     url: Mapped[str | None] = mapped_column(Text, nullable=True)
     tech: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, server_default=EMPTY_JSON_ARRAY)
     translations: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    image_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("stored_files.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
+    """The cover image (a `stored_files` row of kind `project_image`); one project per file."""
 
 
 class SkillGroup(TimestampMixin, Base):

@@ -6,7 +6,9 @@ import { ScrollTrigger } from '../animations/gsap'
 import { App } from '../App'
 import i18n from '../i18n'
 import { fetchCalls, jsonResponse, queueDeferred, queueJson } from '../test/api'
-import { resolveStaticContent, type Locale, type ResolvedContent } from './resolved'
+import type { ResolvedContent } from './resolved'
+import { CONTENT_FIXTURE } from '../test/contentFixture'
+import { staticContent } from './staticContent'
 
 function renderAt(path: string) {
   return render(
@@ -16,8 +18,7 @@ function renderAt(path: string) {
   )
 }
 
-const staticContent = (locale: Locale) => resolveStaticContent(i18n.getFixedT(locale), locale)
-const STATIC_ROLE = 'Software Developer / Assistant Manager'
+const STATIC_ROLE = CONTENT_FIXTURE.en.experience[0].role
 const role = (name: string) => screen.queryByRole('heading', { level: 3, name })
 /** Lets every queued response settle, so "nothing changed" is a claim, not a race. */
 const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 0)))
@@ -29,7 +30,7 @@ function apiContent(): ResolvedContent {
   }
   const [current, ...rest] = content.experience
   content.experience = [
-    { ...current, role: 'Lead Developer (from the API)', bullets: [...current.bullets, 'A bullet only the API knows.'] },
+    { ...current, role: 'Principal Engineer (from the API)', bullets: [...current.bullets, 'A bullet only the API knows.'] },
     ...rest,
   ]
   content.skills = {
@@ -38,7 +39,7 @@ function apiContent(): ResolvedContent {
       group.id === 'frontend' ? { ...group, items: [...group.items, 'Svelte'] } : group,
     ),
   }
-  content.contact = { ...content.contact, location: 'Toronto, Canada' }
+  content.contact = { ...content.contact, location: 'Vancouver, Canada' }
   return content
 }
 
@@ -68,12 +69,12 @@ describe('useContent', () => {
     refresh.mockClear()
 
     pending.resolve(jsonResponse(apiContent()))
-    expect(await screen.findByRole('heading', { level: 3, name: 'Lead Developer (from the API)' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 3, name: 'Principal Engineer (from the API)' })).toBeInTheDocument()
     expect(role(STATIC_ROLE)).toBeNull()
     expect(screen.getByText('A bullet only the API knows.')).toBeInTheDocument()
     expect(within(screen.getByRole('list', { name: 'Front-end' })).getByText('Svelte')).toBeInTheDocument()
-    expect(screen.getByText('Toronto, Canada')).toBeInTheDocument()
-    expect(screen.queryByText('Ontario, Canada')).toBeNull()
+    expect(screen.getByText('Vancouver, Canada')).toBeInTheDocument()
+    expect(screen.queryByText('Toronto, Canada')).toBeNull()
     // The section heights changed: the safe (debounced, scroll-end aware) refresh was requested.
     // It runs in a passive effect after the swap renders, so wait for it rather than race it.
     await waitFor(() => expect(refresh).toHaveBeenCalledWith(true))
@@ -82,7 +83,7 @@ describe('useContent', () => {
   it('keeps the reader on their section when the swap changes the height above it', async () => {
     // Contact sits under the reading line on the static page; the API's longer Experience section
     // pushes it 300px down. The reader (landed on #contact, say) must follow it, before any paint.
-    const swapped = () => document.body.textContent?.includes('Lead Developer (from the API)') ?? false
+    const swapped = () => document.body.textContent?.includes('Principal Engineer (from the API)') ?? false
     const realRect = Element.prototype.getBoundingClientRect
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
       if (this.id !== 'contact') return realRect.call(this)
@@ -94,7 +95,7 @@ describe('useContent', () => {
     vi.mocked(window.scrollTo).mockClear()
 
     pending.resolve(jsonResponse(apiContent()))
-    await screen.findByRole('heading', { level: 3, name: 'Lead Developer (from the API)' })
+    await screen.findByRole('heading', { level: 3, name: 'Principal Engineer (from the API)' })
     expect(window.scrollTo).toHaveBeenCalledWith(0, 300)
   })
 
@@ -103,7 +104,7 @@ describe('useContent', () => {
     await waitFor(() => expect(fetchCalls()).toHaveLength(1))
     await settle()
     expect(role(STATIC_ROLE)).toBeInTheDocument()
-    expect(screen.getByText('Ontario, Canada')).toBeInTheDocument()
+    expect(screen.getByText('Toronto, Canada')).toBeInTheDocument()
   })
 
   it('keeps the static content on a non-200 response', async () => {
@@ -120,7 +121,7 @@ describe('useContent', () => {
     renderAt('/en')
     await waitFor(() => expect(warn).toHaveBeenCalledWith('[content] static content kept', expect.any(Error)))
     expect(role(STATIC_ROLE)).toBeInTheDocument()
-    expect(screen.getByText('Ontario, Canada')).toBeInTheDocument()
+    expect(screen.getByText('Toronto, Canada')).toBeInTheDocument()
   })
 
   it('discards a valid payload for another locale', async () => {
@@ -129,7 +130,7 @@ describe('useContent', () => {
     await waitFor(() => expect(fetchCalls()).toHaveLength(1))
     await settle()
     expect(role(STATIC_ROLE)).toBeInTheDocument()
-    expect(role('Lead Developer (from the API)')).toBeNull()
+    expect(role('Principal Engineer (from the API)')).toBeNull()
   })
 
   it('does not re-render or re-measure for a payload identical to the static snapshot', async () => {
@@ -164,6 +165,6 @@ describe('useContent', () => {
     queueJson(content)
     renderAt('/zh-hant')
     expect(await screen.findByRole('heading', { level: 3, name: '首席開發員（來自 API）' })).toBeInTheDocument()
-    expect(screen.getByText('加拿大安大略省')).toBeInTheDocument()
+    expect(screen.getByText('加拿大多倫多')).toBeInTheDocument()
   })
 })

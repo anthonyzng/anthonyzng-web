@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { fileUrl } from '../api/files'
 import type { ResolvedProject } from '../content/resolved'
 import { TagList } from './TagList'
 
@@ -11,8 +12,13 @@ interface ProjectCardProps {
 /**
  * One project card: image frame, title, summary, tech tags and an optional link.
  * A `placeholder` project is a reserved slot: it says so on a badge and describes nothing, so a
- * visitor can never mistake it for real work. The hatch plane keeps the frame's parallax alive and
- * is where a real screenshot will drop in.
+ * visitor can never mistake it for real work.
+ *
+ * The frame holds a plane that drifts inside it on scroll (`useParallax`): the hatch texture, with
+ * the uploaded cover image over it when there is one, cropped to the frame. An image that cannot be
+ * loaded (the API is down, or the saved snapshot names a file of another database) hides itself and
+ * leaves the hatch, never an empty frame. The image is decorative (`alt=""`, the frame is hidden
+ * from assistive technology): the title and summary next to it already say what the project is.
  */
 export function ProjectCard({ project, index }: ProjectCardProps) {
   const { t } = useTranslation()
@@ -20,11 +26,29 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
   const title = project.placeholder || project.title === null ? t('content.projects.placeholder.title', { index }) : project.title
   const summary =
     project.placeholder || project.summary === null ? t('content.projects.placeholder.summary') : project.summary
+  const image = project.placeholder ? null : project.image
 
   return (
     <article className="flex h-full flex-col border border-line bg-surface">
       <div aria-hidden="true" className="relative aspect-[4/3] overflow-hidden border-b border-line">
-        <div data-plane className="absolute inset-0 bg-hatch" />
+        <div data-plane className="absolute inset-0 bg-hatch">
+          {image ? (
+            // Keyed by URL: a new image gets a fresh element, so a hidden broken one never hides it.
+            <img
+              key={image.url}
+              src={fileUrl(image.url)}
+              width={image.width}
+              height={image.height}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={(event) => {
+                event.currentTarget.hidden = true
+              }}
+              className="size-full bg-surface object-cover"
+            />
+          ) : null}
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-4 p-6">
         <div className="flex items-start justify-between gap-4">

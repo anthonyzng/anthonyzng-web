@@ -1,8 +1,8 @@
 # Backend
 
-FastAPI + SQLAlchemy 2 (async, asyncpg) + Alembic. Serves the localized content API, the contact
-endpoint and admin authentication for owwsolution.com. Run every command below from this
-directory (`backend/`).
+FastAPI + SQLAlchemy 2 (async, asyncpg) + Alembic. Serves the localized content API, the stored
+files (project cover images, the CV), the contact endpoint, admin authentication and the admin API
+for owwsolution.com. Run every command below from this directory (`backend/`).
 
 ```bash
 python -m uv sync --all-groups                 # creates .venv from uv.lock
@@ -10,7 +10,8 @@ cp .env.example .env                           # then fill in the real values (n
 docker compose -f ../docker-compose.dev.yml up -d db   # PostgreSQL 17 on 127.0.0.1:5432
 
 python -m uv run alembic upgrade head          # apply migrations to DATABASE_URL
-python -m uv run python -m app.seed            # upsert app/seed/content.json (idempotent)
+python -m uv run python -m app.seed            # bootstrap an empty database from app/seed/content.json
+                                               # (refuses one that holds content; --force overwrites)
 python -m uv run uvicorn app.main:app --reload --port 8000
 
 python -m uv run ruff check .                  # lint
@@ -24,6 +25,8 @@ API docs: `http://localhost:8000/api/v1/docs` (development only: switched off wi
 `{"error": {"code", "message", "fields"?}}`. With `APP_ENV=production` the app refuses to start on
 placeholder or development settings; see `.env.example` and CLAUDE.md section 6.2.
 
-Layout: `app/core` (settings, db, security, rate limiting, errors), `app/models` (SQLAlchemy),
-`app/schemas` (Pydantic), `app/services` (content, contact, Turnstile, email, auth),
-`app/api/v1` (routers), `app/seed` (content seed), `alembic/` (migrations), `tests/`.
+Layout: `app/core` (settings, db, security, rate limiting, errors, middleware), `app/models`
+(SQLAlchemy), `app/schemas` (Pydantic), `app/services` (content, content_admin, collections, files,
+messages, contact, Turnstile, email, auth), `app/api/v1` (routers), `app/seed` (initial content for
+an empty database; the admin panel is the source of truth afterwards), `alembic/` (migrations),
+`tests/`.

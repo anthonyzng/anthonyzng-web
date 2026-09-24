@@ -1,9 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { CONTACT_LINKS } from '../content/contact'
-import { EXPERIENCE } from '../content/experience'
-import { PROJECTS } from '../content/projects'
-import { CERTIFICATIONS, EDUCATION, SKILL_GROUPS, SPOKEN_LANGUAGES } from '../content/skills'
-import { tagKey, type Tag } from '../content/tags'
 import en from './locales/en.json'
 import zhHant from './locales/zh-Hant.json'
 
@@ -67,69 +62,34 @@ describe('locales', () => {
     }
   })
 
-  it('define every key the content modules ask for', () => {
-    for (const key of contentKeys()) {
-      expect(enKeys.has(key), `en: ${key}`).toBe(true)
-      expect(zhKeys.has(key), `zh-Hant: ${key}`).toBe(true)
-    }
+  it('keep exactly the layout copy of the content sections', () => {
+    // The content itself (roles, bullets, chips, labels of the channels, the location) comes from
+    // the API or its saved snapshot; only the words the page wraps around it live here.
+    const layout = [...enKeys.keys()].filter((key) => key.startsWith('content.')).sort()
+    expect(layout).toEqual(
+      [
+        'content.techOf',
+        'content.experience.present',
+        'content.projects.note',
+        'content.projects.visit',
+        'content.projects.placeholder.badge',
+        'content.projects.placeholder.title',
+        'content.projects.placeholder.summary',
+        'content.skills.credentials.title',
+        'content.skills.credentials.education.label',
+        'content.skills.credentials.certifications.label',
+        'content.skills.credentials.certifications.inProgress',
+        'content.skills.credentials.languages.label',
+        'content.contact.labels.cv',
+        'content.contact.labels.location',
+        'content.contact.cvDownload',
+      ].sort(),
+    )
   })
 
-  it('translates every descriptive chip instead of leaving English on the Chinese page', () => {
-    for (const key of [...contentKeys()].filter((key) => key.startsWith('content.terms.'))) {
+  it('translates the layout copy the Chinese page shows next to the content', () => {
+    for (const key of ['content.experience.present', 'content.projects.note', 'content.contact.labels.cv', 'content.contact.cvDownload']) {
       expect(zhKeys.get(key), key).not.toEqual(enKeys.get(key))
     }
   })
 })
-
-/**
- * Every i18n key the sections build from `src/content/`, derived exactly the way the components
- * derive it. Adding an entry, a bullet, a skill group or a descriptive chip therefore fails here
- * until both locales carry its text.
- */
-function contentKeys(): string[] {
-  const keys = ['content.techOf', 'content.experience.present', 'content.projects.note', 'content.contact.location']
-
-  // Chips are either proper nouns (no key) or terms translated under content.terms.<id>.
-  const tags = (items: readonly Tag[]) => items.map(tagKey).filter((key): key is string => key !== null)
-
-  for (const entry of EXPERIENCE) {
-    keys.push(`content.experience.${entry.id}.role`, `content.experience.${entry.id}.location`)
-    for (const bullet of entry.bullets) keys.push(`content.experience.${entry.id}.bullets.${bullet}`)
-    keys.push(...tags(entry.tech))
-  }
-
-  for (const project of PROJECTS) {
-    if (project.placeholder) {
-      keys.push(
-        'content.projects.placeholder.badge',
-        'content.projects.placeholder.title',
-        'content.projects.placeholder.summary',
-      )
-    } else {
-      keys.push(`content.projects.items.${project.id}.title`, `content.projects.items.${project.id}.summary`)
-    }
-    if (project.url) keys.push('content.projects.visit')
-    keys.push(...tags(project.tech))
-  }
-
-  for (const group of SKILL_GROUPS) {
-    keys.push(`content.skills.groups.${group.id}`)
-    keys.push(...tags(group.items))
-  }
-  keys.push(
-    'content.skills.credentials.title',
-    'content.skills.credentials.education.label',
-    'content.skills.credentials.certifications.label',
-    'content.skills.credentials.languages.label',
-  )
-  for (const entry of EDUCATION) keys.push(`content.skills.credentials.education.${entry.id}`)
-  if (CERTIFICATIONS.some((certification) => certification.inProgress)) {
-    keys.push('content.skills.credentials.certifications.inProgress')
-  }
-  for (const language of SPOKEN_LANGUAGES) keys.push(`content.skills.credentials.languages.${language}`)
-
-  keys.push('content.contact.labels.email', 'content.contact.labels.location')
-  for (const link of CONTACT_LINKS) keys.push(`content.contact.labels.${link.id}`)
-
-  return keys
-}

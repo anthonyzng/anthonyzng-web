@@ -1,0 +1,227 @@
+{
+  "locale": "zh-Hant",
+  "experience": [
+    {
+      "id": "sksys",
+      "company": "BABYSOFT o/a SKSYS Corporation",
+      "role": "軟件開發員 / 助理經理",
+      "location": "加拿大安大略省萬錦市",
+      "start": "2023-11",
+      "end": null,
+      "bullets": [
+        "以組件化的 TypeScript 前端開發漸進式網頁應用程式（PWA），並透過 REST API 與 Node.js / Express 後端服務整合。",
+        "主導電訊服務應用程式的介面改版，提升易用性及營運效率。",
+        "擔任複雜技術問題的對接及升級聯絡人，在敏捷團隊中與項目經理協調。",
+        "遠端及現場診斷並解決網絡、硬件與作業系統問題，維持系統正常運作。"
+      ],
+      "tech": [
+        "TypeScript",
+        "JavaScript",
+        "Node.js",
+        "Express",
+        "REST APIs",
+        "PWA",
+        "Agile",
+        "Jira"
+      ]
+    },
+    {
+      "id": "hactl",
+      "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
+      "role": "高級資訊科技協調員",
+      "location": "香港",
+      "start": "2021-08",
+      "end": "2022-10",
+      "bullets": [
+        "在 Microsoft Azure 上建置混合雲數據平台，包括數據管道及 Power BI 報表，令營運時間優化最少 10%，資源損耗減少最少 5%。",
+        "透過介面改版項目，改善及維護關鍵企業應用系統（COSAC-Plus、COSAC-Mobile）。",
+        "協調跨部門團隊，並編寫文件及指引，確保交接順利。"
+      ],
+      "tech": [
+        "Microsoft Azure",
+        "數據管道",
+        "Power BI",
+        "企業應用系統"
+      ]
+    },
+    {
+      "id": "ivc",
+      "company": "IVC Consulting Group",
+      "role": "ABAP 程式開發員",
+      "location": "香港",
+      "start": "2020-08",
+      "end": "2021-04",
+      "bullets": [
+        "開發及優化 SAP ERP 模組程式，並提供技術支援。",
+        "與業務分析師合作收集需求，就變更影響及技術限制提供建議。"
+      ],
+      "tech": [
+        "ABAP",
+        "SAP ERP"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "slotOne",
+      "placeholder": true,
+      "title": null,
+      "summary": null,
+      "tech": [],
+      "url": null,
+      "image": null
+    },
+    {
+      "id": "slotTwo",
+      "placeholder": true,
+      "title": null,
+      "summary": null,
+      "tech": [],
+      "url": null,
+      "image": null
+    }
+  ],
+  "skills": {
+    "groups": [
+      {
+        "id": "frontend",
+        "label": "前端",
+        "items": [
+          "React",
+          "Next.js",
+          "Angular",
+          "TypeScript",
+          "JavaScript",
+          "HTML5",
+          "CSS3",
+          "Tailwind CSS",
+          "jQuery",
+          "響應式 UI/UX"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "後端",
+        "items": [
+          "Node.js / Express",
+          "Java / Spring Boot",
+          "Python / Flask",
+          "REST APIs",
+          "Microservices",
+          "ABAP",
+          "NGINX"
+        ]
+      },
+      {
+        "id": "data",
+        "label": "數據庫與數據",
+        "items": [
+          "PostgreSQL",
+          "MySQL",
+          "MS SQL",
+          "Oracle SQL",
+          "MongoDB",
+          "數據管道",
+          "Power BI"
+        ]
+      },
+      {
+        "id": "cloud",
+        "label": "雲端與 DevOps",
+        "items": [
+          "Microsoft Azure",
+          "Docker",
+          "Kubernetes",
+          "CI/CD",
+          "Linux",
+          "Git",
+          "Bitbucket"
+        ]
+      },
+      {
+        "id": "ai",
+        "label": "AI 開發",
+        "items": [
+          "LLM 輔助開發",
+          "AI 編程代理（Claude Code）",
+          "提示詞設計",
+          "AI 工作流程自動化"
+        ]
+      },
+      {
+        "id": "ways",
+        "label": "工作方式",
+        "items": [
+          "Agile / Scrum",
+          "Jira",
+          "完整軟件開發生命週期",
+          "技術文件撰寫",
+          "團隊協調與指導"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "id": "uwe",
+        "degree": "資訊科技（榮譽）理學士 — 一級榮譽",
+        "school": "University of the West of England, Bristol",
+        "year": "2020"
+      }
+    ],
+    "certifications": [
+      {
+        "id": "az900",
+        "name": "Microsoft Azure Fundamentals (AZ-900)",
+        "inProgress": false
+      },
+      {
+        "id": "ccna",
+        "name": "CCNA Routing & Switching",
+        "inProgress": false
+      },
+      {
+        "id": "pmp",
+        "name": "PMP",
+        "inProgress": true
+      }
+    ],
+    "languages": [
+      {
+        "id": "english",
+        "name": "英文"
+      },
+      {
+        "id": "mandarin",
+        "name": "普通話"
+      },
+      {
+        "id": "cantonese",
+        "name": "廣東話"
+      }
+    ]
+  },
+  "contact": {
+    "links": [
+      {
+        "id": "email",
+        "label": "電郵",
+        "href": "mailto:anthonyzng075@gmail.com",
+        "display": "anthonyzng075@gmail.com"
+      },
+      {
+        "id": "linkedin",
+        "label": "LinkedIn",
+        "href": "https://www.linkedin.com/in/anthonyzng/",
+        "display": "linkedin.com/in/anthonyzng"
+      },
+      {
+        "id": "github",
+        "label": "GitHub",
+        "href": "https://github.com/anthonyzng",
+        "display": "github.com/anthonyzng"
+      }
+    ],
+    "location": "加拿大安大略省"
+  },
+  "cv": null
+}

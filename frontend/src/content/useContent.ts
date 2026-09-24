@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readAnchor, restoreAnchor, type ScrollAnchor } from '../animations/readingPosition'
 import { useLenis } from '../animations/useSmoothScroll'
@@ -7,10 +7,11 @@ import { ApiHttpError, ApiPayloadError, isAbortError } from '../api/client'
 import { fetchContent } from '../api/content'
 import { resolveLanguage } from '../i18n/languages'
 import { isSameJson } from './isSameContent'
-import { resolveStaticContent, type Locale, type ResolvedContent } from './resolved'
+import type { Locale, ResolvedContent } from './resolved'
+import { staticContent } from './staticContent'
 
 /**
- * The site content for the active locale. It returns the static snapshot (`src/content` + i18n)
+ * The site content for the active locale. It returns the static snapshot (`staticContent.ts`)
  * synchronously, so the first paint is complete and needs no network, then asks the API for the
  * same locale and swaps its payload in. Anything short of a valid payload for the active locale
  * (network error, non-200, a body the schema rejects, a payload for another locale) keeps the
@@ -25,14 +26,14 @@ import { resolveStaticContent, type Locale, type ResolvedContent } from './resol
  * never shown against the new one (the page also remounts on a language switch, which resets this).
  */
 export function useContent(): ResolvedContent {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const locale: Locale = resolveLanguage(i18n.language)
-  const fallback = useMemo(() => resolveStaticContent(t, locale), [t, locale])
+  const fallback = staticContent(locale)
   const [remote, setRemote] = useState<ResolvedContent | null>(null)
   const lenis = useLenis()
   const anchor = useRef<ScrollAnchor | null>(null)
 
-  // `fallback` only changes with the locale (or its translator), so it is the snapshot of this locale.
+  // `fallback` is one object per locale, so the effect reruns exactly when the locale changes.
   useEffect(() => {
     const controller = new AbortController()
     void fetchContent(locale, controller.signal).then(

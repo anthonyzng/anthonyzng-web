@@ -35,9 +35,14 @@ function numberData(value: string | undefined): number | null {
  * - `[data-speed]` wrappers (optional `data-speed-x` xPercent drift on desktop, `data-fade-out` as a
  *   progress fraction) share one scrubbed timeline per scope;
  * - `[data-plane]` image planes drift inside their clipping frame.
- * Options are read once; pass a stable object.
+ * Options are read once; pass a stable object. A changed `motionKey` (the section's item ids)
+ * rebuilds everything, so planes that arrived with the API payload drift too.
  */
-export function useParallax(scope: RefObject<HTMLElement | null>, options: ParallaxOptions = {}): void {
+export function useParallax(
+  scope: RefObject<HTMLElement | null>,
+  options: ParallaxOptions = {},
+  motionKey = '',
+): void {
   useGSAP(
     () => {
       const root = scope.current
@@ -100,6 +105,6 @@ export function useParallax(scope: RefObject<HTMLElement | null>, options: Paral
       )
       return () => mm.revert()
     },
-    { scope, dependencies: [], revertOnUpdate: true },
+    { scope, dependencies: [motionKey], revertOnUpdate: true },
   )
 }

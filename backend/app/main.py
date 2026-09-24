@@ -16,14 +16,22 @@ from app.core.config import Settings, get_settings
 from app.core.db import create_engine, create_session_factory
 from app.core.errors import register_exception_handlers
 from app.core.log_config import configure_logging
-from app.core.middleware import RequestBodyLimitMiddleware, SecurityHeadersMiddleware
+from app.core.middleware import (
+    RequestBodyLimitMiddleware,
+    SecurityHeadersMiddleware,
+    ServerErrorEnvelopeMiddleware,
+)
 from app.core.security import make_dummy_password_hash
 from app.core.state import AppServices
 from app.services.auth import ensure_admin_user
 from app.services.email import build_email_provider
+from app.services.files import MAX_CV_UPLOAD_BYTES, MAX_IMAGE_UPLOAD_BYTES
 from app.services.turnstile import CloudflareTurnstileVerifier
 
 logger = logging.getLogger(__name__)
+
+MIB = 1024 * 1024
+MAX_CONTENT_WRITE_BYTES = 512 * 1024
 
 APP_TITLE = "anthonyzng-web API"
 APP_VERSION = "0.1.0"
@@ -82,9 +90,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redirect_slashes=False,
     )
     app.state.settings = settings
-    # Middleware added first sits innermost, so the body limit's 413 still gets CORS and the
-    # security headers.
-    app.add_middleware(RequestBodyLimitMiddleware)
+    # Middleware added first sits innermost, so the 500 envelope and the body limit's 413 still get
+    # CORS and the security headers. Admin routes may exceed the 64 KiB default: content writes (a
+    # long bilingual entry is 80-100 KB; 512 KiB leaves room for escapes) and the two uploads (the
+    # file limit plus room for the multipart envelope). The first matching pattern wins.
+    app.add_middleware(ServerErrorEnvelopeMiddleware)
+    app.add_middleware(
+        RequestBodyLimitMiddleware,
+        route_limits=(
+            (f"{API_V1_PREFIX}/admin/content/projects/[^/]+/image", MAX_IMAGE_UPLOAD_BYTES + MIB),
+            (f"{API_V1_PREFIX}/admin/cv", MAX_CV_UPLOAD_BYTES + MIB),
+            (f"{API_V1_PREFIX}/admin/content/.+", MAX_CONTENT_WRITE_BYTES),
+        ),
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -94,7 +112,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         expose_headers=["ETag", "Retry-After"],
         max_age=600,
     )
-    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        no_store_prefixes=(f"{API_V1_PREFIX}/admin", f"{API_V1_PREFIX}/auth"),
+    )
     register_exception_handlers(app)
     app.include_router(v1_router)
     return app

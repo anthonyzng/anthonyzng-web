@@ -27,6 +27,52 @@ describe('requestJson', () => {
     expect(requestBody(request)).toEqual({ name: 'Jane' })
   })
 
+  it.each(['PUT', 'PATCH'] as const)('sends a JSON body with %s', async (method) => {
+    queueJson({ ok: true })
+    await requestJson('/admin/x', { schema, method, body: { read: true }, credentials: 'include' })
+    const [request] = fetchCalls()
+    expect(request.init).toMatchObject({ method, credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+    expect(requestBody(request)).toEqual({ read: true })
+  })
+
+  it('sends a DELETE without a body and resolves a 204 to undefined', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await expect(
+      requestJson('/admin/x/1', { schema: z.undefined(), method: 'DELETE', credentials: 'include' }),
+    ).resolves.toBeUndefined()
+    const [request] = fetchCalls()
+    expect(request.init).toMatchObject({ method: 'DELETE', credentials: 'include' })
+    expect(request.init?.body).toBeUndefined()
+    expect(request.init?.headers).toBeUndefined()
+  })
+
+  it('adds extra headers next to the JSON content type', async () => {
+    queueJson({ ok: true })
+    await requestJson('/admin/x', {
+      schema,
+      method: 'PUT',
+      body: { read: true },
+      credentials: 'include',
+      headers: { 'If-Match': '"2026-09-24T01:56:53.270832Z"' },
+    })
+    const [request] = fetchCalls()
+    expect(request.init?.headers).toEqual({
+      'If-Match': '"2026-09-24T01:56:53.270832Z"',
+      'Content-Type': 'application/json',
+    })
+  })
+
+  it('sends a FormData body as is, leaving the multipart Content-Type to the browser', async () => {
+    queueJson({ ok: true })
+    const form = new FormData()
+    form.append('file', new File(['%PDF-1.7'], 'cv.pdf', { type: 'application/pdf' }))
+    await requestJson('/admin/cv', { schema, method: 'PUT', body: form, credentials: 'include' })
+    const [request] = fetchCalls()
+    expect(request.init?.method).toBe('PUT')
+    expect(request.init?.body).toBe(form)
+    expect(request.init?.headers).toBeUndefined()
+  })
+
   it('maps the contract error shape to ApiHttpError, with fields and Retry-After', async () => {
     queueJson(
       { error: { code: 'validation_error', message: 'Invalid request.', fields: { email: 'invalid' } } },

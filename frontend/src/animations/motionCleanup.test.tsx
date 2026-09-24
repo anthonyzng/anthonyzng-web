@@ -3,7 +3,10 @@ import { StrictMode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../App'
+import type { ResolvedContent } from '../content/resolved'
 import i18n from '../i18n'
+import { queueJson } from '../test/api'
+import { CONTENT_FIXTURE } from '../test/contentFixture'
 import { navigation } from '../test/navigation'
 import { NavigationHandle } from '../test/NavigationHandle'
 import { FakeLenis } from '../test/fakeLenis'
@@ -244,6 +247,28 @@ describe('motion setup and cleanup', () => {
     expect(pinSpacers()).toHaveLength(0)
     expectStatementSplitWithoutAriaLabel()
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('[animations]'), expect.anything())
+    expect(error).not.toHaveBeenCalled()
+  }, MOTION_TEST_TIMEOUT_MS)
+
+  it('binds the choreography to a card that only the API payload has', async () => {
+    const payload = structuredClone(CONTENT_FIXTURE.en) as { projects: ResolvedContent['projects'] }
+    payload.projects = [
+      ...payload.projects,
+      { id: 'nova', placeholder: false, title: 'Nova', summary: 'Added in the admin.', tech: [], url: null, image: null },
+    ]
+    // StrictMode runs the content effect twice: the first request is aborted, the second one lands.
+    queueJson(payload)
+    queueJson(payload)
+    await renderHome()
+    const heading = await screen.findByRole('heading', { level: 3, name: 'Nova' })
+    const item = heading.closest('[data-reveal-item]')!
+    await waitFor(() => expect(ScrollTrigger.getAll().some((trigger) => trigger.trigger === item)).toBe(true))
+    // The new card's image plane drifts like the others (GSAP sets its overscan scale).
+    expect(item.querySelector<HTMLElement>('[data-plane]')!.style.transform).not.toBe('')
+    // Nothing is left bound to the nodes the swap replaced.
+    for (const trigger of ScrollTrigger.getAll()) {
+      if (trigger.trigger instanceof Element) expect(trigger.trigger.isConnected).toBe(true)
+    }
     expect(error).not.toHaveBeenCalled()
   }, MOTION_TEST_TIMEOUT_MS)
 

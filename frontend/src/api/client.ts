@@ -71,16 +71,26 @@ export const apiUrl = (path: string): string => `${API_BASE_URL}/api/v1${path}`
 /** How long a request may take before it counts as failed (a form must never hang on "Sending"). */
 export const REQUEST_TIMEOUT_MS = 15_000
 
+export type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
 interface RequestOptions<T> {
   /** Validates and types the 2xx body. */
   schema: BodySchema<T>
-  method?: 'GET' | 'POST'
-  /** Serialised as JSON; sets `Content-Type: application/json`. */
+  method?: RequestMethod
+  /**
+   * A `FormData` body (a file upload) is sent as is, without a `Content-Type`: the browser writes the
+   * multipart header with its boundary. Anything else is serialised as JSON with `Content-Type: application/json`.
+   */
   body?: unknown
   signal?: AbortSignal
-  /** `'omit'` for the public routes (a simple request, no preflight); `'include'` only for `/auth/*`. */
+  /** `'omit'` for the public routes (a simple request, no preflight); `'include'` only for `/auth/*` and `/admin/*`. */
   credentials?: RequestCredentials
   timeoutMs?: number
+  /**
+   * Extra request headers (the admin's `If-Match`). Only for routes that are preflighted anyway: a
+   * custom header turns a simple public GET into a preflighted one.
+   */
+  headers?: Readonly<Record<string, string>>
 }
 
 /**
@@ -101,12 +111,17 @@ function withTimeout(signal: AbortSignal | undefined, timeoutMs: number): AbortS
  * can tell it apart.
  */
 export async function requestJson<T>(path: string, options: RequestOptions<T>): Promise<T> {
-  const { schema, method = 'GET', body, signal, credentials = 'omit', timeoutMs = REQUEST_TIMEOUT_MS } = options
+  const { schema, method = 'GET', body, signal, credentials = 'omit', timeoutMs = REQUEST_TIMEOUT_MS, headers } = options
   const init: RequestInit = { method, signal: withTimeout(signal, timeoutMs), credentials }
-  if (body !== undefined) {
-    init.headers = { 'Content-Type': 'application/json' }
+  const sent: Record<string, string> = { ...headers }
+  if (body instanceof FormData) {
+    init.body = body
+  } else if (body !== undefined) {
+    sent['Content-Type'] = 'application/json'
     init.body = JSON.stringify(body)
   }
+  // Only when there is something to send: a public GET must stay a simple request (no preflight).
+  if (Object.keys(sent).length > 0) init.headers = sent
 
   let response: Response
   try {
