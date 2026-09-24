@@ -1,7 +1,8 @@
-import { createContext, use, useMemo } from 'react'
+import { createContext, use } from 'react'
 import { useTranslation } from 'react-i18next'
 import { resolveLanguage } from '../i18n/languages'
-import { resolveStaticContent, type ResolvedContent } from './resolved'
+import type { ResolvedContent } from './resolved'
+import { staticContent } from './staticContent'
 
 /** Provided by `ContentProvider` (one fetch per page); `null` outside it. */
 export const ContentContext = createContext<ResolvedContent | null>(null)
@@ -13,7 +14,6 @@ export const ContentContext = createContext<ResolvedContent | null>(null)
  */
 export function useResolvedContent(): ResolvedContent {
   const provided = use(ContentContext)
-  const { t, i18n } = useTranslation()
-  const locale = resolveLanguage(i18n.language)
-  return useMemo(() => provided ?? resolveStaticContent(t, locale), [provided, t, locale])
+  const { i18n } = useTranslation()
+  return provided ?? staticContent(resolveLanguage(i18n.language))
 }

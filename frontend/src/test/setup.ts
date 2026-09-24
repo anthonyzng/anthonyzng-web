@@ -8,6 +8,13 @@ import { turnstileFake } from './turnstileFake'
 // Cloudflare's widget script never loads in jsdom: every test gets the stand-in (FakeTurnstile.tsx).
 vi.mock('@marsidev/react-turnstile', async () => ({ Turnstile: (await import('./FakeTurnstile')).FakeTurnstile }))
 
+// The saved snapshot changes whenever the owner syncs content from the admin panel: tests render a
+// fixed fixture instead (contentFixture.ts). snapshot.test.ts unmocks it to check the real files.
+vi.mock('../content/staticContent', async () => {
+  const { CONTENT_FIXTURE } = await import('./contentFixture')
+  return { staticContent: (locale: keyof typeof CONTENT_FIXTURE) => CONTENT_FIXTURE[locale] }
+})
+
 // No network in tests: fetch fails like an unreachable backend unless a test queues a response
 // (test/api.ts), so every page renders from the static content by default.
 vi.stubGlobal(

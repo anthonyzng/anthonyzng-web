@@ -1,0 +1,227 @@
+{
+  "locale": "en",
+  "experience": [
+    {
+      "id": "sksys",
+      "company": "BABYSOFT o/a SKSYS Corporation",
+      "role": "Software Developer / Assistant Manager",
+      "location": "Markham, ON, Canada",
+      "start": "2023-11",
+      "end": null,
+      "bullets": [
+        "Built a Progressive Web App with a component-based TypeScript front end, integrated with Node.js / Express back-end services over REST APIs.",
+        "Led the UI revamp of a telecom service application, improving usability and operational efficiency.",
+        "Acted as technical point of contact and escalation for complex issues, coordinating with project managers in an Agile team.",
+        "Diagnosed and resolved network, hardware and operating-system issues remotely and on-site, keeping systems available."
+      ],
+      "tech": [
+        "TypeScript",
+        "JavaScript",
+        "Node.js",
+        "Express",
+        "REST APIs",
+        "PWA",
+        "Agile",
+        "Jira"
+      ]
+    },
+    {
+      "id": "hactl",
+      "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
+      "role": "Senior IT Coordinator",
+      "location": "Hong Kong",
+      "start": "2021-08",
+      "end": "2022-10",
+      "bullets": [
+        "Implemented a hybrid-cloud data platform on Microsoft Azure with a data pipeline and Power BI reporting, optimizing operational time by at least 10% and reducing resource loss by at least 5%.",
+        "Improved and maintained mission-critical enterprise applications (COSAC-Plus, COSAC-Mobile) through UI revamp projects.",
+        "Coordinated cross-functional teams and authored documentation and guidelines for smooth handovers."
+      ],
+      "tech": [
+        "Microsoft Azure",
+        "Data pipelines",
+        "Power BI",
+        "Enterprise applications"
+      ]
+    },
+    {
+      "id": "ivc",
+      "company": "IVC Consulting Group",
+      "role": "ABAP Programmer",
+      "location": "Hong Kong",
+      "start": "2020-08",
+      "end": "2021-04",
+      "bullets": [
+        "Developed and enhanced SAP ERP module programs and provided technical support.",
+        "Partnered with business analysts to gather requirements and advise on change impacts and technical limitations."
+      ],
+      "tech": [
+        "ABAP",
+        "SAP ERP"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "slotOne",
+      "placeholder": true,
+      "title": null,
+      "summary": null,
+      "tech": [],
+      "url": null,
+      "image": null
+    },
+    {
+      "id": "slotTwo",
+      "placeholder": true,
+      "title": null,
+      "summary": null,
+      "tech": [],
+      "url": null,
+      "image": null
+    }
+  ],
+  "skills": {
+    "groups": [
+      {
+        "id": "frontend",
+        "label": "Front-end",
+        "items": [
+          "React",
+          "Next.js",
+          "Angular",
+          "TypeScript",
+          "JavaScript",
+          "HTML5",
+          "CSS3",
+          "Tailwind CSS",
+          "jQuery",
+          "Responsive UI/UX"
+        ]
+      },
+      {
+        "id": "backend",
+        "label": "Back-end",
+        "items": [
+          "Node.js / Express",
+          "Java / Spring Boot",
+          "Python / Flask",
+          "REST APIs",
+          "Microservices",
+          "ABAP",
+          "NGINX"
+        ]
+      },
+      {
+        "id": "data",
+        "label": "Databases & data",
+        "items": [
+          "PostgreSQL",
+          "MySQL",
+          "MS SQL",
+          "Oracle SQL",
+          "MongoDB",
+          "Data pipelines",
+          "Power BI"
+        ]
+      },
+      {
+        "id": "cloud",
+        "label": "Cloud & DevOps",
+        "items": [
+          "Microsoft Azure",
+          "Docker",
+          "Kubernetes",
+          "CI/CD",
+          "Linux",
+          "Git",
+          "Bitbucket"
+        ]
+      },
+      {
+        "id": "ai",
+        "label": "AI development",
+        "items": [
+          "LLM-assisted development",
+          "AI coding agents (Claude Code)",
+          "Prompt design",
+          "AI workflow automation"
+        ]
+      },
+      {
+        "id": "ways",
+        "label": "Ways of working",
+        "items": [
+          "Agile / Scrum",
+          "Jira",
+          "Full SDLC",
+          "Technical documentation",
+          "Team coordination & mentoring"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "id": "uwe",
+        "degree": "BSc (Hons) Information Technology — First Class Honours",
+        "school": "University of the West of England, Bristol",
+        "year": "2020"
+      }
+    ],
+    "certifications": [
+      {
+        "id": "az900",
+        "name": "Microsoft Azure Fundamentals (AZ-900)",
+        "inProgress": false
+      },
+      {
+        "id": "ccna",
+        "name": "CCNA Routing & Switching",
+        "inProgress": false
+      },
+      {
+        "id": "pmp",
+        "name": "PMP",
+        "inProgress": true
+      }
+    ],
+    "languages": [
+      {
+        "id": "english",
+        "name": "English"
+      },
+      {
+        "id": "mandarin",
+        "name": "Mandarin"
+      },
+      {
+        "id": "cantonese",
+        "name": "Cantonese"
+      }
+    ]
+  },
+  "contact": {
+    "links": [
+      {
+        "id": "email",
+        "label": "Email",
+        "href": "mailto:anthonyzng075@gmail.com",
+        "display": "anthonyzng075@gmail.com"
+      },
+      {
+        "id": "linkedin",
+        "label": "LinkedIn",
+        "href": "https://www.linkedin.com/in/anthonyzng/",
+        "display": "linkedin.com/in/anthonyzng"
+      },
+      {
+        "id": "github",
+        "label": "GitHub",
+        "href": "https://github.com/anthonyzng",
+        "display": "github.com/anthonyzng"
+      }
+    ],
+    "location": "Ontario, Canada"
+  },
+  "cv": null
+}

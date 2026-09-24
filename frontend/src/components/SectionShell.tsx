@@ -8,6 +8,11 @@ import { formatIndex, SECTION_IDS, type SectionId } from '../sections/sectionIds
 interface SectionShellProps {
   id: SectionId
   headingSize?: 'headline' | 'display'
+  /**
+   * The ids of the section's items, joined. When the API payload adds or removes an item, the
+   * reveal and parallax choreography is rebuilt for the new set of cards and rows.
+   */
+  motionKey?: string
   children: ReactNode
 }
 
@@ -17,11 +22,11 @@ interface SectionShellProps {
  * creating a scroll container (so the CSS-sticky counter still works); `isolate` keeps the ghost
  * behind the content even where overflow: clip is unsupported.
  */
-export function SectionShell({ id, headingSize = 'headline', children }: SectionShellProps) {
+export function SectionShell({ id, headingSize = 'headline', motionKey = '', children }: SectionShellProps) {
   const { t } = useTranslation()
   const scope = useRef<HTMLElement>(null)
-  useSectionReveal(scope)
-  useParallax(scope)
+  useSectionReveal(scope, motionKey)
+  useParallax(scope, undefined, motionKey)
 
   const number = formatIndex(SECTION_IDS.indexOf(id))
   const total = formatIndex(SECTION_IDS.length - 1)

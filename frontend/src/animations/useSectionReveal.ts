@@ -6,8 +6,12 @@ import { DISTANCE, EASE, MOBILE_FACTOR, SCRUB, TRIGGER } from './motion'
  * Scrubbed (so reversible) section entrance: the rule draws, the counter and tagline settle and the
  * heading rises out of its mask. Each `[data-reveal-item]` (an untransformed trigger wrapper) then
  * reveals its `[data-reveal-inner]` against its own position on the page.
+ *
+ * `motionKey` names the section's items (their ids): when the content swap adds or removes an item,
+ * the key changes and the whole choreography is reverted and rebuilt, so a card that only the API
+ * payload has is revealed like the others and no trigger is left on a removed one.
  */
-export function useSectionReveal(scope: RefObject<HTMLElement | null>): void {
+export function useSectionReveal(scope: RefObject<HTMLElement | null>, motionKey = ''): void {
   useGSAP(
     () => {
       const root = scope.current
@@ -48,6 +52,6 @@ export function useSectionReveal(scope: RefObject<HTMLElement | null>): void {
       )
       return () => mm.revert()
     },
-    { scope },
+    { scope, dependencies: [motionKey], revertOnUpdate: true },
   )
 }
