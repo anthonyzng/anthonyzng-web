@@ -94,9 +94,10 @@ Each tier runs in its **own Docker container** so they can be scaled or moved in
 anthonyzng-web/
 ├── CLAUDE.md
 ├── README.md
-├── docker-compose.yml          # production stack (Phase 6)
-├── docker-compose.dev.yml      # local dev: the `db` service (PostgreSQL 17 on 127.0.0.1:5432)
-├── .env.example                # root Compose variables (Postgres credentials), placeholder values only
+├── docker-compose.yml          # the full stack: db, migrate (one-off), backend, frontend, proxy
+├── docker-compose.local.yml    # override: the full stack on this machine over HTTP (localhost:8080)
+├── docker-compose.dev.yml      # the `db` service alone (PostgreSQL 17 on 127.0.0.1:5432) for host-run dev
+├── .env.example                # root Compose variables (Postgres credentials, addresses, frontend build args), placeholders only
 ├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
 │   ├── settings.json           # project plugins
@@ -104,7 +105,8 @@ anthonyzng-web/
 ├── db/
 │   └── init/                   # Postgres init scripts (creates the `*_test` database on first start)
 ├── frontend/
-│   ├── Dockerfile              # multi-stage: build → static serve (Phase 6)
+│   ├── Dockerfile              # multi-stage: npm build → unprivileged nginx on :8080
+│   ├── nginx.conf              # SPA fallback, asset caching, /healthz
 │   ├── .env.example            # VITE_API_BASE_URL, VITE_TURNSTILE_SITE_KEY (public build-time values)
 │   ├── scripts/                # sync-content.mjs (`npm run content:sync`)
 │   └── src/
@@ -117,7 +119,7 @@ anthonyzng-web/
 │       ├── admin/              # admin panel (Phase 5)
 │       └── pages/
 ├── backend/
-│   ├── Dockerfile              # (Phase 6)
+│   ├── Dockerfile              # multi-stage: uv sync → slim runtime, non-root, uvicorn on :8000
 │   ├── pyproject.toml          # uv-managed project; uv.lock is committed
 │   ├── .env.example            # every backend env var, placeholder values only
 │   ├── alembic.ini
@@ -132,7 +134,7 @@ anthonyzng-web/
 │       ├── seed/               # content.json + `python -m app.seed` (bootstraps an empty database)
 │       └── core/               # config, db, security, rate_limit, client_ip, errors, middleware
 ├── proxy/
-│   └── Caddyfile
+│   └── Caddyfile               # hosts from env, TLS, frontend security headers, body cap
 └── .github/workflows/
 ```
 
@@ -229,8 +231,12 @@ python -m uv run mypy .                        # strict type check
 python -m uv run pytest -q                     # tests against TEST_DATABASE_URL (schema rebuilt by the session fixture)
 python -m uv run alembic revision --autogenerate -m "describe change"   # after a model change
 
-# Full stack locally (from Phase 6)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Full stack (from the repo root; needs .env and backend/.env)
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # locally: http://localhost:8080, API http://api.localhost:8080
+docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f backend  # follow one service
+docker compose -f docker-compose.yml -f docker-compose.local.yml run --rm backend python -m app.seed   # seed inside the stack
+docker compose -f docker-compose.yml -f docker-compose.local.yml down            # stop (volumes kept)
+docker compose up -d --build                                                       # production (the VM, Phase 7)
 ```
 
 Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
@@ -261,6 +267,14 @@ Before every commit that touches `backend/`: `ruff check`, `ruff format --check`
 - **Seed** (`app/seed/`): `content.json` is the site's initial content in the storage shapes (`translations` objects, tag strings or `{"en","zh-Hant"}` term objects, `YYYY-MM` dates); rows are validated by the write models and mapped by the collection registry. `seed_content` upserts every row by slug in one transaction (`INSERT … ON CONFLICT (slug) DO UPDATE`, `updated_at = now()`; a row without `sortOrder` takes its position in the file), never deletes a row and keeps a project's image, unless the file makes that project a placeholder (which cannot have one): then the image is dropped, and cover images no project points at are deleted. The admin panel is the source of truth, so `content.json` is not kept in step with it and only bootstraps an empty database (development, a new server): `python -m app.seed` refuses a database that already holds content, because it would put the file's version back over every edited row; `--force` seeds anyway.
 - **Tests** (`tests/`, 304 cases): pytest + pytest-asyncio (auto mode) + httpx `ASGITransport` against `TEST_DATABASE_URL` (a real PostgreSQL: schema dropped and `alembic upgrade head` once per session, every table truncated before each test); the real lifespan runs with Turnstile and email replaced by recording fakes through dependency overrides; no network anywhere. Only `TEST_DATABASE_URL` is read from `backend/.env`; every other setting is a test constant, so no personal value appears in test output. Coverage includes migrations at head and model drift, seed idempotency and the CLI's refusal, `/content` field by field against `content.json` for both locales plus ETag / 304, every contact path, the IP hash (never a raw IP in the row, the email or the log), login / cookie / `/me` / logout, session revocation, the single-admin invariant, Argon2 off the event loop, the production settings guard, the body caps (64 KiB, per-route caps that do not leak to other routes, `Connection: close` on a streamed 413), the 500 envelope with CORS headers, rate limiting, the error envelope, CORS and the security headers; for the admin API: 401 on every route, the foreign-origin 403, JSON-only writes, `no-store` on successes and errors, a round trip of every collection, validation field paths, ASCII digits and integer ranges, project URL parsing, slug conflicts and immutability, server-side placement and order keeping, `If-Match` / 412, reorder and image changes without a version bump, the summary, the upload pipeline (`test_images.py`, no database: tall screenshots, MPO JPEGs, rotated JPEGs at full width, broken metadata, broken PNG streams, 16-bit greyscale, colour profiles, refusal codes), file cleanup, overlapping uploads, the CV rules, download names and caching, and the message list, filter, paging with `asOf`, read state and delete; the seed's `--force` over a slot that gained an image. Upload tests build their images with Pillow and their PDFs as bytes; no fixture file is committed.
 
+## 6.3 Containers (Phase 6)
+
+- **Stack** (`docker-compose.yml`, project `anthonyzng-web`): `db` (postgres:17-alpine, volume `pgdata`, no host port), `migrate` (the backend image, built by `backend` and never pulled (`pull_policy: never`), running `alembic upgrade head` once per `up`, then exiting; `restart: "no"`), `backend` (waits for `db` healthy and `migrate` completed successfully), `frontend`, `proxy` (caddy:2.11-alpine, the only published service: 80, 443, 443/udp; volumes `caddy_data` for certificates and `caddy_config`). Every long-running service has `restart: unless-stopped` and `no-new-privileges`; `backend`, `migrate` and `frontend` run with a read-only root filesystem (`/tmp` as tmpfs). Configuration: the root `.env` (Compose interpolation: Postgres credentials, the Caddy addresses, the frontend build args; `.env.example`) and `backend/.env` (the backend settings, loaded with `env_file`); the compose file itself sets the backend's `DATABASE_URL` (host `db`, built from the `POSTGRES_*` values, so the password must be URL-safe) and `TRUSTED_PROXY=true`, overriding `backend/.env`. `docker compose config` prints the merged environment, secrets included: use `--quiet` to validate it.
+- **Backend image** (`backend/Dockerfile`): `python:3.13-slim`; uv (`ghcr.io/astral-sh/uv:0.12`) installs the locked runtime dependencies only (`uv sync --frozen --no-dev --no-install-project`) into `/opt/venv`; the runtime stage copies the venv, `alembic.ini`, `alembic/` and `app/` (root-owned) and runs as the unprivileged `app` user (uid 10001). `CMD`: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --no-server-header` (one worker for the in-process rate limiter; no access log, which would record raw client IPs). `HEALTHCHECK` calls `/api/v1/health`. `.dockerignore` keeps `.env`, `.venv`, `tests/` and caches out, so no secret is ever baked into an image. The same image runs the seed: `docker compose … run --rm backend python -m app.seed`.
+- **Frontend image** (`frontend/Dockerfile`): `node:22-alpine` runs `npm ci` and `npm run build` (typecheck + Vite) with the build args `VITE_API_BASE_URL` and `VITE_TURNSTILE_SITE_KEY` (both required: the build fails on an empty value instead of falling back to the development defaults of `src/env.ts`); the runtime is `nginxinc/nginx-unprivileged:1.29-alpine` on port 8080 with `frontend/nginx.conf`: `/assets/*` (hashed) `Cache-Control: public, max-age=31536000, immutable` and a 404 for a missing file, any other path with a file name (a dot in its last segment) that file or a 404 (a missing `/robots.txt` is never the app with a 200), every other path `index.html` (the SPA routes) with `no-cache`, `/healthz` for the healthcheck, gzip (`gzip_proxied any`: every request arrives through Caddy), `server_tokens off`, `absolute_redirect off`.
+- **Proxy** (`proxy/Caddyfile`): site addresses from the environment (`SITE_ADDRESS`, `SITE_URL`, `WWW_ADDRESS`, `API_ADDRESS`; production defaults `owwsolution.com`, `https://owwsolution.com`, `www.owwsolution.com`, `api.owwsolution.com` in the compose file, so a bare domain gets an automatic Let's Encrypt certificate). The site host carries the frontend's security headers (`X-Frame-Options: DENY`, so the admin panel can never be framed; `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, HSTS one year, no `Server`); `www` redirects permanently to `SITE_URL` (one canonical origin); the API host adds HSTS, drops `Server`, caps request bodies at 11 MiB (`MiB`: Caddy's `MB` is decimal) and proxies to `backend:8000` without compression (it would rewrite the ETags). Caddy sets `X-Forwarded-For` to the client address, the rightmost entry the backend reads with `TRUSTED_PROXY=true`. No access log anywhere. `caddy validate` / `caddy fmt` must stay clean (run them in the `caddy` image).
+- **Locally** (`docker-compose.local.yml`, an override): plain HTTP on `127.0.0.1:8080` (`ports: !override`), `http://localhost:8080` (site) and `http://api.localhost:8080` (API). Browsers take `localhost` and `api.localhost` for two different sites, so the admin's `SameSite=Lax` cookie would not reach `api.localhost`: the local build therefore calls the API on the site's own origin (`VITE_API_BASE_URL=http://localhost:8080`, and the override mounts `proxy/local/api-on-site.caddy` into `/etc/caddy/site.d/`, which the site block imports, so Caddy routes `/api/*` of the site host to the backend; production mounts nothing there). The local frontend image is tagged `anthonyzng-web-frontend:local`, so its localhost bundle never stands in for a production build. The backend keeps its development `backend/.env` with `CORS_ORIGINS=http://localhost:8080`; the database is the same service and volume as `docker-compose.dev.yml` and stays published on `127.0.0.1:5432` for host-run tests; stop a host-run backend first so only one admin edits it.
+
 ---
 
 ## 7. Deployment
@@ -271,8 +285,8 @@ Before every commit that touches `backend/`: `ruff check`, `ruff format --check`
 4. On merge to `main`: GitHub Actions builds images → pushes to GHCR → SSHes into the VM → `docker compose pull && docker compose up -d`.
 5. Required secrets (VM host, SSH deploy key, etc.) are created **only after the owner authorises them**.
 6. Production backend settings: `APP_ENV=production` refuses placeholder or development values at startup (see 6.2 Settings). Generate `JWT_SECRET` and `IP_HASH_SECRET` separately (`python -c "import secrets; print(secrets.token_urlsafe(48))"`), and set a real Turnstile secret, `EMAIL_PROVIDER=resend` with the `owwsolution.com` domain verified in Resend, `CORS_ORIGINS=https://owwsolution.com,https://www.owwsolution.com` and `TRUSTED_PROXY=true` (behind Caddy). The frontend build needs `VITE_API_BASE_URL=https://api.owwsolution.com` and the real `VITE_TURNSTILE_SITE_KEY`.
-7. Run uvicorn with exactly one worker (the rate limiter is in-process) and `--no-access-log`: its access log would record raw client IPs, which the backend otherwise never writes. Put Caddy's `request_body max_size` in front of the app's caps (11 MiB, the CV route's cap; the app still holds every other route to 64 KiB).
-8. Frontend response headers (Caddy): `X-Frame-Options: DENY` or CSP `frame-ancestors 'none'` on every page, so the admin panel can never be framed; a Content-Security-Policy (Phase 8) must allow the API origin in `connect-src` and `img-src` (project cover images are served by `GET /files/{id}`).
+7. The containers (6.3) already run uvicorn with exactly one worker (the rate limiter is in-process) and `--no-access-log` (its access log would record raw client IPs), put Caddy's 11 MiB `request_body` cap in front of the app's caps, and send the frontend's security headers from Caddy. On the VM: the root `.env` (a strong `POSTGRES_PASSWORD`, `VITE_API_BASE_URL=https://api.owwsolution.com`, the real `VITE_TURNSTILE_SITE_KEY`) and a production `backend/.env`, then `docker compose up -d --build` (Phase 7 replaces the local build with images from GHCR); the first start on an empty database needs `docker compose run --rm backend python -m app.seed`.
+8. A Content-Security-Policy (Phase 8) must allow the API origin in `connect-src` and `img-src` (project cover images are served by `GET /files/{id}`).
 
 ---
 

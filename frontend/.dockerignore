@@ -1,0 +1,11 @@
+# The image builds from sources; local builds, dependencies and env files stay out.
+node_modules/
+dist/
+coverage/
+.vite/
+.env
+.env.*
+.codegraph/
+Dockerfile
+.dockerignore
+*.log
