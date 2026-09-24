@@ -10,7 +10,7 @@ from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import SiteText
-from app.seed import SEED_PATH, SeedFile, seed_content
+from app.seed import SEED_PATH
 
 CONTENT = "/api/v1/content"
 LOCALES = ("en", "zh-Hant")
@@ -28,11 +28,6 @@ def resolve(tag: Any, locale: str) -> str:
 
 def ordered(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: (row.get("sortOrder", 0), row["slug"]))
-
-
-@pytest.fixture
-async def seeded(session: AsyncSession, seed_data: SeedFile) -> None:
-    await seed_content(session, seed_data)
 
 
 @pytest.mark.usefixtures("seeded")
@@ -66,6 +61,7 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
             "summary": row["translations"][locale]["summary"],
             "tech": [resolve(tag, locale) for tag in row["tech"]],
             "url": row["url"],
+            "image": None,
         }
         for row in ordered(raw["projects"])
     ]
@@ -105,6 +101,8 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
     ]
     location = next(row for row in raw["siteTexts"] if row["slug"] == "contact_location")
     assert body["contact"]["location"] == location["translations"][locale]["text"]
+    # No CV uploaded yet.
+    assert body["cv"] is None
 
 
 @pytest.mark.usefixtures("seeded")
@@ -191,6 +189,7 @@ async def test_empty_tables_give_empty_arrays(client: httpx.AsyncClient) -> None
         "projects": [],
         "skills": {"groups": [], "education": [], "certifications": [], "languages": []},
         "contact": {"links": [], "location": ""},
+        "cv": None,
     }
 
 

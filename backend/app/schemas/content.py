@@ -1,6 +1,25 @@
 """Public `GET /content` payload: every string already resolved for the requested locale."""
 
+from datetime import datetime
+
 from app.schemas.common import CamelModel, Locale, Month
+
+
+class ImageRef(CamelModel):
+    """A stored image. `url` is a path on the API origin (`/api/v1/files/<uuid>`)."""
+
+    url: str
+    width: int
+    height: int
+
+
+class CvRef(CamelModel):
+    """The downloadable CV. `url` is a path on the API origin (`/api/v1/files/<uuid>`)."""
+
+    url: str
+    filename: str
+    size: int
+    updated_at: datetime
 
 
 class ExperienceItem(CamelModel):
@@ -21,6 +40,7 @@ class ProjectItem(CamelModel):
     summary: str | None
     tech: list[str]
     url: str | None
+    image: ImageRef | None
 
 
 class SkillGroupItem(CamelModel):
@@ -72,3 +92,4 @@ class ContentPayload(CamelModel):
     projects: list[ProjectItem]
     skills: SkillsPayload
     contact: ContactPayload
+    cv: CvRef | None

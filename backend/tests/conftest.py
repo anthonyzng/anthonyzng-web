@@ -25,7 +25,7 @@ from app.core.config import BACKEND_DIR, Settings
 from app.core.rate_limit import rate_limiter
 from app.core.state import AppServices
 from app.main import create_app
-from app.seed import SeedFile, load_seed_file
+from app.seed import SeedFile, load_seed_file, seed_content
 from app.services.email import OutgoingEmail
 
 TEST_ADMIN_EMAIL = "admin@example.com"
@@ -34,7 +34,7 @@ TEST_CONTACT_TO_EMAIL = "inbox@example.com"
 TEST_JWT_SECRET = "unit-test-secret-not-for-production"
 TEST_IP_HASH_SECRET = "unit-test-ip-hash-secret-0123456789"
 TEST_ORIGIN = "http://localhost:5173"
-HEAD_REVISION = "0001_initial_schema"
+HEAD_REVISION = "0002_admin_panel"
 
 TABLES = (
     "admin_users",
@@ -47,6 +47,7 @@ TABLES = (
     "contact_links",
     "site_texts",
     "contact_messages",
+    "stored_files",
 )
 
 
@@ -206,3 +207,19 @@ async def session(app: FastAPI) -> AsyncIterator[AsyncSession]:
 @pytest.fixture(scope="session")
 def seed_data() -> SeedFile:
     return load_seed_file()
+
+
+@pytest.fixture
+async def seeded(session: AsyncSession, seed_data: SeedFile) -> None:
+    """The database holds the seed content."""
+    await seed_content(session, seed_data)
+
+
+@pytest.fixture
+async def admin_client(client: httpx.AsyncClient) -> httpx.AsyncClient:
+    """`client` signed in as the admin (the session cookie is in its jar)."""
+    response = await client.post(
+        "/api/v1/auth/login", json={"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD}
+    )
+    assert response.status_code == 200
+    return client

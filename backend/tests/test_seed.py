@@ -1,13 +1,16 @@
-"""`app.seed`: idempotent upsert by slug that never deletes."""
+"""`app.seed`: idempotent upsert by slug that never deletes; the CLI seeds only empty databases."""
 
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.models import Base
-from app.models.content import Certification, ExperienceEntry
-from app.seed import SeedFile, seed_content
-from app.seed.__main__ import run
+from app.models.content import Certification, ExperienceEntry, Project
+from app.models.stored_file import StoredFile
+from app.seed import SeedFile, has_content, seed_content
+from app.seed.__main__ import SeedRefusedError, run
+from app.services.files import EncodedImage, new_cover_image
 
 EXPECTED_COUNTS = {
     "experience_entries": 3,
@@ -73,6 +76,49 @@ async def test_seed_keeps_rows_absent_from_the_file(
 async def test_cli_runner_seeds_the_configured_database(
     session: AsyncSession, test_settings: Settings
 ) -> None:
+    assert not await has_content(session)
     counts = await run(test_settings)
     assert counts == EXPECTED_COUNTS
     assert await row_counts(session) == EXPECTED_COUNTS
+    assert await has_content(session)
+
+
+async def test_forced_seed_resets_a_slot_that_gained_a_cover_image(
+    session: AsyncSession, seed_data: SeedFile
+) -> None:
+    """The admin filled seed slot `slotOne` and gave it an image; `--force` puts the placeholder
+    back, which cannot keep an image (the CHECK would fail), so the image goes too."""
+    await seed_content(session, seed_data)
+    image = new_cover_image(EncodedImage(data=b"webp-bytes", width=4, height=3))
+    session.add(image)
+    await session.flush()
+    project = await session.get_one(Project, "slotOne")
+    project.placeholder = False
+    project.url = "https://example.com"
+    project.translations = {
+        "en": {"title": "Real", "summary": "Real work."},
+        "zh-Hant": {"title": "真實", "summary": "真實項目。"},
+    }
+    project.image_id = image.id
+    await session.commit()
+
+    await seed_content(session, seed_data)
+    session.expire_all()
+    project = await session.get_one(Project, "slotOne")
+    assert project.placeholder is True
+    assert project.image_id is None
+    assert await session.get(StoredFile, image.id) is None
+
+
+async def test_cli_runner_refuses_a_database_with_content(
+    session: AsyncSession, test_settings: Settings
+) -> None:
+    """An edit made in the admin panel survives an accidental `python -m app.seed`."""
+    session.add(Certification(slug="extra", sort_order=99, name="Edited", in_progress=False))
+    await session.commit()
+    with pytest.raises(SeedRefusedError):
+        await run(test_settings)
+    assert (await row_counts(session))["experience_entries"] == 0
+
+    assert await run(test_settings, force=True) == EXPECTED_COUNTS
+    assert await session.get(Certification, "extra") is not None

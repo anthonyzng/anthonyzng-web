@@ -89,7 +89,27 @@ async def get_current_admin(
     user = await get_admin_for_session(session, claims)
     if user is None:
         raise _unauthorized()
+    # End the lookup's transaction: an upload route then receives its body (megabytes, maybe on a
+    # slow link) without holding a pooled connection idle in a transaction. The session keeps
+    # `user` usable (`expire_on_commit=False`) and opens a new transaction on its next query.
+    await session.commit()
     return user
 
 
 CurrentAdminDep = Annotated[AdminUser, Depends(get_current_admin)]
+
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
+def require_trusted_origin(request: Request, settings: SettingsDep) -> None:
+    """Refuse a state-changing request that a browser sent from a foreign origin.
+
+    Defence in depth next to SameSite=Lax and JSON-only bodies: a browser always sends `Origin`
+    on a cross-origin POST / PUT / PATCH / DELETE, so a foreign one is refused outright. A request
+    without the header (curl, a server-side client) is left to the cookie check.
+    """
+    if request.method in SAFE_METHODS:
+        return
+    origin = request.headers.get("origin")
+    if origin is not None and origin not in settings.CORS_ORIGINS:
+        raise ApiError(403, "forbidden", "Cross-origin request refused.")

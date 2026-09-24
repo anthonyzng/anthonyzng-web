@@ -13,6 +13,7 @@ from app.models.content import (
     SkillGroup,
     SpokenLanguage,
 )
+from app.models.stored_file import StoredFile
 
 __all__ = [
     "AdminUser",
@@ -26,4 +27,5 @@ __all__ = [
     "SiteText",
     "SkillGroup",
     "SpokenLanguage",
+    "StoredFile",
 ]

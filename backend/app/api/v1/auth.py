@@ -7,6 +7,7 @@ from app.api.deps import (
     ServicesDep,
     SessionDep,
     SettingsDep,
+    require_trusted_origin,
 )
 from app.core.errors import ApiError, RateLimitedError
 from app.core.rate_limit import LOGIN_EMAIL_RULE, LOGIN_IP_RULE
@@ -26,9 +27,8 @@ from app.services.auth import (
     revoke_sessions,
 )
 
-router = APIRouter(prefix="/auth", tags=["auth"])
-
-NO_STORE = "no-store"
+router = APIRouter(prefix="/auth", tags=["auth"], dependencies=[Depends(require_trusted_origin)])
+"""Every response here carries `Cache-Control: no-store` (the security-headers middleware)."""
 
 
 async def enforce_login_ip_rate_limit(client_ip: ClientIpDep, limiter: RateLimiterDep) -> None:
@@ -76,7 +76,6 @@ async def login(
         secret=settings.JWT_SECRET.get_secret_value(),
     )
     set_session_cookie(response, token, secure=settings.is_production)
-    response.headers["Cache-Control"] = NO_STORE
     return AdminInfo(email=user.email)
 
 
@@ -90,7 +89,7 @@ async def logout(request: Request, session: SessionDep, settings: SettingsDep) -
         user = await get_admin_for_session(session, claims)
         if user is not None:
             await revoke_sessions(session, user)
-    response = Response(status_code=204, headers={"Cache-Control": NO_STORE})
+    response = Response(status_code=204)
     clear_session_cookie(response, secure=settings.is_production)
     return response
 
@@ -100,6 +99,5 @@ async def logout(request: Request, session: SessionDep, settings: SettingsDep) -
     response_model=AdminInfo,
     responses={401: {"model": ErrorResponse, "description": "No valid session cookie"}},
 )
-async def me(admin: CurrentAdminDep, response: Response) -> AdminInfo:
-    response.headers["Cache-Control"] = NO_STORE
+async def me(admin: CurrentAdminDep) -> AdminInfo:
     return AdminInfo(email=admin.email)

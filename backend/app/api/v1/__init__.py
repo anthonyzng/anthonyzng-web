@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import auth, contact, content, health
+from app.api.v1 import admin, auth, contact, content, files, health
 from app.schemas.errors import ErrorResponse
 
 API_V1_PREFIX = "/api/v1"
@@ -20,3 +20,5 @@ router.include_router(health.router)
 router.include_router(content.router)
 router.include_router(contact.router)
 router.include_router(auth.router)
+router.include_router(files.router)
+router.include_router(admin.router)

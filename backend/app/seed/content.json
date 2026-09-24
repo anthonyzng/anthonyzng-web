@@ -1,5 +1,5 @@
 {
-  "$comment": "Seed for `python -m app.seed` (upsert by slug, idempotent). Mirrors the frontend's static content (frontend/src/content/*.ts + the content.* subtree of both locale files) in the storage shapes of Phase 4: translations = {\"en\", \"zh-Hant\"} objects, tags = proper-noun strings or {\"en\", \"zh-Hant\"} term objects, dates = YYYY-MM (end null = present).",
+  "$comment": "Initial content for `python -m app.seed`, which bootstraps an empty database (upsert by slug; it refuses a database that already holds content unless given --force). Once the site runs, the admin panel is the source of truth and this file is not kept in step with it. Storage shapes: translations = {\"en\", \"zh-Hant\"} objects, tags = proper-noun strings or {\"en\", \"zh-Hant\"} term objects, dates = YYYY-MM (end null = present).",
   "experience": [
     {
       "slug": "sksys",

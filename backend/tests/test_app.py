@@ -4,6 +4,7 @@ import json
 from collections.abc import AsyncIterator
 
 import httpx
+import pytest
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -82,10 +83,15 @@ async def test_unhandled_exception_is_masked(app: FastAPI) -> None:
 
     app.add_api_route("/api/v1/boom", boom, methods=["GET"])
     async with make_client(app) as client:
-        response = await client.get("/api/v1/boom")
+        response = await client.get("/api/v1/boom", headers={"Origin": TEST_ORIGIN})
     assert response.status_code == 500
     assert response.json() == {"error": {"code": "internal_error", "message": "Unexpected error."}}
     assert "secret detail" not in response.text
+    # Readable cross-origin, like every other error: the admin panel reports a server error
+    # instead of "the server could not be reached".
+    assert response.headers["access-control-allow-origin"] == TEST_ORIGIN
+    assert response.headers["access-control-allow-credentials"] == "true"
+    assert response.headers["x-content-type-options"] == "nosniff"
 
 
 async def test_security_headers(client: httpx.AsyncClient) -> None:
@@ -109,6 +115,22 @@ async def test_cors_preflight_for_allowed_origin(client: httpx.AsyncClient) -> N
     assert response.headers["access-control-allow-credentials"] == "true"
     assert response.headers["access-control-max-age"] == "600"
     assert "content-type" in response.headers["access-control-allow-headers"].lower()
+
+
+@pytest.mark.parametrize("method", ["PUT", "PATCH", "DELETE"])
+async def test_cors_preflight_admits_the_admin_write_methods(
+    client: httpx.AsyncClient, method: str
+) -> None:
+    """The admin panel (another origin in development and production) edits with credentials."""
+    response = await client.options(
+        "/api/v1/admin/content/experience/sksys",
+        headers={"Origin": TEST_ORIGIN, "Access-Control-Request-Method": method},
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == TEST_ORIGIN
+    assert response.headers["access-control-allow-credentials"] == "true"
+    allowed = response.headers["access-control-allow-methods"].split(",")
+    assert method in [value.strip() for value in allowed]
 
 
 async def test_cors_actual_request_exposes_headers(client: httpx.AsyncClient) -> None:
@@ -189,6 +211,8 @@ async def test_streamed_oversized_body_is_cut_off(
     assert "content-length" not in {name.lower() for name in response.request.headers}
     assert response.status_code == 413
     assert response.json() == TOO_LARGE
+    # As on the fast path: the server drops the rest of the body instead of reading it.
+    assert response.headers["connection"] == "close"
     assert turnstile.calls == []
 
 
