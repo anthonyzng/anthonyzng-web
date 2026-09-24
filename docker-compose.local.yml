@@ -1,0 +1,42 @@
+# Runs the production stack on this machine (plain HTTP, no certificates):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#
+#   site  http://localhost:8080        API  http://localhost:8080/api/v1 (also http://api.localhost:8080/api/v1)
+#
+# Browsers resolve every *.localhost name to this machine, but take localhost and api.localhost for
+# two different sites, so the admin's SameSite=Lax cookie would not reach api.localhost: the local
+# build calls the API on the site's own origin (proxy/local/api-on-site.caddy routes /api/* there). Production keeps the
+# api subdomain (one site with the apex). The backend keeps its development settings from
+# backend/.env; CORS allows the site's origin (used by the api.localhost address only). The local
+# frontend image gets its own tag, so its localhost bundle never stands in for a production build. The database is the
+# same service and volume as docker-compose.dev.yml (same project), still published on
+# 127.0.0.1:5432 for the host-run tests; stop a host-run backend first, so one admin edits it.
+
+services:
+  db:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+
+  backend:
+    environment:
+      CORS_ORIGINS: http://localhost:8080
+
+  frontend:
+    image: anthonyzng-web-frontend:local
+    build:
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+        # Cloudflare's public always-pass test key (the backend/.env default secret matches it).
+        VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+
+  proxy:
+    environment:
+      SITE_ADDRESS: http://localhost:8080
+      SITE_URL: http://localhost:8080
+      WWW_ADDRESS: http://www.localhost:8080
+      API_ADDRESS: http://api.localhost:8080
+    ports: !override
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./proxy/local/api-on-site.caddy:/etc/caddy/site.d/api-on-site.caddy:ro

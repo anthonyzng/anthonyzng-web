@@ -1,0 +1,50 @@
+# Reverse proxy for the whole stack: TLS (automatic Let's Encrypt certificates for real domains),
+# routing by host, and the frontend's security headers.
+#
+# Addresses come from the environment (docker-compose.yml):
+#   SITE_ADDRESS  production "owwsolution.com"          locally "http://localhost:8080"
+#   SITE_URL      production "https://owwsolution.com"  locally "http://localhost:8080"
+#   WWW_ADDRESS   production "www.owwsolution.com"      locally "http://www.localhost:8080"
+#   API_ADDRESS   production "api.owwsolution.com"      locally "http://api.localhost:8080"
+# No access log: it would record raw client IPs, which the stack otherwise never writes.
+
+(frontend_headers) {
+	header {
+		# HTTPS only for a year once seen over HTTPS (browsers ignore it on plain HTTP).
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		# The admin panel lives on this host: it must never be framed.
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
+
+{$SITE_ADDRESS} {
+	import frontend_headers
+	# Extra routes for this host, if any: empty in production; the local override mounts
+	# proxy/local/api-on-site.caddy here (Caddy logs a warning when the glob matches nothing).
+	import /etc/caddy/site.d/*.caddy
+	reverse_proxy frontend:8080
+}
+
+# One canonical origin for the site (SEO; the API allows only that origin).
+{$WWW_ADDRESS} {
+	redir {$SITE_URL}{uri} permanent
+}
+
+{$API_ADDRESS} {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	# In front of the app's own caps: the CV upload route's 11 MiB is the largest (MiB: Caddy's
+	# MB is decimal, 1000^2).
+	request_body {
+		max_size 11MiB
+	}
+	# Sets X-Forwarded-For to the client address (the backend reads its rightmost entry with
+	# TRUSTED_PROXY=true). No compression: it would rewrite the API's ETags.
+	reverse_proxy backend:8000
+}

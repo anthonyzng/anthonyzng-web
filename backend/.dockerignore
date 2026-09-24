@@ -1,0 +1,14 @@
+# Only pyproject.toml, uv.lock, alembic.ini, alembic/ and app/ are needed in the image.
+.env
+.env.*
+.venv/
+tests/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.codegraph/
+Dockerfile
+.dockerignore
+README.md

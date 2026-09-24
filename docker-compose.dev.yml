@@ -1,9 +1,11 @@
-# Local development services. Phase 6 adds the full stack (frontend, backend, proxy);
-# until then only the database runs in Docker and the backend runs on the host.
+# The database alone, for development with the backend and frontend run on the host
+# (`uvicorn --reload`, `npm run dev`); the full stack is docker-compose.yml (+ docker-compose.local.yml).
 #
 #   docker compose -f docker-compose.dev.yml up -d db
 #
-# Credentials come from the git-ignored root `.env` (see `.env.example`).
+# Same project, service and volume as the full stack's `db`, so both see the same data. Also
+# creates the *_test database for pytest on first start. Credentials come from the git-ignored root
+# `.env` (see `.env.example`).
 services:
   db:
     image: postgres:17-alpine

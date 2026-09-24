@@ -1,0 +1,5 @@
+# Local stack only (docker-compose.local.yml mounts this into the site host): the API on the site's
+# own origin too. Browsers take localhost and api.localhost for two different sites, so the admin's
+# SameSite=Lax session cookie would not travel to api.localhost; production's apex and api
+# subdomain are one site and need no such route.
+reverse_proxy /api/* backend:8000

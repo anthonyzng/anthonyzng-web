@@ -1,0 +1,116 @@
+# The production stack: every service in its own container, only the proxy is published.
+#
+#   docker compose up -d --build                                   # production (the VM)
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # locally
+#
+# Configuration:
+#   .env           Compose variables (Postgres credentials, public addresses, frontend build args);
+#                  see .env.example.
+#   backend/.env   backend settings (secrets); see backend/.env.example. DATABASE_URL and
+#                  TRUSTED_PROXY are set here instead, for the container network.
+# Both files are git-ignored. Migrations run once per `up` in the `migrate` service, before the
+# backend starts; the app itself never migrates.
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+
+x-backend-env: &backend-env
+  # Inside the network the database is `db`. The password must be URL-safe (letters, digits, - _ . ~).
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-anthonyzng}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-anthonyzng_web}
+  # Behind Caddy: the client IP is the rightmost X-Forwarded-For entry.
+  TRUSTED_PROXY: "true"
+
+services:
+  db:
+    <<: *hardening
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-anthonyzng}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-anthonyzng_web}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-anthonyzng} -d ${POSTGRES_DB:-anthonyzng_web}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-off: brings the schema to head, then exits; the backend waits for it to succeed. It runs
+  # the backend's image, built once by the `backend` service (never pulled).
+  migrate:
+    <<: *hardening
+    image: anthonyzng-web-backend
+    pull_policy: never
+    restart: "no"
+    env_file:
+      - path: ./backend/.env
+        required: true
+    environment: *backend-env
+    command: ["alembic", "upgrade", "head"]
+    healthcheck:
+      disable: true
+    read_only: true
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    <<: *hardening
+    image: anthonyzng-web-backend
+    build: ./backend
+    env_file:
+      - path: ./backend/.env
+        required: true
+    environment: *backend-env
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    <<: *hardening
+    image: anthonyzng-web-frontend
+    build:
+      context: ./frontend
+      args:
+        # Required: the build fails on an empty value (set them in .env; the local override does).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  proxy:
+    <<: *hardening
+    image: caddy:2.11-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-owwsolution.com}
+      SITE_URL: ${SITE_URL:-https://owwsolution.com}
+      WWW_ADDRESS: ${WWW_ADDRESS:-www.owwsolution.com}
+      API_ADDRESS: ${API_ADDRESS:-api.owwsolution.com}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # /etc/caddy/site.d/ is empty here; the local override adds a route there.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
