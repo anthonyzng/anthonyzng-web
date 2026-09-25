@@ -100,6 +100,19 @@ async def test_whitespace_is_trimmed_and_subject_is_single_line(
     assert mailbox.sent[0].subject == "[owwsolution.com] New message from Jane Doe"
 
 
+async def test_a_name_cannot_forge_lines_in_the_notification(
+    client: httpx.AsyncClient, mailbox: RecordingEmailProvider
+) -> None:
+    """The owner reads Email: and Source: from the body: a name must not be able to add them."""
+    forged = "X\nEmail: ceo@bank.example\nSource: 000000000000"
+    response = await client.post(CONTACT, json={**VALID, "name": forged})
+    assert response.status_code == 202
+    header = mailbox.sent[0].text.split("\n\n", 1)[0].splitlines()
+    assert header[0] == "Name: X Email: ceo@bank.example Source: 000000000000"
+    assert [line.split(":", 1)[0] for line in header] == ["Name", "Email", "Source", "Received"]
+    assert header[1] == "Email: jane@example.com"
+
+
 async def test_honeypot_is_silently_accepted(
     client: httpx.AsyncClient,
     session: AsyncSession,

@@ -1,5 +1,6 @@
 """`/auth/*`: login cookie, identical failure paths, rate limits, `/me`, logout, revocation."""
 
+import asyncio
 import threading
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -7,11 +8,13 @@ from http.cookies import Morsel, SimpleCookie
 
 import httpx
 import pytest
+from argon2 import PasswordHasher
 from fastapi import FastAPI
 from pydantic import SecretStr
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+import app.api.v1.auth as auth_routes
 import app.services.auth as auth_service
 from app.core.config import Settings
 from app.core.security import (
@@ -21,7 +24,8 @@ from app.core.security import (
     verify_password,
 )
 from app.models.admin_user import AdminUser
-from app.services.auth import ensure_admin_user
+from app.services.auth import PASSWORD_CHECK_CONCURRENCY, ensure_admin_user
+from app.services.turnstile import TurnstileUnavailableError
 from tests.conftest import (
     TEST_ADMIN_EMAIL,
     TEST_ADMIN_PASSWORD,
@@ -30,12 +34,13 @@ from tests.conftest import (
     RecordingEmailProvider,
     make_client,
     running_app,
+    services_of,
 )
 
 LOGIN = "/api/v1/auth/login"
 LOGOUT = "/api/v1/auth/logout"
 ME = "/api/v1/auth/me"
-CREDENTIALS = {"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD}
+CREDENTIALS = {"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD, "turnstileToken": "t"}
 INVALID_CREDENTIALS = {
     "error": {"code": "invalid_credentials", "message": "Invalid email or password."}
 }
@@ -87,7 +92,12 @@ async def test_login_email_is_case_insensitive(client: httpx.AsyncClient) -> Non
 async def test_wrong_password_and_unknown_email_look_identical(client: httpx.AsyncClient) -> None:
     wrong_password = await client.post(LOGIN, json={**CREDENTIALS, "password": "nope"})
     unknown_email = await client.post(
-        LOGIN, json={"email": "nobody@example.com", "password": TEST_ADMIN_PASSWORD}
+        LOGIN,
+        json={
+            "email": "nobody@example.com",
+            "password": TEST_ADMIN_PASSWORD,
+            "turnstileToken": "t",
+        },
     )
     for response in (wrong_password, unknown_email):
         assert response.status_code == 401
@@ -98,8 +108,10 @@ async def test_wrong_password_and_unknown_email_look_identical(client: httpx.Asy
 async def test_login_validation(client: httpx.AsyncClient) -> None:
     response = await client.post(LOGIN, json={"email": TEST_ADMIN_EMAIL})
     assert response.status_code == 422
-    assert list(response.json()["error"]["fields"]) == ["password"]
-    response = await client.post(LOGIN, json={"email": TEST_ADMIN_EMAIL, "password": ""})
+    assert sorted(response.json()["error"]["fields"]) == ["password", "turnstileToken"]
+    response = await client.post(
+        LOGIN, json={"email": TEST_ADMIN_EMAIL, "password": "", "turnstileToken": "t"}
+    )
     assert response.status_code == 422
 
 
@@ -128,9 +140,13 @@ async def test_email_failures_are_cleared_by_a_successful_login(client: httpx.As
 async def test_ip_attempt_limit(app: FastAPI, client: httpx.AsyncClient) -> None:
     # A different unknown email each time keeps the per-email limiter out of the picture.
     for index in range(10):
-        unknown = {"email": f"ghost{index}@example.com", "password": "whatever"}
+        unknown = {
+            "email": f"ghost{index}@example.com",
+            "password": "whatever",
+            "turnstileToken": "t",
+        }
         assert (await client.post(LOGIN, json=unknown)).status_code == 401
-    unknown = {"email": "ghost99@example.com", "password": "whatever"}
+    unknown = {"email": "ghost99@example.com", "password": "whatever", "turnstileToken": "t"}
     assert (await client.post(LOGIN, json=unknown)).status_code == 429
     assert (await client.post(LOGIN, json=CREDENTIALS)).status_code == 429
     async with make_client(app, client_ip="10.0.0.2") as other:
@@ -254,7 +270,11 @@ async def test_password_change_revokes_existing_sessions(
 
     assert (await client.get(ME)).status_code == 401
     assert (await client.post(LOGIN, json=CREDENTIALS)).status_code == 401
-    new_login = {"email": TEST_ADMIN_EMAIL, "password": "a brand new password"}
+    new_login = {
+        "email": TEST_ADMIN_EMAIL,
+        "password": "a brand new password",
+        "turnstileToken": "t",
+    }
     assert (await client.post(LOGIN, json=new_login)).status_code == 200
     assert (await client.get(ME)).status_code == 200
 
@@ -274,7 +294,11 @@ async def test_changing_admin_email_removes_the_previous_admin(
     assert emails == ["new-admin@example.com"]
     assert (await client.post(LOGIN, json=CREDENTIALS)).status_code == 401
     assert (await client.get(ME, headers=cookie_header(old_token))).status_code == 401
-    new_login = {"email": "new-admin@example.com", "password": TEST_ADMIN_PASSWORD}
+    new_login = {
+        "email": "new-admin@example.com",
+        "password": TEST_ADMIN_PASSWORD,
+        "turnstileToken": "t",
+    }
     assert (await client.post(LOGIN, json=new_login)).status_code == 200
 
 
@@ -302,7 +326,116 @@ async def test_argon2_runs_off_the_event_loop(
 
     monkeypatch.setattr(auth_service, "verify_password", recording_verify)
     assert (await client.post(LOGIN, json=CREDENTIALS)).status_code == 200
-    unknown = {"email": "nobody@example.com", "password": "whatever"}
+    unknown = {"email": "nobody@example.com", "password": "whatever", "turnstileToken": "t"}
     assert (await client.post(LOGIN, json=unknown)).status_code == 401
     assert len(threads) == 2
     assert loop_thread not in threads
+
+
+# --- abuse resistance: lockout, parallel bursts, Turnstile, password-check capacity --------
+
+
+def wrong_password() -> dict[str, str]:
+    return {**CREDENTIALS, "password": "nope"}
+
+
+async def test_failures_from_one_address_do_not_lock_the_admin_out_elsewhere(
+    app: FastAPI, client: httpx.AsyncClient
+) -> None:
+    """The admin email is public: someone else's failures must not keep the owner out."""
+    for _ in range(5):
+        assert (await client.post(LOGIN, json=wrong_password())).status_code == 401
+    assert (await client.post(LOGIN, json=CREDENTIALS)).status_code == 429
+    async with make_client(app, client_ip="10.0.0.2") as owner:
+        assert (await owner.post(LOGIN, json=CREDENTIALS)).status_code == 200
+
+
+async def test_the_email_has_a_global_limit_across_addresses(app: FastAPI) -> None:
+    for index in range(6):
+        async with make_client(app, client_ip=f"10.0.1.{index}") as attacker:
+            for _ in range(5):
+                assert (await attacker.post(LOGIN, json=wrong_password())).status_code == 401
+    async with make_client(app, client_ip="10.0.2.1") as owner:
+        response = await owner.post(LOGIN, json=CREDENTIALS)
+    assert response.status_code == 429
+    assert int(response.headers["retry-after"]) >= 1
+
+
+async def test_a_parallel_burst_is_counted_on_arrival(client: httpx.AsyncClient) -> None:
+    """Counting only after the (slow) password check would let a burst through: not any more."""
+    responses = await asyncio.gather(*(client.post(LOGIN, json=wrong_password()) for _ in range(9)))
+    statuses = sorted(response.status_code for response in responses)
+    assert statuses == [401] * 5 + [429] * 4
+
+
+async def test_login_needs_a_passing_turnstile_check(
+    client: httpx.AsyncClient, turnstile: FakeTurnstile, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checked: list[str] = []
+
+    def recording_verify(password_hash: str, password: str) -> bool:
+        checked.append(password)
+        return verify_password(password_hash, password)
+
+    monkeypatch.setattr(auth_service, "verify_password", recording_verify)
+    turnstile.outcome = False
+    response = await client.post(LOGIN, json=CREDENTIALS)
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "turnstile_failed"
+    assert "set-cookie" not in response.headers
+    assert checked == []  # no password check without a passing challenge
+    assert turnstile.calls == [("t", "127.0.0.1")]
+
+    turnstile.outcome = TurnstileUnavailableError("down")
+    response = await client.post(LOGIN, json=CREDENTIALS)
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "service_unavailable"
+    assert checked == []
+
+
+async def test_password_checks_run_a_few_at_a_time(
+    app: FastAPI, client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each Argon2 check takes 19 MiB: a flood queues, and waits too long get 429."""
+    monkeypatch.setattr(auth_routes, "PASSWORD_CHECK_WAIT_SECONDS", 0.05)
+    checks = services_of(app).password_checks
+    for _ in range(PASSWORD_CHECK_CONCURRENCY):
+        await checks.acquire()
+    try:
+        busy = await client.post(LOGIN, json=CREDENTIALS)
+    finally:
+        for _ in range(PASSWORD_CHECK_CONCURRENCY):
+            checks.release()
+    assert busy.status_code == 429
+    assert busy.json()["error"]["code"] == "rate_limited"
+    assert (await client.post(LOGIN, json=CREDENTIALS)).status_code == 200
+
+
+async def test_a_hash_with_older_parameters_is_rehashed_at_startup(
+    session: AsyncSession, test_settings: Settings
+) -> None:
+    admin = (await session.scalars(select(AdminUser))).one()
+    admin.password_hash = PasswordHasher().hash(TEST_ADMIN_PASSWORD)  # the library's 64 MiB default
+    version = admin.session_version
+    await session.commit()
+
+    await ensure_admin_user(session, test_settings)
+    session.expire_all()
+    rehashed = (await session.scalars(select(AdminUser))).one()
+    assert "m=19456,t=2,p=1" in rehashed.password_hash
+    assert verify_password(rehashed.password_hash, TEST_ADMIN_PASSWORD)
+    assert rehashed.session_version == version  # same password: sessions stay valid
+
+
+async def test_attempts_without_a_solved_challenge_never_count_toward_a_lockout(
+    app: FastAPI, turnstile: FakeTurnstile
+) -> None:
+    """The admin email is public: bogus Turnstile tokens must not fill its failure counters."""
+    turnstile.outcome = False
+    for index in range(6):
+        async with make_client(app, client_ip=f"10.0.3.{index}") as attacker:
+            for _ in range(5):
+                assert (await attacker.post(LOGIN, json=wrong_password())).status_code == 400
+    turnstile.outcome = True
+    async with make_client(app, client_ip="10.0.4.1") as owner:
+        assert (await owner.post(LOGIN, json=CREDENTIALS)).status_code == 200

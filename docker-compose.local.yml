@@ -16,6 +16,8 @@
 services:
   migrate:
     image: anthonyzng-web-backend:local
+    environment:
+      APP_ENV: development
 
   db:
     ports:
@@ -24,6 +26,7 @@ services:
   backend:
     image: anthonyzng-web-backend:local
     environment:
+      APP_ENV: development
       CORS_ORIGINS: http://localhost:8080
 
   frontend:
@@ -40,6 +43,7 @@ services:
       SITE_URL: http://localhost:8080
       WWW_ADDRESS: http://www.localhost:8080
       API_ADDRESS: http://api.localhost:8080
+      API_URL: http://api.localhost:8080
     ports: !override
       - "127.0.0.1:8080:8080"
     volumes:

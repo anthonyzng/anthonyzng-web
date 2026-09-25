@@ -1,22 +1,55 @@
 # Reverse proxy for the whole stack: TLS (automatic Let's Encrypt certificates for real domains),
-# routing by host, and the frontend's security headers.
+# routing by host, the client IP behind Cloudflare, and the security headers.
 #
 # Addresses come from the environment (docker-compose.yml):
 #   SITE_ADDRESS  production "owwsolution.com"          locally "http://localhost:8080"
 #   SITE_URL      production "https://owwsolution.com"  locally "http://localhost:8080"
 #   WWW_ADDRESS   production "www.owwsolution.com"      locally "http://www.localhost:8080"
 #   API_ADDRESS   production "api.owwsolution.com"      locally "http://api.localhost:8080"
+#   API_URL       production "https://api.owwsolution.com" (the API origin the CSP admits)
 # No access log: it would record raw client IPs, which the stack otherwise never writes.
+{
+	servers {
+		# Cloudflare's edge (https://www.cloudflare.com/ips/, 2026-09): only a request that
+		# really arrives from these ranges may name the visitor in CF-Connecting-IP; for anything
+		# else {client_ip} is the peer address, so the header cannot be forged by going around
+		# Cloudflare. Refresh the list when Cloudflare announces new ranges.
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers CF-Connecting-IP
+		# A slow client cannot hold a connection open for ever (slowloris); a body may take up
+		# to two minutes (an 11 MiB CV on a slow link, as the admin panel's upload deadline).
+		timeouts {
+			read_header 10s
+			read_body 2m
+			write 2m
+			idle 2m
+		}
+	}
+}
+
+# The backend reads the rightmost X-Forwarded-For entry (TRUSTED_PROXY=true): send exactly one,
+# the visitor's address as resolved above (Caddy's default would append Cloudflare's edge).
+(to_backend) {
+	reverse_proxy backend:8000 {
+		header_up X-Forwarded-For {client_ip}
+	}
+}
 
 (frontend_headers) {
 	header {
 		# HTTPS only for a year once seen over HTTPS (browsers ignore it on plain HTTP).
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
-		# The admin panel lives on this host: it must never be framed.
+		# The admin panel lives on this host: it must never be framed (also frame-ancestors).
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# Scripts only from this origin, Cloudflare Turnstile and Cloudflare Web Analytics (no
+		# inline script: the theme runs from /theme-init.js); styles from this origin (React and
+		# GSAP set styles through the CSSOM, which style-src does not govern); images and API
+		# calls from this origin and the API (cover images are GET /files/{id} there); fonts may also be
+		# data: URLs (Vite inlines font subsets under 4 KB into the CSS).
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: {$API_URL}; font-src 'self' data:; connect-src 'self' {$API_URL} https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 	}
 }
@@ -37,6 +70,8 @@
 {$API_ADDRESS} {
 	header {
 		Strict-Transport-Security "max-age=31536000"
+		# JSON and files only: nothing here may run a script or be framed.
+		Content-Security-Policy "default-src 'none'; img-src 'self'; frame-ancestors 'none'"
 		-Server
 	}
 	# In front of the app's own caps: the CV upload route's 11 MiB is the largest (MiB: Caddy's
@@ -44,7 +79,6 @@
 	request_body {
 		max_size 11MiB
 	}
-	# Sets X-Forwarded-For to the client address (the backend reads its rightmost entry with
-	# TRUSTED_PROXY=true). No compression: it would rewrite the API's ETags.
-	reverse_proxy backend:8000
+	# No compression: it would rewrite the API's ETags.
+	import to_backend
 }

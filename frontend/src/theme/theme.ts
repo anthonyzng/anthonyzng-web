@@ -1,6 +1,6 @@
 export type Theme = 'light' | 'dark'
 
-/** localStorage key; keep in sync with the inline script in index.html. */
+/** localStorage key; keep in sync with public/theme-init.js (run before first paint by index.html). */
 export const THEME_STORAGE_KEY = 'theme'
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'

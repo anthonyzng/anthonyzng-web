@@ -34,6 +34,8 @@ MAX_IMAGE_HEIGHT = 16383
 """WebP's own limit per side: a taller image (a full-page screenshot) is scaled down to fit."""
 WEBP_QUALITY = 82
 ACCEPTED_IMAGE_FORMATS = frozenset({"JPEG", "MPO", "PNG", "WEBP"})
+OPENED_FORMATS = ("JPEG", "PNG", "WEBP")
+"""The readers Pillow may use on an upload (its JPEG reader also returns MPO files)."""
 """MPO is how Pillow names a JPEG with a multi-picture (MPF) segment, common in phone photos."""
 DRAFT_FORMATS = frozenset({"JPEG", "MPO"})
 ROTATING_ORIENTATIONS = frozenset({5, 6, 7, 8})
@@ -84,10 +86,18 @@ def _unreadable() -> FileRejectedError:
     return FileRejectedError("image_unreadable", "The file is not a readable image.")
 
 
+def _has_accepted_signature(raw: bytes) -> bool:
+    """JPEG (also MPO), PNG or WebP by the file's first bytes."""
+    return raw.startswith((b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")) or (
+        raw[:4] == b"RIFF" and raw[8:12] == b"WEBP"
+    )
+
+
 def _open_image(raw: bytes) -> Image.Image:
-    """Read the header only (no pixels are decoded yet)."""
+    """Read the header only (no pixels are decoded yet), with the accepted formats' readers only:
+    Pillow never runs the parser of another format on an upload."""
     try:
-        return Image.open(io.BytesIO(raw))
+        return Image.open(io.BytesIO(raw), formats=OPENED_FORMATS)
     except UNREADABLE_IMAGE_ERRORS as exc:
         raise _unreadable() from exc
 
@@ -121,8 +131,10 @@ def encode_cover_image(raw: bytes) -> EncodedImage:
         raise FileRejectedError("file_empty", "The file is empty.")
     if len(raw) > MAX_IMAGE_UPLOAD_BYTES:
         raise FileRejectedError("file_too_large", "The image is larger than 8 MB.")
+    if not _has_accepted_signature(raw):
+        raise FileRejectedError("file_type", "Upload a JPEG, PNG or WebP image.")
     image = _open_image(raw)
-    if image.format not in ACCEPTED_IMAGE_FORMATS:
+    if image.format not in ACCEPTED_IMAGE_FORMATS:  # pragma: no cover - the readers above only
         raise FileRejectedError("file_type", "Upload a JPEG, PNG or WebP image.")
     if image.width * image.height > MAX_IMAGE_PIXELS:
         raise FileRejectedError(

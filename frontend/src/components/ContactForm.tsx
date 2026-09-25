@@ -1,12 +1,10 @@
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile'
 import { useEffect, useId, useRef, useState, type ChangeEvent, type FocusEvent, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiHttpError, isAbortError } from '../api/client'
 import { submitContact } from '../api/contact'
-import { TURNSTILE_SITE_KEY } from '../env'
-import { resolveLanguage } from '../i18n/languages'
-import { useDocumentTheme } from '../theme/useDocumentTheme'
 import { FormField } from './FormField'
+import { TurnstileWidget } from './TurnstileWidget'
+import { useTurnstile } from './useTurnstile'
 
 type FieldName = 'name' | 'email' | 'message'
 const FIELDS: readonly FieldName[] = ['name', 'email', 'message']
@@ -78,19 +76,14 @@ const AGAIN =
  * fields. On success the form gives way to a confirmation that takes focus.
  */
 export function ContactForm() {
-  const { t, i18n } = useTranslation()
-  const theme = useDocumentTheme()
-  const language = resolveLanguage(i18n.language) === 'zh-Hant' ? 'zh-TW' : 'en'
-  // The widget re-renders for a new theme or language and issues a new token; an older one is never sent.
-  const widgetKey = `${theme}:${language}`
+  const { t } = useTranslation()
+  const turnstile = useTurnstile()
+  const { token } = turnstile
   const id = useId()
   const [values, setValues] = useState<Values>(EMPTY)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [attempted, setAttempted] = useState(false)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
-  const [issued, setIssued] = useState<{ token: string; widget: string } | null>(null)
-  const token = issued?.widget === widgetKey ? issued.token : null
-  const widget = useRef<TurnstileInstance | undefined>(undefined)
   const websiteInput = useRef<HTMLInputElement>(null)
   const controls = useRef<Partial<Record<FieldName, HTMLInputElement | HTMLTextAreaElement | null>>>({})
   const successHeading = useRef<HTMLHeadingElement>(null)
@@ -133,11 +126,6 @@ export function ContactForm() {
   const focusFirstInvalid = (invalid: FieldErrors) => {
     const first = FIELDS.find((name) => invalid[name])
     if (first) controls.current[first]?.focus()
-  }
-
-  const resetWidget = () => {
-    widget.current?.reset()
-    setIssued(null)
   }
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -196,7 +184,7 @@ export function ContactForm() {
       }
       // The verification was rejected, the backend failed or never answered: the token is spent either way.
       setStatus({ kind: 'error' })
-      resetWidget()
+      turnstile.reset()
     } finally {
       if (request.current === controller) request.current = null
     }
@@ -205,7 +193,7 @@ export function ContactForm() {
   const startOver = () => {
     setErrors({})
     setAttempted(false)
-    setIssued(null)
+    turnstile.clear()
     focusNameOnReset.current = true
     setStatus({ kind: 'idle' })
   }
@@ -308,20 +296,12 @@ export function ContactForm() {
           </div>
 
           <div className="mt-8">
-            <Turnstile
-              ref={widget}
-              siteKey={TURNSTILE_SITE_KEY}
-              options={{ theme, language, size: 'flexible', appearance: 'always' }}
-              onSuccess={(value) => {
-                setIssued({ token: value, widget: widgetKey })
-                setError('turnstile', null) // a fresh token answers a "complete the verification" left by an early submit
-              }}
-              onExpire={() => setIssued(null)}
-              onError={() => setIssued(null)}
+            <TurnstileWidget
+              binding={turnstile.widget}
+              // A fresh token answers a "complete the verification" left by an early submit.
+              onToken={() => setError('turnstile', null)}
+              error={errors.turnstile ? t(`contactForm.errors.${errors.turnstile}`) : null}
             />
-            {errors.turnstile ? (
-              <p className="mt-2 text-sm text-error">{t(`contactForm.errors.${errors.turnstile}`)}</p>
-            ) : null}
           </div>
 
           <div className="mt-8">

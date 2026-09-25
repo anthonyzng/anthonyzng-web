@@ -12,10 +12,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
-from app.core.security import SessionClaims, hash_password, verify_password
+from app.core.security import (
+    SessionClaims,
+    hash_password,
+    password_needs_rehash,
+    verify_password,
+)
 from app.models.admin_user import AdminUser
 
 logger = logging.getLogger(__name__)
+
+PASSWORD_CHECK_CONCURRENCY = 2
+"""Argon2 checks allowed at once: a flood of logins queues instead of exhausting memory."""
+PASSWORD_CHECK_WAIT_SECONDS = 5
+"""How long a login waits for a free check before it is answered 429 (try again shortly)."""
 
 
 def normalize_email(email: str) -> str:
@@ -58,6 +68,10 @@ async def ensure_admin_user(session: AsyncSession, settings: Settings) -> AdminU
         user.password_hash = await run_in_threadpool(hash_password, password)
         user.session_version += 1
         logger.info("Admin password updated from configuration; existing sessions revoked")
+    elif password_needs_rehash(user.password_hash):
+        # Same password, older hashing parameters: re-hash; sessions stay valid.
+        user.password_hash = await run_in_threadpool(hash_password, password)
+        logger.info("Admin password re-hashed with the current parameters")
 
     stale = await session.scalars(
         delete(AdminUser).where(AdminUser.email != email).returning(AdminUser.id)

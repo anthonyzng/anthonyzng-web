@@ -84,7 +84,7 @@ async def test_foreign_origin_is_refused_on_writes(admin_client: httpx.AsyncClie
 async def test_foreign_origin_cannot_even_try_to_log_in(client: httpx.AsyncClient) -> None:
     response = await client.post(
         "/api/v1/auth/login",
-        json={"email": "admin@example.com", "password": "x"},
+        json={"email": "admin@example.com", "password": "x", "turnstileToken": "t"},
         headers={"Origin": "http://evil.test"},
     )
     assert response.status_code == 403
@@ -106,7 +106,8 @@ async def test_admin_and_auth_errors_are_never_cached_either(client: httpx.Async
     assert unauthorized.status_code == 401
     assert unauthorized.headers["cache-control"] == "no-store"
     refused = await client.post(
-        "/api/v1/auth/login", json={"email": "someone@example.com", "password": "wrong"}
+        "/api/v1/auth/login",
+        json={"email": "someone@example.com", "password": "wrong", "turnstileToken": "t"},
     )
     assert refused.status_code == 401
     assert refused.headers["cache-control"] == "no-store"

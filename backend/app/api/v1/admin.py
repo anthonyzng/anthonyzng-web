@@ -11,6 +11,7 @@ An update may carry `If-Match: "<updatedAt>"`: a row changed since answers 412
 `image_too_many_pixels`, `image_placeholder`) and the developer-facing text in `fields.file`.
 """
 
+from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
@@ -19,7 +20,7 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 
-from app.api.deps import SessionDep, get_current_admin, require_trusted_origin
+from app.api.deps import ServicesDep, SessionDep, get_current_admin, require_trusted_origin
 from app.core.errors import ApiError
 from app.schemas.admin import (
     CvResponse,
@@ -49,10 +50,25 @@ from app.services.content_admin import (
 from app.services.files import FileRejectedError, delete_cv, get_cv_ref, replace_cv
 from app.services.messages import MessageNotFoundError, delete_message, list_messages, set_read
 
+
+async def clear_public_content_on_writes(
+    request: Request, services: ServicesDep
+) -> AsyncIterator[None]:
+    """Every admin write drops the cached public `/content` (after the handler, once its changes
+    are committed; a failed write clears it too, which is only a wasted rebuild)."""
+    yield
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        services.content_cache.clear()
+
+
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
-    dependencies=[Depends(require_trusted_origin), Depends(get_current_admin)],
+    dependencies=[
+        Depends(require_trusted_origin),
+        Depends(get_current_admin),
+        Depends(clear_public_content_on_writes),
+    ],
 )
 
 JsonBody = Annotated[Any, Body()]

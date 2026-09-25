@@ -132,11 +132,13 @@ def test_an_rgb_colour_profile_is_kept() -> None:
     ("raw", "code"),
     [
         (b"", "file_empty"),
-        (b"definitely not an image", "image_unreadable"),
+        (b"definitely not an image", "file_type"),
         (encoded(Image.new("RGB", (20, 20)), "GIF"), "file_type"),
+        # The JPEG signature, then nothing Pillow can read.
+        (b"\xff\xd8\xff" + b"garbage" * 10, "image_unreadable"),
         (encoded(Image.new("1", (7000, 7000))), "image_too_many_pixels"),
     ],
-    ids=["empty", "garbage", "gif", "49-megapixels"],
+    ids=["empty", "garbage", "gif", "broken-jpeg", "49-megapixels"],
 )
 def test_refusals_name_their_reason(raw: bytes, code: str) -> None:
     with pytest.raises(FileRejectedError) as caught:

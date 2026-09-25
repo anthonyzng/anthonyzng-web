@@ -45,10 +45,12 @@ class ContactStorageError(Exception):
 def build_contact_email(
     settings: Settings, submission: ContactRequest, ip_hash: str | None, received_at: datetime
 ) -> OutgoingEmail:
+    # One line, as in the subject: a name with line breaks cannot add fake header lines
+    # ("Email: …", "Source: …") to the body the owner reads.
     name = " ".join(submission.name.split())
     text = "\n".join(
         [
-            f"Name: {submission.name}",
+            f"Name: {name}",
             f"Email: {submission.email}",
             # The same sender always shows the same short hash, so repeat senders stand out.
             f"Source: {fingerprint(ip_hash)} (hashed IP)",

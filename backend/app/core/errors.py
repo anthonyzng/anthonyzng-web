@@ -128,7 +128,8 @@ async def _handle_validation_error(_request: Request, exc: Exception) -> JSONRes
 
 async def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
     # The traceback is logged by the server (Starlette re-raises after this handler runs).
-    logger.error("Unhandled %s on %s %s", type(exc).__name__, request.method, request.url.path)
+    # %r: an encoded newline in the path (%0a) cannot start a forged log line.
+    logger.error("Unhandled %s on %s %r", type(exc).__name__, request.method, request.url.path)
     code, message = _STATUS_CODES[500]
     return error_response(500, code, message)
 
