@@ -1,0 +1,11 @@
+# Keeps the SHA-pinned GitHub Actions (and the version comments next to them) up to date, one
+# weekly pull request. npm and uv dependencies are not managed here.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

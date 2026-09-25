@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { ThemeToggle } from '../../components/ThemeToggle'
+import { TurnstileWidget } from '../../components/TurnstileWidget'
+import { useTurnstile } from '../../components/useTurnstile'
 import { ApiHttpError, isAbortError } from '../../api/client'
 import { login } from '../api'
 import { PageHeading } from '../components/PageHeading'
@@ -15,7 +17,8 @@ import { CARD, PRIMARY_BUTTON } from '../styles'
 
 type Field = 'email' | 'password'
 type Values = Record<Field, string>
-type Errors = Partial<Record<Field, string>>
+/** Keys under `login.errors`, per field; `turnstile` is the verification widget. */
+type Errors = Partial<Record<Field | 'turnstile', string>>
 
 type Status =
   | { kind: 'idle' }
@@ -23,6 +26,8 @@ type Status =
   | { kind: 'submitting' }
   | { kind: 'wrongCredentials' }
   | { kind: 'rateLimited'; retryAfter: number | null }
+  | { kind: 'verificationFailed' }
+  | { kind: 'unavailable' }
   | { kind: 'error' }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -39,9 +44,12 @@ function validate(field: Field, value: string): string | null {
 }
 
 /**
- * Sign-in for the single admin account. Inline validation; a 401 is one generic message for both
+ * Sign-in for the single admin account, behind a Cloudflare Turnstile check. Inline validation; the
+ * form is not sent until the widget has issued a token; a 401 is one generic message for both
  * fields (the backend answers unknown email and wrong password identically); a 429 says when to
- * try again. On success the user returns to the admin page that sent them here.
+ * try again; a rejected check (400) or an unreachable verification service (503) asks for another
+ * try. A token is single-use, so every failed attempt resets the widget. On success the user returns
+ * to the admin page that sent them here.
  */
 export function LoginPage() {
   const { t } = useTranslation(ADMIN_NS)
@@ -57,6 +65,7 @@ export function LoginPage() {
   const [attempted, setAttempted] = useState(false)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
   const [focusRequest, setFocusRequest] = useState(0)
+  const turnstile = useTurnstile()
   usePageTitle(t('login.title'))
 
   useEffect(() => () => request.current?.abort(), [])
@@ -85,8 +94,10 @@ export function LoginPage() {
       const key = validate(field, values[field])
       if (key) found[field] = key
     }
+    const token = turnstile.token
+    if (token === null) found.turnstile = 'turnstileRequired'
     setErrors(found)
-    if (Object.keys(found).length > 0) {
+    if (token === null || Object.keys(found).length > 0) {
       setStatus({ kind: 'invalid' })
       setFocusRequest((current) => current + 1)
       return
@@ -96,23 +107,39 @@ export function LoginPage() {
     const controller = new AbortController()
     request.current = controller
     try {
-      const admin = await login(values.email.trim(), values.password, controller.signal)
+      const admin = await login(
+        { email: values.email.trim(), password: values.password, turnstileToken: token },
+        controller.signal,
+      )
       signIn(admin.email)
       void navigate(from, { replace: true })
     } catch (error) {
       if (isAbortError(error)) return
+      if (error instanceof ApiHttpError && error.status === 422 && error.fields) {
+        const fromServer: Errors = {}
+        if (Object.hasOwn(error.fields, 'email')) fromServer.email = 'emailInvalid'
+        if (Object.hasOwn(error.fields, 'password')) fromServer.password = 'passwordRequired'
+        const tokenRefused = Object.hasOwn(error.fields, 'turnstileToken')
+        if (tokenRefused) fromServer.turnstile = 'turnstileRequired'
+        setErrors(fromServer)
+        setStatus(Object.keys(fromServer).length > 0 ? { kind: 'invalid' } : { kind: 'error' })
+        setFocusRequest((current) => current + 1)
+        // The body was refused before the token was checked, so the widget keeps it, unless the token
+        // itself was refused. Reset last: the new token then withdraws the message set just above.
+        if (tokenRefused) turnstile.reset()
+        return
+      }
+      // Any other failure may have spent the token (it is single-use): the next attempt needs a new one.
+      turnstile.reset()
       if (error instanceof ApiHttpError && error.status === 401) {
         setValues((current) => ({ ...current, password: '' }))
         setStatus({ kind: 'wrongCredentials' })
       } else if (error instanceof ApiHttpError && error.status === 429) {
         setStatus({ kind: 'rateLimited', retryAfter: error.retryAfter })
-      } else if (error instanceof ApiHttpError && error.status === 422 && error.fields) {
-        const fromServer: Errors = {}
-        if (Object.hasOwn(error.fields, 'email')) fromServer.email = 'emailInvalid'
-        if (Object.hasOwn(error.fields, 'password')) fromServer.password = 'passwordRequired'
-        setErrors(fromServer)
-        setStatus(Object.keys(fromServer).length > 0 ? { kind: 'invalid' } : { kind: 'error' })
-        setFocusRequest((current) => current + 1)
+      } else if (error instanceof ApiHttpError && error.status === 400 && error.code === 'turnstile_failed') {
+        setStatus({ kind: 'verificationFailed' })
+      } else if (error instanceof ApiHttpError && error.status === 503) {
+        setStatus({ kind: 'unavailable' })
       } else {
         setStatus({ kind: 'error' })
       }
@@ -122,8 +149,14 @@ export function LoginPage() {
   }
 
   const submitting = status.kind === 'submitting'
-  const failed = status.kind !== 'idle' && status.kind !== 'submitting'
+  // "Check the highlighted fields" lives exactly as long as something is highlighted.
+  const flagged = (Object.keys(errors) as (keyof Errors)[]).filter((key) => errors[key])
+  const shown: Status = status.kind === 'invalid' && flagged.length === 0 ? { kind: 'idle' } : status
+  const failed = shown.kind !== 'idle' && shown.kind !== 'submitting'
+  // Only the check is missing: the status line says so instead of pointing at fields that are fine.
+  const onlyCheckMissing = flagged.length === 1 && flagged[0] === 'turnstile'
   const statusId = `${id}-status`
+  const turnstileErrorId = `${id}-turnstile-error`
   const noticeId = `${id}-notice`
   // Why the user is here; read with the heading, which takes focus after the redirect.
   const notice = reason === 'expired' ? t('login.expired') : reason === 'signedOut' ? t('login.signedOut') : null
@@ -186,7 +219,20 @@ export function LoginPage() {
               autoComplete="current-password"
               required
             />
-            <button type="submit" aria-disabled={submitting || undefined} className={`${PRIMARY_BUTTON} w-full`}>
+            <TurnstileWidget
+              binding={turnstile.widget}
+              // A fresh token answers a "complete the verification check" left by an early submit.
+              onToken={() => setErrors((current) => ({ ...current, turnstile: undefined }))}
+              error={errors.turnstile ? t(`login.errors.${errors.turnstile}`) : null}
+              errorId={turnstileErrorId}
+            />
+            {/* The widget is an iframe with no field to mark, so the button names its message instead. */}
+            <button
+              type="submit"
+              aria-disabled={submitting || undefined}
+              aria-describedby={errors.turnstile ? turnstileErrorId : undefined}
+              className={`${PRIMARY_BUTTON} w-full`}
+            >
               {submitting ? t('login.submitting') : t('login.submit')}
             </button>
           </form>
@@ -197,7 +243,7 @@ export function LoginPage() {
             aria-live="polite"
             className={`mt-5 text-sm text-pretty empty:mt-0 ${failed ? 'text-error' : 'text-muted'}`}
           >
-            {statusText(status, t)}
+            {statusText(shown, onlyCheckMissing, t)}
           </p>
         </div>
       </main>
@@ -205,20 +251,30 @@ export function LoginPage() {
   )
 }
 
-function statusText(status: Status, t: (key: string, options?: Record<string, unknown>) => string): string {
+function statusText(
+  status: Status,
+  onlyCheckMissing: boolean,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   switch (status.kind) {
     case 'idle':
       return ''
     case 'invalid':
-      return t('login.errors.fixFields')
+      return onlyCheckMissing ? t('login.errors.completeCheck') : t('login.errors.fixFields')
     case 'submitting':
       return t('login.submitting')
     case 'wrongCredentials':
       return t('login.errors.wrongCredentials')
     case 'rateLimited':
-      return status.retryAfter === null
-        ? t('login.errors.rateLimited')
-        : t('login.errors.rateLimitedIn', { count: Math.max(1, Math.ceil(status.retryAfter / 60)) })
+      // Too many password checks at once asks for a wait of a few seconds; "1 minute" would overstate it.
+      if (status.retryAfter === null) return t('login.errors.rateLimited')
+      return status.retryAfter < 60
+        ? t('login.errors.rateLimitedInSeconds', { count: Math.max(1, Math.ceil(status.retryAfter)) })
+        : t('login.errors.rateLimitedIn', { count: Math.ceil(status.retryAfter / 60) })
+    case 'verificationFailed':
+      return t('login.errors.turnstileFailed')
+    case 'unavailable':
+      return t('login.errors.unavailable')
     case 'error':
       return t('login.errors.generic')
   }

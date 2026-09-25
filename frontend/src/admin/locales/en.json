@@ -74,6 +74,12 @@
       "rateLimited": "Too many attempts. Please try again later.",
       "rateLimitedIn_one": "Too many attempts. Please try again in {{count}} minute.",
       "rateLimitedIn_other": "Too many attempts. Please try again in {{count}} minutes.",
+      "rateLimitedInSeconds_one": "Too many attempts. Please try again in {{count}} second.",
+      "rateLimitedInSeconds_other": "Too many attempts. Please try again in {{count}} seconds.",
+      "turnstileRequired": "Please complete the verification check.",
+      "completeCheck": "Complete the verification check above, then sign in.",
+      "turnstileFailed": "The verification check failed. Please complete it again, then sign in.",
+      "unavailable": "The verification service is not responding. Please try again shortly.",
       "generic": "You could not be signed in because the server did not answer. Check your connection and try again."
     }
   },

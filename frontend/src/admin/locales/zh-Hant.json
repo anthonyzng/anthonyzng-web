@@ -74,6 +74,12 @@
       "rateLimited": "嘗試次數過多，請稍後再試。",
       "rateLimitedIn_one": "嘗試次數過多，請於 {{count}} 分鐘後再試。",
       "rateLimitedIn_other": "嘗試次數過多，請於 {{count}} 分鐘後再試。",
+      "rateLimitedInSeconds_one": "嘗試次數過多，請於 {{count}} 秒後再試。",
+      "rateLimitedInSeconds_other": "嘗試次數過多，請於 {{count}} 秒後再試。",
+      "turnstileRequired": "請先完成驗證。",
+      "completeCheck": "請先完成上方的驗證，然後登入。",
+      "turnstileFailed": "驗證未能通過。請重新完成驗證，然後登入。",
+      "unavailable": "驗證服務暫時沒有回應，請稍後再試。",
       "generic": "伺服器沒有回應，未能登入。請檢查網絡連線，然後再試。"
     }
   },

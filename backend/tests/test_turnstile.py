@@ -4,7 +4,9 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
+from app.main import site_hostnames
 from app.services.turnstile import CloudflareTurnstileVerifier, TurnstileUnavailableError
+from tests.conftest import build_settings
 
 URL = "https://turnstile.test/siteverify"
 
@@ -76,3 +78,28 @@ async def test_network_failure_raises() -> None:
     async with client:
         with pytest.raises(TurnstileUnavailableError, match="request failed"):
             await verifier.verify("tok", "1.1.1.1")
+
+
+@pytest.mark.parametrize(
+    ("hostname", "accepted"),
+    [("owwsolution.com", True), ("evil.example", False), (None, False)],
+)
+async def test_production_accepts_only_tokens_solved_on_the_site(
+    hostname: str | None, accepted: bool
+) -> None:
+    body: dict[str, object] = {"success": True}
+    if hostname is not None:
+        body["hostname"] = hostname
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, json=body))
+    )
+    verifier = CloudflareTurnstileVerifier(
+        "secret-key", client, url=URL, hostnames=frozenset({"owwsolution.com"})
+    )
+    async with client:
+        assert await verifier.verify("token", None) is accepted
+
+
+def test_site_hostnames_come_from_the_cors_origins() -> None:
+    settings = build_settings(CORS_ORIGINS=["https://owwsolution.com", "http://localhost:5173"])
+    assert site_hostnames(settings) == frozenset({"owwsolution.com", "localhost"})

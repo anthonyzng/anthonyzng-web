@@ -59,7 +59,7 @@ describe('ContactForm', () => {
     await act(async () => {
       await i18n.changeLanguage('zh-Hant')
     })
-    expect(screen.getByTestId('turnstile')).toHaveAttribute('data-language', 'zh-TW')
+    expect(screen.getByTestId('turnstile')).toHaveAttribute('data-language', 'zh-tw')
     expect(screen.getByRole('form', { name: '發送訊息' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '傳送訊息' })).toBeInTheDocument()
   })

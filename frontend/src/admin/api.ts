@@ -46,8 +46,15 @@ const segment = (value: string | number): string => encodeURIComponent(String(va
 
 // Auth
 
-export const login = (email: string, password: string, signal?: AbortSignal): Promise<{ email: string }> =>
-  call('/auth/login', { method: 'POST', body: { email, password }, schema: adminInfoSchema, signal })
+export interface LoginRequest {
+  email: string
+  password: string
+  /** The Turnstile widget's token; single-use, so every attempt needs a fresh one. */
+  turnstileToken: string
+}
+
+export const login = ({ email, password, turnstileToken }: LoginRequest, signal?: AbortSignal): Promise<{ email: string }> =>
+  call('/auth/login', { method: 'POST', body: { email, password, turnstileToken }, schema: adminInfoSchema, signal })
 
 export const fetchMe = (signal?: AbortSignal): Promise<{ email: string }> => call('/auth/me', { schema: adminInfoSchema, signal })
 

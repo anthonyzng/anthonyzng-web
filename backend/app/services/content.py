@@ -1,6 +1,9 @@
 """Builds the public content payload for one locale and renders it to reproducible bytes."""
 
+import asyncio
 import hashlib
+import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -181,6 +184,60 @@ def render_content(payload: ContentPayload) -> ContentDocument:
 
 async def get_content_document(session: AsyncSession, locale: Locale) -> ContentDocument:
     return render_content(await build_content_payload(session, locale))
+
+
+CONTENT_CACHE_TTL_SECONDS = 30.0
+
+
+class ContentCache:
+    """The rendered `/content` document per locale, kept for a short while.
+
+    A public request would otherwise run about nine queries, validate every row and hash the
+    result; a flood would exhaust the database pool. A miss for a locale is built once however many
+    requests wait for it (a lock per locale). Any admin write clears the cache (`clear`), so edits
+    show at once; the lifetime only bounds staleness from writes that bypass the API (the seed CLI).
+    One per app (`AppServices`), so every test starts empty.
+    """
+
+    def __init__(
+        self,
+        ttl_seconds: float = CONTENT_CACHE_TTL_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._ttl = ttl_seconds
+        self._clock = clock
+        self._entries: dict[str, tuple[float, ContentDocument]] = {}
+        self._locks: dict[str, asyncio.Lock] = {}
+        self._generation = 0
+
+    def _fresh(self, locale: str) -> ContentDocument | None:
+        entry = self._entries.get(locale)
+        if entry is not None and self._clock() < entry[0]:
+            return entry[1]
+        return None
+
+    async def get(
+        self, locale: str, build: Callable[[], Awaitable[ContentDocument]]
+    ) -> ContentDocument:
+        document = self._fresh(locale)
+        if document is not None:
+            return document
+        if locale not in self._locks:
+            self._locks[locale] = asyncio.Lock()
+        async with self._locks[locale]:
+            document = self._fresh(locale)  # built while this request waited
+            if document is None:
+                generation = self._generation
+                document = await build()
+                # A write that cleared the cache meanwhile may postdate what was read: serve it
+                # to this request, but do not keep it.
+                if generation == self._generation:
+                    self._entries[locale] = (self._clock() + self._ttl, document)
+            return document
+
+    def clear(self) -> None:
+        self._generation += 1
+        self._entries.clear()
 
 
 def etag_matches(if_none_match: str | None, etag: str) -> bool:

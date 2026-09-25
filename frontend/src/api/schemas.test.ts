@@ -53,6 +53,19 @@ describe('contentPayloadSchema', () => {
     }
   })
 
+  it('accepts contact links only with the schemes the backend allows', () => {
+    const withLink = (href: string) => {
+      const payload = base()
+      return { ...payload, contact: { ...payload.contact, links: [{ id: 'link', label: 'Link', href, display: 'link' }] } }
+    }
+    for (const href of ['mailto:someone@example.com', 'https://example.com/me', 'http://example.com']) {
+      expect(accepts(withLink(href)), href).toBe(true)
+    }
+    for (const href of ['javascript:alert(1)', 'JAVASCRIPT:alert(1)', 'data:text/html,x', '//evil.test', 'tel:123', '']) {
+      expect(accepts(withLink(href)), href).toBe(false)
+    }
+  })
+
   it('accepts a cover image served by the API', () => {
     expect(accepts(withProject({ image: IMAGE }))).toBe(true)
   })

@@ -52,7 +52,7 @@ describe('admin panel', () => {
     expect(await findPageHeading('Experience')).toBeInTheDocument()
     await waitFor(() => expect(navigation.location?.pathname).toBe('/admin/content/experience'))
     const [login] = api.to('POST /auth/login')
-    expect(login.json).toEqual({ email: ADMIN_EMAIL, password: 'correct horse' })
+    expect(login.json).toEqual({ email: ADMIN_EMAIL, password: 'correct horse', turnstileToken: 'test-token' })
     expect(login.init?.credentials).toBe('include')
     // The sign-in proved the session: no second /auth/me.
     expect(api.to('GET /auth/me')).toHaveLength(1)

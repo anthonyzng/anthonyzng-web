@@ -1,10 +1,12 @@
 """FastAPI application factory and the ASGI entry point (`uvicorn app.main:app`)."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import cache
 from typing import cast
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import FastAPI
@@ -24,7 +26,8 @@ from app.core.middleware import (
 )
 from app.core.security import make_dummy_password_hash
 from app.core.state import AppServices
-from app.services.auth import ensure_admin_user
+from app.services.auth import PASSWORD_CHECK_CONCURRENCY, ensure_admin_user
+from app.services.content import ContentCache
 from app.services.email import build_email_provider
 from app.services.files import MAX_CV_UPLOAD_BYTES, MAX_IMAGE_UPLOAD_BYTES
 from app.services.turnstile import CloudflareTurnstileVerifier
@@ -64,15 +67,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             http_client=http_client,
             dummy_password_hash=make_dummy_password_hash(),
             turnstile_verifier=CloudflareTurnstileVerifier(
-                settings.TURNSTILE_SECRET_KEY.get_secret_value(), http_client
+                settings.TURNSTILE_SECRET_KEY.get_secret_value(),
+                http_client,
+                # Production: a token must have been solved on the site itself (CORS_ORIGINS).
+                hostnames=site_hostnames(settings) if settings.is_production else None,
             ),
             email_provider=build_email_provider(settings, http_client),
+            password_checks=asyncio.Semaphore(PASSWORD_CHECK_CONCURRENCY),
+            content_cache=ContentCache(),
         )
         logger.info("Backend ready (env=%s, email=%s)", settings.APP_ENV, settings.EMAIL_PROVIDER)
         yield
     finally:
         await http_client.aclose()
         await engine.dispose()
+
+
+def site_hostnames(settings: Settings) -> frozenset[str]:
+    """The host names of the site's origins (CORS_ORIGINS), where Turnstile widgets are solved."""
+    return frozenset(
+        host for origin in settings.CORS_ORIGINS if (host := urlsplit(origin).hostname)
+    )
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

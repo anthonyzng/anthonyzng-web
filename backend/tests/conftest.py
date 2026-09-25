@@ -219,7 +219,8 @@ async def seeded(session: AsyncSession, seed_data: SeedFile) -> None:
 async def admin_client(client: httpx.AsyncClient) -> httpx.AsyncClient:
     """`client` signed in as the admin (the session cookie is in its jar)."""
     response = await client.post(
-        "/api/v1/auth/login", json={"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD}
+        "/api/v1/auth/login",
+        json={"email": TEST_ADMIN_EMAIL, "password": TEST_ADMIN_PASSWORD, "turnstileToken": "t"},
     )
     assert response.status_code == 200
     return client

@@ -18,12 +18,23 @@ JWT_ALGORITHM = "HS256"
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 """`Expires` value that clears a cookie (an int would mean "seconds from now" to Starlette)."""
 
-_hasher = PasswordHasher()
+# OWASP's Argon2id baseline (m=19 MiB, t=2, p=1): the library default takes 64 MiB per check,
+# which a burst of logins would turn into an out-of-memory kill on the 1 GiB VM. Checks also run at
+# most PASSWORD_CHECK_CONCURRENCY at a time (the login route).
+_hasher = PasswordHasher(time_cost=2, memory_cost=19 * 1024, parallelism=1)
 
 
 def hash_password(password: str) -> str:
-    """Argon2id hash with the library's current recommended parameters."""
+    """Argon2id hash with the parameters above."""
     return _hasher.hash(password)
+
+
+def password_needs_rehash(password_hash: str) -> bool:
+    """True when `password_hash` was made with other parameters (or is unreadable)."""
+    try:
+        return _hasher.check_needs_rehash(password_hash)
+    except InvalidHashError:
+        return True
 
 
 def verify_password(password_hash: str, password: str) -> bool:

@@ -1,0 +1,6 @@
+# The site's public pages; the admin panel is not for search engines (it also sends noindex).
+User-agent: *
+Allow: /
+Disallow: /admin
+
+Sitemap: https://owwsolution.com/sitemap.xml

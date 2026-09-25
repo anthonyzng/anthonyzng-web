@@ -29,11 +29,15 @@ class CloudflareTurnstileVerifier:
         *,
         url: str = SITEVERIFY_URL,
         timeout: float = SITEVERIFY_TIMEOUT_SECONDS,
+        hostnames: frozenset[str] | None = None,
     ) -> None:
+        """`hostnames`: the sites a token may come from (production: the site's own host), so a
+        token solved on another site that shares the widget is refused; None skips the check."""
         self._secret = secret
         self._client = client
         self._url = url
         self._timeout = timeout
+        self._hostnames = hostnames
 
     async def verify(self, token: str, remote_ip: str | None) -> bool:
         data = {"secret": self._secret, "response": token}
@@ -53,5 +57,8 @@ class CloudflareTurnstileVerifier:
             raise TurnstileUnavailableError("siteverify returned an unexpected body")
         if not payload["success"]:
             logger.info("Turnstile rejected a token: %s", payload.get("error-codes"))
+            return False
+        if self._hostnames is not None and payload.get("hostname") not in self._hostnames:
+            logger.info("Turnstile token solved on another host was refused")
             return False
         return True

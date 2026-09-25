@@ -51,7 +51,11 @@ const skillGroupItem = z.object({ id, label: z.string(), items: strings })
 const educationItem = z.object({ id, degree: z.string(), school: z.string(), year: z.string() })
 const certificationItem = z.object({ id, name: z.string(), inProgress: z.boolean() })
 const spokenLanguageItem = z.object({ id, name: z.string() })
-const contactLinkItem = z.object({ id, label: z.string(), href: z.string(), display: z.string() })
+// The backend admits only these schemes (LinkHref); checked again here, so a javascript: or data:
+// link can never reach an <a href> even if a row slipped past it (the payload is then refused and
+// the page keeps its snapshot).
+const linkHref = z.string().check(z.regex(/^(mailto:|https:\/\/|http:\/\/)/))
+const contactLinkItem = z.object({ id, label: z.string(), href: linkHref, display: z.string() })
 
 export const contentPayloadSchema = z.object({
   locale: localeSchema,

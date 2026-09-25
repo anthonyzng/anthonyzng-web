@@ -166,7 +166,7 @@ async def test_deleting_the_project_deletes_its_image(
     ("content", "code", "message"),
     [
         (b"", "file_empty", "empty"),
-        (b"definitely not an image", "image_unreadable", "not a readable image"),
+        (b"definitely not an image", "file_type", "JPEG, PNG or WebP"),
         (image_bytes((20, 20), "GIF"), "file_type", "JPEG, PNG or WebP"),
     ],
 )

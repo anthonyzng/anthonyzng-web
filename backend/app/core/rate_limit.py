@@ -24,7 +24,11 @@ class RateLimitRule(NamedTuple):
 
 CONTACT_IP_RULE = RateLimitRule(limit=5, window_seconds=900)
 LOGIN_IP_RULE = RateLimitRule(limit=10, window_seconds=900)
-LOGIN_EMAIL_RULE = RateLimitRule(limit=5, window_seconds=900)
+LOGIN_EMAIL_IP_RULE = RateLimitRule(limit=5, window_seconds=900)
+"""One email from one address: the brute-force limit (counted on arrival, cleared on success)."""
+LOGIN_EMAIL_RULE = RateLimitRule(limit=30, window_seconds=900)
+"""One email from anywhere: bounds a distributed guess (counted on arrival, cleared on success).
+High enough that one address alone cannot lock the admin out; each attempt also needs Turnstile."""
 
 _SWEEP_EVERY = 1000
 
@@ -97,7 +101,8 @@ class SlidingWindowRateLimiter:
 
 
 _MAX_WINDOW = max(
-    CONTACT_IP_RULE.window_seconds, LOGIN_IP_RULE.window_seconds, LOGIN_EMAIL_RULE.window_seconds
+    rule.window_seconds
+    for rule in (CONTACT_IP_RULE, LOGIN_IP_RULE, LOGIN_EMAIL_IP_RULE, LOGIN_EMAIL_RULE)
 )
 
 rate_limiter = SlidingWindowRateLimiter()
