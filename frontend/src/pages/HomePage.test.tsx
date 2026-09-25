@@ -236,6 +236,36 @@ describe('HomePage (static path: no motion)', () => {
     }
   })
 
+  it('names each language version for search engines and link previews', async () => {
+    const head = (selector: string, attribute = 'content') => document.head.querySelector(selector)?.getAttribute(attribute)
+    const view = renderAt('/en')
+    await headerNav()
+    expect(head('meta[name="description"]')).toBe(i18n.t('meta.description', { lng: 'en' }))
+    expect(head('link[rel="canonical"]', 'href')).toBe('https://owwsolution.com/en')
+    expect(head('meta[property="og:url"]')).toBe('https://owwsolution.com/en')
+    expect(head('meta[property="og:locale"]')).toBe('en_US')
+    expect(head('meta[property="og:locale:alternate"]')).toBe('zh_HK')
+    view.unmount()
+
+    renderAt('/zh-hant')
+    await waitFor(() => expect(head('link[rel="canonical"]', 'href')).toBe('https://owwsolution.com/zh-hant'))
+    expect(head('meta[name="description"]')).toBe(i18n.t('meta.description', { lng: 'zh-Hant' }))
+    expect(head('meta[property="og:title"]')).toBe(i18n.t('meta.title', { lng: 'zh-Hant' }))
+    expect(head('meta[property="og:locale"]')).toBe('zh_HK')
+    expect(head('meta[property="og:locale:alternate"]')).toBe('en_US')
+    // One of each, however often the language changes.
+    expect(document.head.querySelectorAll('link[rel="canonical"], meta[name="description"]')).toHaveLength(2)
+  })
+
+  it('keeps the 404 page out of search results, and only that page', async () => {
+    const robots = () => document.head.querySelector('meta[name="robots"]')?.getAttribute('content') ?? null
+    const view = renderAt('/en/no-such-page')
+    await screen.findByRole('heading', { level: 1 })
+    expect(robots()).toBe('noindex')
+    view.unmount()
+    expect(robots()).toBeNull()
+  })
+
   it('navigates from the 404 page to a section, lands it and focuses its heading', async () => {
     const user = userEvent.setup()
     renderAt('/en/does-not-exist')

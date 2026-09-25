@@ -154,6 +154,10 @@
     }
   }
 
+  .ghost-numeral::before {
+    content: attr(data-numeral);
+  }
+
   @media (forced-colors: active) {
     .ghost-numeral {
       display: none;

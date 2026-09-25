@@ -33,13 +33,14 @@ export function SectionShell({ id, headingSize = 'headline', motionKey = '', chi
 
   return (
     <section ref={scope} id={id} aria-labelledby={`${id}-title`} className="relative isolate overflow-clip py-24 md:py-40">
+      {/* Decorative: drawn as generated content (::before), so it is no text node that contrast
+          checks or the accessibility tree would weigh; the section title says which section this is. */}
       <span
         aria-hidden="true"
         data-speed={SPEED.ghost}
+        data-numeral={number}
         className="ghost-numeral pointer-events-none absolute right-5 top-12 -z-10 select-none font-mono text-ghost tabular-nums text-line sm:right-8 md:top-20"
-      >
-        {number}
-      </span>
+      />
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div data-reveal="rule" aria-hidden="true" className="h-px w-full origin-left bg-line" />
         <div className="mt-10 grid gap-y-8 md:grid-cols-12 md:gap-x-8">
