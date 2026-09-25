@@ -3,6 +3,7 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import cache
 from typing import cast
 
 import httpx
@@ -121,4 +122,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     return app
 
 
-app = create_app()
+@cache
+def _asgi_app() -> FastAPI:
+    return create_app()
+
+
+def __getattr__(name: str) -> FastAPI:
+    """`app`, the ASGI entry point (`uvicorn app.main:app`), built on first access.
+
+    Importing this module needs no configuration (the tests import `create_app` with their own
+    settings); only the server that asks for `app` reads the environment.
+    """
+    if name == "app":
+        return _asgi_app()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -6,6 +6,14 @@ from pydantic import SecretStr, ValidationError
 from app.core.config import Settings
 
 
+@pytest.fixture(autouse=True)
+def no_settings_in_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests check defaults and parsing: no setting may come from the process environment
+    (CI exports TEST_DATABASE_URL; a developer may export others). `.env` is off via `_env_file`."""
+    for name in Settings.model_fields:
+        monkeypatch.delenv(name, raising=False)
+
+
 def base_values(**overrides: Any) -> dict[str, Any]:
     values: dict[str, Any] = {
         "_env_file": None,
