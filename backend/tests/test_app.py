@@ -1,6 +1,8 @@
 """Cross-cutting behaviour: error envelope, security headers, CORS, docs, request body cap."""
 
 import json
+import subprocess
+import sys
 from collections.abc import AsyncIterator
 
 import httpx
@@ -8,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.core.config import Settings
+from app.core.config import BACKEND_DIR, Settings
 from app.core.middleware import MAX_REQUEST_BODY_BYTES
 from tests.conftest import (
     TEST_ORIGIN,
@@ -33,6 +35,24 @@ def contact_body(size: int) -> bytes:
 
 def oversized_contact_body() -> bytes:
     return contact_body(MAX_REQUEST_BODY_BYTES + 1)
+
+
+def test_importing_the_app_module_reads_no_settings() -> None:
+    """The tests (and CI, which has no backend/.env) import `create_app` from `app.main`: the
+    ASGI `app` must only be built when a server asks for it."""
+    script = (
+        "import app.main\n"
+        "from app.core.config import get_settings\n"
+        "assert get_settings.cache_info().currsize == 0, 'settings were read on import'\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=BACKEND_DIR,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 async def test_root_is_not_found(client: httpx.AsyncClient) -> None:
