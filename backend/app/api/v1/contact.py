@@ -8,6 +8,7 @@ from app.api.deps import (
     SettingsDep,
     TurnstileDep,
 )
+from app.core.client_ip import rate_limit_subject
 from app.core.errors import ApiError, RateLimitedError
 from app.core.rate_limit import CONTACT_IP_RULE
 from app.schemas.contact import ContactAccepted, ContactRequest
@@ -20,7 +21,7 @@ router = APIRouter(tags=["contact"])
 
 async def enforce_contact_rate_limit(client_ip: ClientIpDep, limiter: RateLimiterDep) -> None:
     """Counted on arrival, before the body is validated (dependencies run first)."""
-    decision = limiter.hit(f"contact:ip:{client_ip}", CONTACT_IP_RULE)
+    decision = limiter.hit(f"contact:ip:{rate_limit_subject(client_ip)}", CONTACT_IP_RULE)
     if not decision.allowed:
         raise RateLimitedError(decision.retry_after)
 

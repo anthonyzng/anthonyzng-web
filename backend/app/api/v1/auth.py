@@ -12,7 +12,7 @@ from app.api.deps import (
     TurnstileDep,
     require_trusted_origin,
 )
-from app.core.client_ip import UNKNOWN_IP
+from app.core.client_ip import UNKNOWN_IP, rate_limit_subject
 from app.core.errors import ApiError, RateLimitedError
 from app.core.rate_limit import LOGIN_EMAIL_IP_RULE, LOGIN_EMAIL_RULE, LOGIN_IP_RULE
 from app.core.security import (
@@ -39,7 +39,7 @@ router = APIRouter(prefix="/auth", tags=["auth"], dependencies=[Depends(require_
 
 async def enforce_login_ip_rate_limit(client_ip: ClientIpDep, limiter: RateLimiterDep) -> None:
     """Every attempt counts, on arrival."""
-    decision = limiter.hit(f"login:ip:{client_ip}", LOGIN_IP_RULE)
+    decision = limiter.hit(f"login:ip:{rate_limit_subject(client_ip)}", LOGIN_IP_RULE)
     if not decision.allowed:
         raise RateLimitedError(decision.retry_after)
 
@@ -82,7 +82,7 @@ async def login(
 
     email = normalize_email(body.email)
     email_keys = (
-        (f"login:email-ip:{email}:{client_ip}", LOGIN_EMAIL_IP_RULE),
+        (f"login:email-ip:{email}:{rate_limit_subject(client_ip)}", LOGIN_EMAIL_IP_RULE),
         (f"login:email:{email}", LOGIN_EMAIL_RULE),
     )
     for key, rule in email_keys:

@@ -295,3 +295,14 @@ async def test_trusted_proxy_uses_forwarded_ip(
     text = mailbox.sent[0].text
     assert f"Source: {fingerprint(ip_hash('203.0.113.9'))} (hashed IP)" in text
     assert "203.0.113.9" not in text
+
+
+async def test_ipv6_addresses_in_one_64_share_the_contact_limit(app: FastAPI) -> None:
+    """Behind Cloudflare visitors arrive over IPv6: a /64 cannot rotate past the limit."""
+    for index in range(5):
+        async with make_client(app, client_ip=f"2001:db8:1:2::{index + 1:x}") as visitor:
+            assert (await visitor.post(CONTACT, json=VALID)).status_code == 202
+    async with make_client(app, client_ip="2001:db8:1:2::ffff") as same_network:
+        assert (await same_network.post(CONTACT, json=VALID)).status_code == 429
+    async with make_client(app, client_ip="2001:db8:1:3::1") as neighbour:
+        assert (await neighbour.post(CONTACT, json=VALID)).status_code == 202

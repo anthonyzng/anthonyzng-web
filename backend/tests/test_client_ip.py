@@ -2,9 +2,16 @@ import hashlib
 import hmac
 import re
 
+import pytest
 from starlette.requests import Request
 
-from app.core.client_ip import UNKNOWN_IP, client_ip, fingerprint, hash_client_ip
+from app.core.client_ip import (
+    UNKNOWN_IP,
+    client_ip,
+    fingerprint,
+    hash_client_ip,
+    rate_limit_subject,
+)
 
 SECRET = "unit-test-ip-hash-secret-0123456789"
 
@@ -82,3 +89,19 @@ def test_fingerprint_is_the_hash_prefix() -> None:
     digest = hash_client_ip("198.51.100.7", SECRET)
     assert digest is not None
     assert fingerprint(digest) == digest[:12]
+
+
+@pytest.mark.parametrize(
+    ("ip", "subject"),
+    [
+        ("203.0.113.7", "203.0.113.7"),
+        ("::ffff:203.0.113.7", "203.0.113.7"),
+        ("2001:db8:1:2:aaaa:bbbb:cccc:dddd", "2001:db8:1:2::/64"),
+        ("2001:0DB8:0001:0002::1", "2001:db8:1:2::/64"),
+        ("2001:db8:1:3::1", "2001:db8:1:3::/64"),
+        (UNKNOWN_IP, UNKNOWN_IP),
+    ],
+)
+def test_rate_limits_count_ipv6_per_64(ip: str, subject: str) -> None:
+    """One IPv6 subscriber holds a whole /64: rotating inside it must not reset a limit."""
+    assert rate_limit_subject(ip) == subject
