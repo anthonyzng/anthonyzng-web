@@ -8,17 +8,21 @@
 # two different sites, so the admin's SameSite=Lax cookie would not reach api.localhost: the local
 # build calls the API on the site's own origin (proxy/local/api-on-site.caddy routes /api/* there). Production keeps the
 # api subdomain (one site with the apex). The backend keeps its development settings from
-# backend/.env; CORS allows the site's origin (used by the api.localhost address only). The local
-# frontend image gets its own tag, so its localhost bundle never stands in for a production build. The database is the
-# same service and volume as docker-compose.dev.yml (same project), still published on
-# 127.0.0.1:5432 for the host-run tests; stop a host-run backend first, so one admin edits it.
+# backend/.env; CORS allows the site's origin (used by the api.localhost address only). The images
+# are built here and tagged `:local`, so a local build never stands in for a GHCR image. The
+# database is the same service and volume as docker-compose.dev.yml (same project), still published
+# on 127.0.0.1:5432 for the host-run tests; stop a host-run backend first, so one admin edits it.
 
 services:
+  migrate:
+    image: anthonyzng-web-backend:local
+
   db:
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
 
   backend:
+    image: anthonyzng-web-backend:local
     environment:
       CORS_ORIGINS: http://localhost:8080
 

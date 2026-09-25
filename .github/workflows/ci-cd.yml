@@ -1,0 +1,205 @@
+# CI on every pull request and push to main; on main it also builds the images, pushes them to
+# GHCR (private packages) and deploys them to the VM over SSH.
+#
+# Repository settings used (Settings → Secrets and variables → Actions):
+#   variables  DEPLOY_ENABLED ("true" turns on images + deploy), DEPLOY_HOST, DEPLOY_USER,
+#              VITE_API_BASE_URL, VITE_TURNSTILE_SITE_KEY (public values compiled into the bundle)
+#   secrets    DEPLOY_SSH_KEY (private key of the deploy user), DEPLOY_KNOWN_HOSTS (the VM's host key)
+# The VM holds its own .env and backend/.env; no application secret passes through GitHub.
+
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Only this setting comes from the environment in tests (tests/conftest.py).
+      TEST_DATABASE_URL: postgresql+asyncpg://ci:ci@127.0.0.1:5432/ci_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --all-groups --frozen --python 3.13
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy .
+      - run: uv run pytest -q
+
+  # The container configuration parses: Compose (both files) and the Caddyfile.
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose files
+        env:
+          POSTGRES_PASSWORD: ci-placeholder
+        run: |
+          touch backend/.env
+          docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.local.yml config --quiet
+      - name: Caddyfile
+        run: |
+          docker run --rm -v "$PWD/proxy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e SITE_ADDRESS=owwsolution.com -e SITE_URL=https://owwsolution.com \
+            -e WWW_ADDRESS=www.owwsolution.com -e API_ADDRESS=api.owwsolution.com \
+            caddy:2.11-alpine sh -c 'caddy validate --config /etc/caddy/Caddyfile && caddy fmt /etc/caddy/Caddyfile | diff /etc/caddy/Caddyfile -'
+
+  images:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    needs: [frontend, backend, containers]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            context: backend
+          - name: frontend
+            context: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}-${{ matrix.name }}:latest
+          # The backend ignores them; the frontend build fails if either is empty.
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+            VITE_TURNSTILE_SITE_KEY=${{ vars.VITE_TURNSTILE_SITE_KEY }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    env:
+      DEPLOY_DIR: /opt/anthonyzng-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: SSH key and pinned host key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host deploy-target\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' \
+            "${{ vars.DEPLOY_HOST }}" "${{ vars.DEPLOY_USER }}" > ~/.ssh/config
+      - name: Copy the stack definition
+        # DEPLOY_DIR is expanded here, on purpose (SC2029).
+        run: |
+          # shellcheck disable=SC2029
+          ssh deploy-target "mkdir -p '$DEPLOY_DIR/proxy'"
+          scp docker-compose.yml "deploy-target:$DEPLOY_DIR/docker-compose.yml"
+          scp proxy/Caddyfile "deploy-target:$DEPLOY_DIR/proxy/Caddyfile"
+      - name: Pull this commit's images and restart
+        env:
+          # Valid only while this job runs; the VM logs out again right after the pull.
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGES: ghcr.io/${{ github.repository }}
+          SHA: ${{ github.sha }}
+        # The remote script is expanded here (DEPLOY_DIR, the tag), on purpose (SC2029). The pulled
+        # images are also tagged `latest` on the VM, so every manual compose command there (seed,
+        # logs, up after editing .env) uses the deployed images without a registry login. Caddy is
+        # reloaded because a changed Caddyfile does not recreate its container.
+        run: |
+          # shellcheck disable=SC2029
+          printf '%s' "$REGISTRY_TOKEN" | ssh deploy-target "set -eu
+            cd '$DEPLOY_DIR'
+            docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+            trap 'docker logout ghcr.io >/dev/null' EXIT
+            IMAGE_TAG='$SHA' docker compose pull backend frontend
+            docker logout ghcr.io >/dev/null
+            for name in backend frontend; do
+              docker tag '$IMAGES'-\$name:'$SHA' '$IMAGES'-\$name:latest
+            done
+            docker compose up -d --remove-orphans
+            for attempt in 1 2 3 4 5; do
+              docker compose exec -T proxy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && break
+              [ \$attempt -lt 5 ] || exit 1
+              sleep 3
+            done
+            docker image prune -af >/dev/null"
+      - name: Smoke test
+        run: |
+          for _ in $(seq 12); do
+            if curl -fsS https://api.owwsolution.com/api/v1/health && curl -fsS -o /dev/null https://owwsolution.com/; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "the site did not come back healthy" >&2
+          exit 1
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

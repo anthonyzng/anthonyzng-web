@@ -1,7 +1,11 @@
 # The production stack: every service in its own container, only the proxy is published.
 #
-#   docker compose up -d --build                                   # production (the VM)
+#   docker compose pull backend frontend && docker compose up -d   # production (the VM; CI deploys)
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # locally
+#
+# Production runs the images CI pushed to GHCR (private packages): IMAGE_TAG is the commit SHA the
+# deploy job passes, `latest` otherwise (the last build of main). The `build` sections are for
+# local builds (the local override retags them `:local`).
 #
 # Configuration:
 #   .env           Compose variables (Postgres credentials, public addresses, frontend build args);
@@ -39,10 +43,10 @@ services:
       retries: 10
 
   # One-off: brings the schema to head, then exits; the backend waits for it to succeed. It runs
-  # the backend's image, built once by the `backend` service (never pulled).
+  # the backend's image (pulled or built by the `backend` service, never on its own).
   migrate:
     <<: *hardening
-    image: anthonyzng-web-backend
+    image: ghcr.io/anthonyzng/anthonyzng-web-backend:${IMAGE_TAG:-latest}
     pull_policy: never
     restart: "no"
     env_file:
@@ -59,7 +63,7 @@ services:
 
   backend:
     <<: *hardening
-    image: anthonyzng-web-backend
+    image: ghcr.io/anthonyzng/anthonyzng-web-backend:${IMAGE_TAG:-latest}
     build: ./backend
     env_file:
       - path: ./backend/.env
@@ -76,7 +80,7 @@ services:
 
   frontend:
     <<: *hardening
-    image: anthonyzng-web-frontend
+    image: ghcr.io/anthonyzng/anthonyzng-web-frontend:${IMAGE_TAG:-latest}
     build:
       context: ./frontend
       args:
