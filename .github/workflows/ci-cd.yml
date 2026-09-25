@@ -85,6 +85,7 @@ jobs:
       - name: Compose files
         env:
           POSTGRES_PASSWORD: ci-placeholder
+          POSTGRES_APP_PASSWORD: ci-placeholder
         run: |
           touch backend/.env
           docker compose config --quiet

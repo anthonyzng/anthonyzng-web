@@ -29,8 +29,10 @@ x-backend-env: &backend-env
   # Production unless the root .env (or the local override) says otherwise, so a backend/.env that
   # lost its APP_ENV line can never start with development defaults (no Secure cookie, API docs).
   APP_ENV: ${APP_ENV:-production}
-  # Inside the network the database is `db`. The password must be URL-safe (letters, digits, - _ . ~).
-  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-anthonyzng}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-anthonyzng_web}
+  # Inside the network the database is `db`. The backend connects as the least-privilege app role
+  # (rows only, set up by `migrate`), never as the schema owner. Passwords must be URL-safe
+  # (letters, digits, - _ . ~).
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_APP_USER:-anthonyzng_app}:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env}@db:5432/${POSTGRES_DB:-anthonyzng_web}
   # Behind Caddy: the client IP is the rightmost X-Forwarded-For entry.
   TRUSTED_PROXY: "true"
 
@@ -52,8 +54,10 @@ services:
       timeout: 3s
       retries: 10
 
-  # One-off: brings the schema to head, then exits; the backend waits for it to succeed. It runs
-  # the backend's image (pulled or built by the `backend` service, never on its own).
+  # One-off: brings the schema to head as the schema owner, then creates or updates the backend's
+  # app role and grants it row privileges on every table (`app.db_roles`), then exits; the backend
+  # waits for it to succeed. It runs the backend's image (pulled or built by the `backend`
+  # service, never on its own).
   migrate:
     <<: *hardening
     image: ghcr.io/anthonyzng/anthonyzng-web-backend:${IMAGE_TAG:-latest}
@@ -62,8 +66,12 @@ services:
     env_file:
       - path: ./backend/.env
         required: true
-    environment: *backend-env
-    command: ["alembic", "upgrade", "head"]
+    environment:
+      <<: *backend-env
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-anthonyzng}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-anthonyzng_web}
+      DATABASE_APP_USER: ${POSTGRES_APP_USER:-anthonyzng_app}
+      DATABASE_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env}
+    command: ["sh", "-c", "alembic upgrade head && python -m app.db_roles"]
     healthcheck:
       disable: true
     read_only: true
