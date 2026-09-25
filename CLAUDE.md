@@ -84,7 +84,7 @@ Each tier runs in its **own Docker container** so they can be scaled or moved in
 | CI/CD      | GitHub Actions: lint/test → build images → push to GHCR → deploy to GCP VM over SSH |
 | Admin auth | Single admin account, Argon2 password hash, JWT in httpOnly cookie, login rate limiting (TOTP 2FA later). Admin UI at `owwsolution.com/admin` |
 | Contact    | Cloudflare Turnstile (bot protection) + Resend (email from `noreply@owwsolution.com`). Every message is also stored in the DB. Recipient comes from env var `CONTACT_TO_EMAIL` (value kept in `CLAUDE.local.md`, never committed) |
-| Analytics  | Cloudflare Web Analytics (owner decision, Phase 8: no cookie, no container on the 1 GiB VM; enabled in the Cloudflare dashboard with automatic setup, which injects the beacon at the edge, allowed by the CSP) |
+| Analytics  | Cloudflare Web Analytics (owner decision, Phase 8: no cookie, no container on the 1 GiB VM; enabled in the Cloudflare dashboard with automatic setup, which injects the beacon at the edge into HTML answers (`static.cloudflareinsights.com/beacon.min.js`, reporting to `cloudflareinsights.com`), both allowed by the CSP; verified in production 2026-09-25) |
 
 ---
 
