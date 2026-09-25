@@ -109,3 +109,5 @@ class SummaryOut(CamelModel):
     counts: dict[str, int]
     unread_messages: int
     cv: CvRef | None
+    totp_enabled: bool
+    """Whether sign-in asks for an authenticator code (the dashboard reminds when it does not)."""

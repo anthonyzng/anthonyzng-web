@@ -19,6 +19,7 @@ dependencies = [
   "httpx>=0.28",
   "python-multipart>=0.0.32",
   "pillow>=12.3.0",
+  "cryptography>=46",
 ]
 
 [dependency-groups]
@@ -53,6 +54,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "app/seed/__main__.py" = ["T201"]     # the CLI prints its per-table counts
+"app/admin_totp.py" = ["T201"]        # the CLI prints the admin's two-factor status
 "alembic/versions/*" = ["E501"]       # long CHECK expressions are clearer on one line
 "tests/**" = ["ARG001", "PLR0913", "PLR0917"]
 

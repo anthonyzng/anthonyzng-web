@@ -31,7 +31,8 @@
     "newTab": "(opens in a new tab)",
     "signOut": "Sign out",
     "signingOut": "Signing out…",
-    "signOutFailed": "You could not be signed out. Check your connection and try again."
+    "signOutFailed": "You could not be signed out. Check your connection and try again.",
+    "security": "Security"
   },
   "language": {
     "label": "Language",
@@ -80,8 +81,19 @@
       "completeCheck": "Complete the verification check above, then sign in.",
       "turnstileFailed": "The verification check failed. Please complete it again, then sign in.",
       "unavailable": "The verification service is not responding. Please try again shortly.",
-      "generic": "You could not be signed in because the server did not answer. Check your connection and try again."
-    }
+      "generic": "You could not be signed in because the server did not answer. Check your connection and try again.",
+      "codeRequired": "Please enter the 6-digit code.",
+      "codeFormat": "The code is 6 digits.",
+      "codeWrong": "That code is not right. Enter the code the app shows now.",
+      "codeUnavailable": "Two-factor sign-in is not available on the server right now. Please try again later."
+    },
+    "codeIntro": "Enter the 6-digit code from your authenticator app.",
+    "code": "Authentication code",
+    "codeHint": "6 digits. The app shows a new one every 30 seconds.",
+    "verify": "Verify",
+    "verifying": "Verifying…",
+    "startOver": "Start again",
+    "codeExpired": "The sign-in took too long. Please sign in again."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -96,7 +108,10 @@
     "cvMissing": "No CV uploaded",
     "syncTitle": "After editing content",
     "syncBody": "The site also keeps a built-in copy of its content for when the API cannot be reached. To refresh that copy, run this command in the frontend/ folder:",
-    "syncLater": "Automatic deployment (Phase 7) will take care of this step."
+    "syncLater": "Automatic deployment (Phase 7) will take care of this step.",
+    "totpOffTitle": "Two-factor sign-in is off",
+    "totpOffBody": "Anyone who learns the password can sign in. With two-factor sign-in, a code from an authenticator app on your phone is needed as well.",
+    "totpOffLink": "Set up two-factor sign-in"
   },
   "list": {
     "add": "Add new",
@@ -350,6 +365,43 @@
       "remove": "The CV could not be removed. Try again."
     },
     "busy": "Wait until the current CV is uploaded, then choose again."
+  },
+  "security": {
+    "title": "Security",
+    "totpHeading": "Two-factor sign-in",
+    "intro": "With two-factor sign-in on, signing in needs the password and a 6-digit code from an authenticator app on your phone, such as Google Authenticator, Microsoft Authenticator or 1Password.",
+    "onSince": "On since",
+    "off": "Off: the password alone signs in.",
+    "setUp": "Set up two-factor sign-in",
+    "starting": "Preparing…",
+    "scanStep": "1. Scan this QR code with your authenticator app",
+    "qrLabel": "QR code for your authenticator app",
+    "manual": "Cannot scan it? Add an account in the app and type this key instead:",
+    "confirmStep": "2. Enter your password and the 6-digit code the app shows",
+    "password": "Password",
+    "code": "Authentication code",
+    "codeHint": "6 digits. The app shows a new one every 30 seconds.",
+    "enable": "Turn on",
+    "enabling": "Turning on…",
+    "cancel": "Cancel",
+    "enabled": "Two-factor sign-in is on. Other devices have been signed out.",
+    "disableHeading": "Turn off two-factor sign-in",
+    "disableBody": "Enter your password and the code the app shows now.",
+    "disable": "Turn off",
+    "disabling": "Turning off…",
+    "disabled": "Two-factor sign-in is off. Other devices have been signed out.",
+    "lostDevice": "Lost the phone with the authenticator app? On the server, in /opt/anthonyzng-web, this command turns two-factor sign-in off; then sign in with the password and set it up again.",
+    "errors": {
+      "passwordRequired": "Please enter your password.",
+      "wrongPassword": "The password is not correct.",
+      "codeRequired": "Please enter the 6-digit code.",
+      "codeFormat": "The code is 6 digits.",
+      "codeWrong": "That code is not right. Enter the code the app shows now.",
+      "conflict": "Two-factor sign-in was changed in another tab. The current setting is shown.",
+      "setupFailed": "The setup could not be started. Check your connection and try again.",
+      "unavailable": "Two-factor sign-in is not available on the server right now. Please try again later.",
+      "generic": "This could not be saved because the server did not answer. Check your connection and try again."
+    }
   },
   "notFound": {
     "title": "Not found",

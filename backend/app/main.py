@@ -26,6 +26,7 @@ from app.core.middleware import (
 )
 from app.core.security import make_dummy_password_hash
 from app.core.state import AppServices
+from app.core.totp import SecretBox
 from app.services.auth import PASSWORD_CHECK_CONCURRENCY, ensure_admin_user
 from app.services.content import ContentCache
 from app.services.email import build_email_provider
@@ -75,6 +76,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             email_provider=build_email_provider(settings, http_client),
             password_checks=asyncio.Semaphore(PASSWORD_CHECK_CONCURRENCY),
             content_cache=ContentCache(),
+            totp_box=SecretBox(settings.TOTP_ENCRYPTION_KEY.get_secret_value()),
         )
         logger.info("Backend ready (env=%s, email=%s)", settings.APP_ENV, settings.EMAIL_PROVIDER)
         yield

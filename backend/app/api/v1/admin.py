@@ -20,7 +20,13 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ValidationError
 from starlette.datastructures import UploadFile
 
-from app.api.deps import ServicesDep, SessionDep, get_current_admin, require_trusted_origin
+from app.api.deps import (
+    CurrentAdminDep,
+    ServicesDep,
+    SessionDep,
+    get_current_admin,
+    require_trusted_origin,
+)
 from app.core.errors import ApiError
 from app.schemas.admin import (
     CvResponse,
@@ -153,8 +159,8 @@ async def read_upload(request: Request) -> tuple[bytes, str | None]:
 
 
 @router.get("/summary", response_model=SummaryOut)
-async def get_summary(session: SessionDep) -> SummaryOut:
-    return await summary(session)
+async def get_summary(session: SessionDep, admin: CurrentAdminDep) -> SummaryOut:
+    return await summary(session, totp_enabled=admin.totp_secret is not None)
 
 
 # --- content collections --------------------------------------------------------------------

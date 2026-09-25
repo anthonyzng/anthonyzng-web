@@ -4,16 +4,22 @@ import type { Collection, ContentItem } from './collections'
 import {
   adminInfoSchema,
   cvResponseSchema,
+  loginResultSchema,
   messageSchema,
   messagesPageSchema,
   noContentSchema,
   projectItemSchema,
   summarySchema,
+  totpSetupSchema,
+  totpStatusSchema,
   type CvRef,
+  type LoginResult,
   type Message,
   type MessagesPage,
   type ProjectItem,
   type Summary,
+  type TotpSetup,
+  type TotpStatus,
 } from './schemas'
 
 /**
@@ -53,8 +59,12 @@ export interface LoginRequest {
   turnstileToken: string
 }
 
-export const login = ({ email, password, turnstileToken }: LoginRequest, signal?: AbortSignal): Promise<{ email: string }> =>
-  call('/auth/login', { method: 'POST', body: { email, password, turnstileToken }, schema: adminInfoSchema, signal })
+export const login = ({ email, password, turnstileToken }: LoginRequest, signal?: AbortSignal): Promise<LoginResult> =>
+  call('/auth/login', { method: 'POST', body: { email, password, turnstileToken }, schema: loginResultSchema, signal })
+
+/** The second step of a sign-in with two-factor sign-in on: the pending cookie from `login`, plus a code. */
+export const loginWithCode = (code: string, signal?: AbortSignal): Promise<LoginResult> =>
+  call('/auth/login/totp', { method: 'POST', body: { code }, schema: loginResultSchema, signal })
 
 export const fetchMe = (signal?: AbortSignal): Promise<{ email: string }> => call('/auth/me', { schema: adminInfoSchema, signal })
 
@@ -63,6 +73,25 @@ export const logout = (): Promise<void> => call('/auth/logout', { method: 'POST'
 // Dashboard
 
 export const fetchSummary = (signal?: AbortSignal): Promise<Summary> => call('/admin/summary', { schema: summarySchema, signal })
+
+// Two-factor sign-in
+
+export const fetchTotpStatus = (signal?: AbortSignal): Promise<TotpStatus> => call('/admin/totp', { schema: totpStatusSchema, signal })
+
+/** A new secret to scan; nothing changes until `enableTotp` confirms a code from it. */
+export const startTotpSetup = (signal?: AbortSignal): Promise<TotpSetup> =>
+  call('/admin/totp/setup', { method: 'POST', schema: totpSetupSchema, signal })
+
+export interface TotpConfirmation {
+  password: string
+  code: string
+}
+
+export const enableTotp = ({ password, code }: TotpConfirmation, signal?: AbortSignal): Promise<TotpStatus> =>
+  call('/admin/totp/enable', { method: 'POST', body: { password, code }, schema: totpStatusSchema, signal })
+
+export const disableTotp = ({ password, code }: TotpConfirmation, signal?: AbortSignal): Promise<TotpStatus> =>
+  call('/admin/totp/disable', { method: 'POST', body: { password, code }, schema: totpStatusSchema, signal })
 
 // Content
 

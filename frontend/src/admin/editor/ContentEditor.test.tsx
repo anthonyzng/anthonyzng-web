@@ -5,7 +5,7 @@ import { jsonResponse } from '../../test/api'
 import { navigation } from '../../test/navigation'
 import { writeDraft } from '../draftStore'
 import type { CertificationItem, ExperienceItem } from '../schemas'
-import { ADMIN_EMAIL, certifications, experience, signedIn, skillGroups } from '../test/fixtures'
+import { ADMIN_EMAIL, certifications, experience, loginResult, signedIn, skillGroups } from '../test/fixtures'
 import { deferred, failWith, mockApi, noContent, ok, sequence, type ApiCall, type Handler } from '../test/mockApi'
 import { findPageHeading, renderAdmin, statusRegion } from '../test/renderAdmin'
 
@@ -543,7 +543,7 @@ describe('content editor', () => {
       ...signedIn(),
       'GET /admin/content/certifications': ok({ items: certifications() }),
       'PUT /admin/content/certifications/pm202': sequence(failWith(401, 'unauthorized'), echo()),
-      'POST /auth/login': ok({ email: ADMIN_EMAIL }),
+      'POST /auth/login': ok(loginResult()),
     })
     const { user } = renderAdmin('/admin/content/certifications/pm202')
     const name = await screen.findByLabelText('Certification')

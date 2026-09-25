@@ -491,4 +491,5 @@ async def test_summary(admin_client: httpx.AsyncClient) -> None:
         },
         "unreadMessages": 0,
         "cv": None,
+        "totpEnabled": False,
     }

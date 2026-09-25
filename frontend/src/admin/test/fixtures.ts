@@ -13,6 +13,9 @@ import { ok, type Handler } from './mockApi'
 /** Invented test data only: no real person, address or message appears in the admin tests. */
 
 export const ADMIN_EMAIL = 'admin@example.com'
+
+/** `POST /auth/login` (and `/auth/login/totp`): signed in, or a code is due first. */
+export const loginResult = (totpRequired = false) => ({ email: ADMIN_EMAIL, totpRequired })
 const UPDATED = '2026-09-01T10:00:00Z'
 
 export const experience = (): ExperienceItem[] => [
@@ -108,6 +111,7 @@ export const summary = (overrides: Partial<Summary> = {}): Summary => ({
   },
   unreadMessages: 2,
   cv: cv(),
+  totpEnabled: true,
   ...overrides,
 })
 

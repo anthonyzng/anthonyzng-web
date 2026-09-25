@@ -11,14 +11,17 @@ import { ADMIN_NS } from '../i18n'
 import { adminPaths } from '../paths'
 import { useStatus } from '../shell/statusContext'
 import { useSummary } from '../shell/summaryContext'
-import { CARD, EYEBROW } from '../styles'
+import { CARD, EYEBROW, TEXT_LINK } from '../styles'
 
 const TILE_BASE = `${CARD} flex h-full justify-between gap-3 px-5 py-4 transition-colors duration-200 hover:text-accent`
 /** A collection and its count on one line: eight of them stay compact on a phone. */
 const COUNT_TILE = `${TILE_BASE} items-center`
 const TILE = `${TILE_BASE} flex-col`
 
-/** Counts per collection, unread messages, whether a CV is online, and how the static fallback is refreshed. */
+/**
+ * Counts per collection, unread messages, whether a CV is online, a reminder while two-factor sign-in
+ * is off, and how the static fallback is refreshed.
+ */
 export function DashboardPage() {
   const { t, i18n } = useTranslation(ADMIN_NS)
   const { announce } = useStatus()
@@ -51,6 +54,16 @@ export function DashboardPage() {
         status === 'error' ? <LoadError onRetry={retry} className="mt-8" /> : <LoadingState className="mt-8" />
       ) : (
         <>
+          {summary.totpEnabled ? null : (
+            <aside className="mt-8 border border-line bg-surface p-6">
+              <h2 className="font-medium">{t('dashboard.totpOffTitle')}</h2>
+              <p className="mt-2 text-sm text-muted">{t('dashboard.totpOffBody')}</p>
+              <AdminLink to={adminPaths.security} className={`mt-3 inline-flex min-h-11 items-center ${TEXT_LINK}`}>
+                {t('dashboard.totpOffLink')}
+              </AdminLink>
+            </aside>
+          )}
+
           <section aria-labelledby={contentHeading} className="mt-8">
             <h2 id={contentHeading} className={EYEBROW}>
               {t('dashboard.content')}

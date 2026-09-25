@@ -107,14 +107,31 @@ export const contactLinkItemSchema = z.object({
 export const siteTextItemSchema = z.object({ slug, translations: localized(z.object({ text: z.string() })), updatedAt })
 export type SiteTextItem = z.infer<typeof siteTextItemSchema>
 
-/** `POST /auth/login` and `GET /auth/me`. */
+/** `GET /auth/me`. */
 export const adminInfoSchema = z.object({ email: z.string() })
+
+/**
+ * `POST /auth/login` and `POST /auth/login/totp`. `totpRequired`: the password was right and an
+ * authenticator code is due; no session exists yet.
+ */
+export const loginResultSchema = z.object({ email: z.string(), totpRequired: z.boolean() })
+export type LoginResult = z.infer<typeof loginResultSchema>
+
+/** `GET /admin/totp`, and the answer to turning it on or off. */
+export const totpStatusSchema = z.object({ enabled: z.boolean(), enabledAt: z.nullable(z.string()) })
+export type TotpStatus = z.infer<typeof totpStatusSchema>
+
+/** `POST /admin/totp/setup`: the secret to type in by hand, and the `otpauth://` URI the QR code carries. */
+export const totpSetupSchema = z.object({ secret: z.string(), uri: z.string() })
+export type TotpSetup = z.infer<typeof totpSetupSchema>
 
 /** `GET /admin/summary`. Counts are a record, so a collection the server adds later cannot break the dashboard. */
 export const summarySchema = z.object({
   counts: z.record(z.string(), number),
   unreadMessages: number,
   cv: z.nullable(cvRefSchema),
+  /** Whether sign-in asks for an authenticator code; the dashboard reminds when it does not. */
+  totpEnabled: z.boolean(),
 })
 export type Summary = z.infer<typeof summarySchema>
 

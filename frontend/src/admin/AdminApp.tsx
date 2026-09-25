@@ -8,6 +8,7 @@ import { CvPage } from './pages/CvPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { MessagesPage } from './pages/MessagesPage'
+import { SecurityPage } from './pages/SecurityPage'
 import { AdminSessionProvider } from './session/AdminSessionProvider'
 import { RequireAuth } from './session/RequireAuth'
 
@@ -28,6 +29,7 @@ export default function AdminApp() {
           <Route path="content/:collection/:slug" element={<ContentEditorPage mode="edit" />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="cv" element={<CvPage />} />
+          <Route path="security" element={<SecurityPage />} />
           <Route path="*" element={<AdminNotFound />} />
         </Route>
       </Routes>

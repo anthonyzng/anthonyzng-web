@@ -31,7 +31,8 @@
     "newTab": "（在新分頁開啟）",
     "signOut": "登出",
     "signingOut": "登出中…",
-    "signOutFailed": "未能登出。請檢查網絡連線，然後再試。"
+    "signOutFailed": "未能登出。請檢查網絡連線，然後再試。",
+    "security": "安全設定"
   },
   "language": {
     "label": "語言",
@@ -80,8 +81,19 @@
       "completeCheck": "請先完成上方的驗證，然後登入。",
       "turnstileFailed": "驗證未能通過。請重新完成驗證，然後登入。",
       "unavailable": "驗證服務暫時沒有回應，請稍後再試。",
-      "generic": "伺服器沒有回應，未能登入。請檢查網絡連線，然後再試。"
-    }
+      "generic": "伺服器沒有回應，未能登入。請檢查網絡連線，然後再試。",
+      "codeRequired": "請輸入 6 位數驗證碼。",
+      "codeFormat": "驗證碼為 6 位數字。",
+      "codeWrong": "驗證碼不正確，請輸入應用程式目前顯示的驗證碼。",
+      "codeUnavailable": "伺服器暫時無法進行雙重驗證，請稍後再試。"
+    },
+    "codeIntro": "請輸入驗證器應用程式顯示的 6 位數驗證碼。",
+    "code": "驗證碼",
+    "codeHint": "6 位數字，應用程式每 30 秒顯示新的一組。",
+    "verify": "驗證",
+    "verifying": "驗證中…",
+    "startOver": "重新開始",
+    "codeExpired": "登入逾時，請重新登入。"
   },
   "dashboard": {
     "title": "概覽",
@@ -96,7 +108,10 @@
     "cvMissing": "尚未上載履歷",
     "syncTitle": "編輯內容後",
     "syncBody": "網站另備一份內建內容，供 API 無法連線時使用。如要更新這份內容，請在 frontend/ 資料夾執行以下指令：",
-    "syncLater": "自動部署（第 7 階段）完成後，這一步會自動進行。"
+    "syncLater": "自動部署（第 7 階段）完成後，這一步會自動進行。",
+    "totpOffTitle": "雙重驗證尚未啟用",
+    "totpOffBody": "任何人只要知道密碼就能登入。啟用雙重驗證後，登入時還需要手機驗證器應用程式上的驗證碼。",
+    "totpOffLink": "設定雙重驗證"
   },
   "list": {
     "add": "新增",
@@ -350,6 +365,43 @@
       "remove": "未能移除履歷，請再試一次。"
     },
     "busy": "請等目前的履歷上載完成，然後再選擇。"
+  },
+  "security": {
+    "title": "安全設定",
+    "totpHeading": "雙重驗證",
+    "intro": "啟用雙重驗證後，登入時除了密碼，還需要手機驗證器應用程式（例如 Google Authenticator、Microsoft Authenticator 或 1Password）上的 6 位數驗證碼。",
+    "onSince": "已啟用，啟用時間：",
+    "off": "未啟用：只需密碼即可登入。",
+    "setUp": "設定雙重驗證",
+    "starting": "準備中…",
+    "scanStep": "1. 用驗證器應用程式掃描此 QR 碼",
+    "qrLabel": "供驗證器應用程式掃描的 QR 碼",
+    "manual": "無法掃描？請在應用程式中新增帳戶，並輸入以下金鑰：",
+    "confirmStep": "2. 輸入密碼及應用程式顯示的 6 位數驗證碼",
+    "password": "密碼",
+    "code": "驗證碼",
+    "codeHint": "6 位數字，應用程式每 30 秒顯示新的一組。",
+    "enable": "啟用",
+    "enabling": "啟用中…",
+    "cancel": "取消",
+    "enabled": "雙重驗證已啟用，其他裝置已被登出。",
+    "disableHeading": "停用雙重驗證",
+    "disableBody": "請輸入密碼及應用程式目前顯示的驗證碼。",
+    "disable": "停用",
+    "disabling": "停用中…",
+    "disabled": "雙重驗證已停用，其他裝置已被登出。",
+    "lostDevice": "裝有驗證器應用程式的手機遺失了？在伺服器的 /opt/anthonyzng-web 執行以下指令即可停用雙重驗證，之後用密碼登入並重新設定。",
+    "errors": {
+      "passwordRequired": "請輸入密碼。",
+      "wrongPassword": "密碼不正確。",
+      "codeRequired": "請輸入 6 位數驗證碼。",
+      "codeFormat": "驗證碼為 6 位數字。",
+      "codeWrong": "驗證碼不正確，請輸入應用程式目前顯示的驗證碼。",
+      "conflict": "雙重驗證已在另一個分頁中更改，以下顯示目前的設定。",
+      "setupFailed": "無法開始設定。請檢查網絡連線，然後再試。",
+      "unavailable": "伺服器暫時無法進行雙重驗證，請稍後再試。",
+      "generic": "伺服器沒有回應，所以未能儲存。請檢查網絡連線，然後再試。"
+    }
   },
   "notFound": {
     "title": "找不到頁面",

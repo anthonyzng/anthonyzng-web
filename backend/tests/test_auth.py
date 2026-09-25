@@ -14,7 +14,6 @@ from pydantic import SecretStr
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-import app.api.v1.auth as auth_routes
 import app.services.auth as auth_service
 from app.core.config import Settings
 from app.core.security import (
@@ -59,7 +58,7 @@ def cookie_header(token: str) -> dict[str, str]:
 async def test_login_sets_the_session_cookie(client: httpx.AsyncClient) -> None:
     response = await client.post(LOGIN, json=CREDENTIALS)
     assert response.status_code == 200
-    assert response.json() == {"email": TEST_ADMIN_EMAIL}
+    assert response.json() == {"email": TEST_ADMIN_EMAIL, "totpRequired": False}
     assert response.headers["cache-control"] == "no-store"
     morsel = session_cookie(response)
     assert morsel.value
@@ -397,7 +396,7 @@ async def test_password_checks_run_a_few_at_a_time(
     app: FastAPI, client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Each Argon2 check takes 19 MiB: a flood queues, and waits too long get 429."""
-    monkeypatch.setattr(auth_routes, "PASSWORD_CHECK_WAIT_SECONDS", 0.05)
+    monkeypatch.setattr(auth_service, "PASSWORD_CHECK_WAIT_SECONDS", 0.05)
     checks = services_of(app).password_checks
     for _ in range(PASSWORD_CHECK_CONCURRENCY):
         await checks.acquire()

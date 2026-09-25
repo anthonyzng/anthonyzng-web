@@ -1,4 +1,5 @@
-"""Password hashing (Argon2id), admin session JWTs and the session cookie."""
+"""Password hashing (Argon2id), admin session JWTs and the session cookie, and the short-lived
+token of a sign-in waiting for its second factor."""
 
 import secrets
 from dataclasses import dataclass
@@ -14,6 +15,13 @@ SESSION_COOKIE_NAME = "admin_session"
 SESSION_COOKIE_PATH = "/api"
 SESSION_TTL = timedelta(hours=12)
 SESSION_TOKEN_TYPE = "admin_session"
+TOTP_PENDING_COOKIE_NAME = "admin_totp_pending"
+TOTP_PENDING_COOKIE_PATH = "/api/v1/auth"
+"""Sent to the sign-in routes only."""
+TOTP_PENDING_TTL = timedelta(minutes=5)
+TOTP_PENDING_TOKEN_TYPE = "admin_totp_pending"
+"""The password was right; the authenticator code is still to come. Never a session: the admin
+session dependency accepts `admin_session` tokens only."""
 JWT_ALGORITHM = "HS256"
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 """`Expires` value that clears a cookie (an int would mean "seconds from now" to Starlette)."""
@@ -60,24 +68,68 @@ class SessionClaims:
     expires_at: datetime
 
 
-def create_session_token(
-    *, user_id: int, email: str, version: int, secret: str, now: datetime | None = None
+def _encode_token(
+    *,
+    token_type: str,
+    ttl: timedelta,
+    user_id: int,
+    email: str,
+    version: int,
+    secret: str,
+    now: datetime | None,
 ) -> str:
     issued_at = now or datetime.now(UTC)
-    expires_at = issued_at + SESSION_TTL
+    expires_at = issued_at + ttl
     payload: dict[str, Any] = {
         "sub": str(user_id),
         "email": email,
         "ver": version,
-        "typ": SESSION_TOKEN_TYPE,
+        "typ": token_type,
         "iat": int(issued_at.timestamp()),
         "exp": int(expires_at.timestamp()),
     }
     return jwt.encode(payload, secret, algorithm=JWT_ALGORITHM)
 
 
+def create_session_token(
+    *, user_id: int, email: str, version: int, secret: str, now: datetime | None = None
+) -> str:
+    return _encode_token(
+        token_type=SESSION_TOKEN_TYPE,
+        ttl=SESSION_TTL,
+        user_id=user_id,
+        email=email,
+        version=version,
+        secret=secret,
+        now=now,
+    )
+
+
+def create_totp_pending_token(
+    *, user_id: int, email: str, version: int, secret: str, now: datetime | None = None
+) -> str:
+    return _encode_token(
+        token_type=TOTP_PENDING_TOKEN_TYPE,
+        ttl=TOTP_PENDING_TTL,
+        user_id=user_id,
+        email=email,
+        version=version,
+        secret=secret,
+        now=now,
+    )
+
+
 def decode_session_token(token: str, secret: str) -> SessionClaims | None:
     """Claims of a valid, unexpired admin session token, or None for anything else."""
+    return _decode_token(token, secret, SESSION_TOKEN_TYPE)
+
+
+def decode_totp_pending_token(token: str, secret: str) -> SessionClaims | None:
+    """Claims of a valid, unexpired second-factor token, or None for anything else."""
+    return _decode_token(token, secret, TOTP_PENDING_TOKEN_TYPE)
+
+
+def _decode_token(token: str, secret: str, token_type: str) -> SessionClaims | None:
     try:
         payload = jwt.decode(
             token,
@@ -87,7 +139,7 @@ def decode_session_token(token: str, secret: str) -> SessionClaims | None:
         )
     except jwt.PyJWTError:
         return None
-    if payload.get("typ") != SESSION_TOKEN_TYPE:
+    if payload.get("typ") != token_type:
         return None
     try:
         user_id = int(payload["sub"])
@@ -131,4 +183,30 @@ def clear_session_cookie(response: Response, *, secure: bool) -> None:
         secure=secure,
         httponly=True,
         samesite="lax",
+    )
+
+
+def set_totp_pending_cookie(response: Response, token: str, *, secure: bool) -> None:
+    """`admin_totp_pending=<JWT>; Path=/api/v1/auth; Max-Age=300; HttpOnly; SameSite=Strict`."""
+    response.set_cookie(
+        TOTP_PENDING_COOKIE_NAME,
+        token,
+        max_age=int(TOTP_PENDING_TTL.total_seconds()),
+        path=TOTP_PENDING_COOKIE_PATH,
+        secure=secure,
+        httponly=True,
+        samesite="strict",
+    )
+
+
+def clear_totp_pending_cookie(response: Response, *, secure: bool) -> None:
+    response.set_cookie(
+        TOTP_PENDING_COOKIE_NAME,
+        "",
+        max_age=0,
+        expires=EPOCH,
+        path=TOTP_PENDING_COOKIE_PATH,
+        secure=secure,
+        httponly=True,
+        samesite="strict",
     )

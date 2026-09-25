@@ -278,7 +278,7 @@ async def remove_project_image(session: AsyncSession, slug: str) -> BaseModel:
     return _to_out(PROJECTS, project, {})
 
 
-async def summary(session: AsyncSession) -> SummaryOut:
+async def summary(session: AsyncSession, *, totp_enabled: bool) -> SummaryOut:
     counts: dict[str, int] = {}
     for name, collection in COLLECTIONS.items():
         total = await session.scalar(select(func.count()).select_from(collection.model))
@@ -286,4 +286,9 @@ async def summary(session: AsyncSession) -> SummaryOut:
     unread = await session.scalar(
         select(func.count()).select_from(ContactMessage).where(ContactMessage.read_at.is_(None))
     )
-    return SummaryOut(counts=counts, unread_messages=unread or 0, cv=await get_cv_ref(session))
+    return SummaryOut(
+        counts=counts,
+        unread_messages=unread or 0,
+        cv=await get_cv_ref(session),
+        totp_enabled=totp_enabled,
+    )

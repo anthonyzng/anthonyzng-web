@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import i18n from '../i18n'
 import { jsonResponse } from '../test/api'
 import { navigation } from '../test/navigation'
-import { ADMIN_EMAIL, experience, signedIn, summary } from './test/fixtures'
+import { ADMIN_EMAIL, experience, loginResult, signedIn, summary } from './test/fixtures'
 import { deferred, failWith, mockApi, noContent, ok, sequence } from './test/mockApi'
 import { findPageHeading, renderAdmin } from './test/renderAdmin'
 
@@ -39,7 +39,7 @@ describe('admin panel', () => {
   it('sends a visitor without a session to the login page, then back to the page they asked for', async () => {
     const api = mockApi({
       'GET /auth/me': failWith(401, 'unauthorized'),
-      'POST /auth/login': ok({ email: ADMIN_EMAIL }),
+      'POST /auth/login': ok(loginResult()),
       'GET /admin/summary': ok(summary()),
       'GET /admin/content/experience': ok({ items: experience() }),
     })
@@ -62,7 +62,7 @@ describe('admin panel', () => {
     mockApi({
       ...signedIn(),
       'GET /admin/content/experience': sequence(failWith(401, 'unauthorized'), ok({ items: experience() })),
-      'POST /auth/login': ok({ email: ADMIN_EMAIL }),
+      'POST /auth/login': ok(loginResult()),
     })
     const { user } = renderAdmin('/admin/content/experience')
 
@@ -102,7 +102,7 @@ describe('admin panel', () => {
       'GET /auth/me': ok({ email: ADMIN_EMAIL }),
       'GET /admin/summary': sequence(stale.handler, ok(summary())),
       'GET /admin/content/experience': sequence(failWith(401, 'unauthorized'), ok({ items: experience() })),
-      'POST /auth/login': ok({ email: ADMIN_EMAIL }),
+      'POST /auth/login': ok(loginResult()),
     })
     const { user } = renderAdmin('/admin/content/experience')
     // The list's 401 ends the session while the first summary is still on its way.

@@ -14,8 +14,9 @@ from sqlalchemy.pool import NullPool
 
 from app.db_roles import RoleSettings, apply_app_role
 
-FIRST_PASSWORD = "first-password-0123456789abcdef"
-SECOND_PASSWORD = "second-password-0123456789abcdef"
+# Throwaway credentials of a temporary test role (not secrets).
+FIRST_PASSWORD = "first-password-0123456789abcdef"  # ggignore
+SECOND_PASSWORD = "second-password-0123456789abcdef"  # ggignore
 IP_HASH = "a" * 64
 
 
@@ -149,7 +150,7 @@ async def test_refuses_the_schema_owner(engine: AsyncEngine) -> None:
 def role_settings(**overrides: Any) -> RoleSettings:
     values: dict[str, Any] = {
         "_env_file": None,
-        "DATABASE_URL": "postgresql+asyncpg://owner:pw@db:5432/app",
+        "DATABASE_URL": "postgresql+asyncpg://owner:pw@db:5432/app",  # ggignore
         "DATABASE_APP_USER": "anthonyzng_app",
         "DATABASE_APP_PASSWORD": FIRST_PASSWORD,
     }
