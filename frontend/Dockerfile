@@ -19,7 +19,7 @@ RUN for name in VITE_API_BASE_URL VITE_TURNSTILE_SITE_KEY; do \
     && npm run build
 
 # --- runtime --------------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
