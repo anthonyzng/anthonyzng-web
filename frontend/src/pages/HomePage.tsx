@@ -1,6 +1,7 @@
 import { useActiveSection } from '../animations/useActiveSection'
 import { useHashScroll } from '../animations/useHashScroll'
 import { ContentProvider } from '../content/ContentProvider'
+import { Closing } from '../sections/Closing'
 import { Contact } from '../sections/Contact'
 import { Experience } from '../sections/Experience'
 import { Hero } from '../sections/Hero'
@@ -23,6 +24,7 @@ export function HomePage() {
       <Projects />
       <Skills />
       <Contact />
+      <Closing />
     </ContentProvider>
   )
 }

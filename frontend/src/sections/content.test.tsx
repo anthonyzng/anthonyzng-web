@@ -246,4 +246,38 @@ describe('section content', () => {
       expect(section.querySelector('[data-plane]')).toBeNull()
     }
   })
+
+  describe('Closing', () => {
+    const closing = () => document.querySelector<HTMLElement>('[data-closing]')
+
+    it('repeats the channels once without motion, hidden from assistive technology and the tab order', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const screenEl = closing()
+      expect(screenEl).not.toBeNull()
+      expect(screenEl).toHaveAttribute('aria-hidden', 'true')
+      expect(screenEl).toHaveTextContent('Get in touch')
+      const links = [...(screenEl?.querySelectorAll('a') ?? [])]
+      expect(links.map((link) => link.getAttribute('href'))).toEqual(content.contact.links.map((link) => link.href))
+      expect(links.every((link) => link.tabIndex === -1)).toBe(true)
+      // The accessible channels stay in the Contact section.
+      expect(within(region('Contact')).getAllByRole('link').length).toBeGreaterThanOrEqual(content.contact.links.length)
+    })
+
+    it('adds the CV download once one is uploaded', async () => {
+      queueJson({ ...editable(), cv: CV })
+      renderAt('/en')
+      await waitFor(() => expect(closing()?.querySelector('a[download]')).not.toBeNull())
+      const cv = closing()?.querySelector('a[download]')
+      expect(cv).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
+      expect(cv).toHaveTextContent('Download CV (PDF, 180 KB)')
+    })
+
+    it('is titled in Chinese on the Chinese page', async () => {
+      await i18n.changeLanguage('zh-Hant')
+      renderAt('/zh-hant')
+      await screen.findByRole('heading', { level: 1 })
+      expect(closing()).toHaveTextContent('保持聯絡')
+    })
+  })
 })

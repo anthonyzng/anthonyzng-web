@@ -35,6 +35,9 @@
     "scrollCue": "Scroll",
     "statement": {
       "label": "In brief"
+    },
+    "closing": {
+      "title": "Get in touch"
     }
   },
   "sections": {

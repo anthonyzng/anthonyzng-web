@@ -86,8 +86,10 @@ describe('useContent', () => {
     const swapped = () => document.body.textContent?.includes('Principal Engineer (from the API)') ?? false
     const realRect = Element.prototype.getBoundingClientRect
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-      if (this.id !== 'contact') return realRect.call(this)
-      const top = swapped() ? 300 : 0
+      // The closing screen follows Contact, below the reading line.
+      const offset = this.id === 'contact' ? 0 : this.hasAttribute('data-closing') ? 500 : null
+      if (offset === null) return realRect.call(this)
+      const top = (swapped() ? 300 : 0) + offset
       return { top, height: 500, bottom: top + 500, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }
     })
     const pending = queueDeferred()

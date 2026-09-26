@@ -35,6 +35,9 @@
     "scrollCue": "向下捲動",
     "statement": {
       "label": "簡介"
+    },
+    "closing": {
+      "title": "保持聯絡"
     }
   },
   "sections": {
