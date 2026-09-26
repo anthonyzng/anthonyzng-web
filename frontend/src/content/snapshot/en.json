@@ -170,11 +170,6 @@
     ],
     "certifications": [
       {
-        "id": "az900",
-        "name": "Microsoft Azure Fundamentals (AZ-900)",
-        "inProgress": false
-      },
-      {
         "id": "ccna",
         "name": "CCNA Routing & Switching",
         "inProgress": false
