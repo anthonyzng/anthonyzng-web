@@ -3,7 +3,7 @@
 # VITE_* values are compiled into the bundle, so they are build arguments (public values only).
 
 # --- build ----------------------------------------------------------------------------------
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
@@ -19,7 +19,7 @@ RUN for name in VITE_API_BASE_URL VITE_TURNSTILE_SITE_KEY; do \
     && npm run build
 
 # --- runtime --------------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080

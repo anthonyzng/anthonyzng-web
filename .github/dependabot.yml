@@ -2,6 +2,8 @@
 # npm and uv updates that stay within a major version are grouped into one pull request per
 # ecosystem, majors come one by one. Container images come one by one too; PostgreSQL majors are
 # ignored, because a new major cannot read the existing data volume without a dump and restore.
+# Node majors (the build image and @types/node) are moved by hand to each new Active LTS, together
+# with the node-version of the workflows, instead of to every Current release.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -19,6 +21,9 @@ updates:
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: uv
     directory: /backend
@@ -32,6 +37,9 @@ updates:
     directories: [/backend, /frontend]
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: docker-compose
     directory: /
