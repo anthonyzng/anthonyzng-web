@@ -1,0 +1,89 @@
+# Refreshes the site's static fallback content (frontend/src/content/snapshot/*.json) from the
+# production API once a day, and opens (or updates) a pull request when it changed. Merging that
+# pull request deploys the new snapshot like any other change (ci-cd.yml).
+#
+# A pull request opened with the job's GITHUB_TOKEN starts no other workflow, so ci-cd.yml's checks
+# do not run on it: this job runs the snapshot's own checks (the zod test and the typecheck) before
+# it pushes. It needs the repository setting "Allow GitHub Actions to create and approve pull
+# requests" (Settings → Actions → General). Run it by hand from the Actions tab after editing content.
+
+name: Content snapshot sync
+
+on:
+  schedule:
+    - cron: "23 4 * * *" # daily at 04:23 UTC (12:23 in Hong Kong)
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: content-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BRANCH: bot/content-sync
+      TITLE: "chore(content): sync the content snapshot from production"
+      API: ${{ vars.VITE_API_BASE_URL || 'https://api.owwsolution.com' }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Fetch the content from the API
+        run: node scripts/sync-content.mjs "$API"
+      - name: Compare with the committed snapshot
+        id: diff
+        run: |
+          if git diff --quiet -- src/content/snapshot; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "The snapshot matches the API; nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- src/content/snapshot
+          fi
+      - name: Close an outdated pull request
+        # main caught up another way (a manual sync): an open one would now roll the copy back.
+        if: steps.diff.outputs.changed == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          open=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh pr close "$open" --delete-branch --comment "The snapshot on main already matches the API; this pull request is no longer needed."
+          fi
+      - name: Check the new snapshot
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          npm ci
+          npx vitest run src/content/snapshot.test.ts
+          npm run typecheck
+      - name: Open or update the pull request
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --force-create "$BRANCH"
+          git add src/content/snapshot
+          git commit --quiet --message "$TITLE"
+          git push --force --quiet origin "$BRANCH"
+          open=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            echo "Updated pull request #$open."
+          else
+            gh pr create --base main --head "$BRANCH" --title "$TITLE" --body "The content saved in the admin panel differs from the site's built-in fallback copy (\`frontend/src/content/snapshot/\`). This pull request brings the copy up to date; merging it deploys it.
+
+          Fetched from \`$API\` by the *Content snapshot sync* workflow, which also ran the snapshot test and the typecheck (the CI/CD checks do not start on pull requests opened by GitHub Actions)."
+          fi

@@ -1,5 +1,7 @@
-# Keeps the SHA-pinned GitHub Actions (and the version comments next to them) up to date, one
-# weekly pull request. npm and uv dependencies are not managed here.
+# Weekly update pull requests. Actions are SHA-pinned (the version in a comment next to each);
+# npm and uv updates that stay within a major version are grouped into one pull request per
+# ecosystem, majors come one by one. Container images come one by one too; PostgreSQL majors are
+# ignored, because a new major cannot read the existing data volume without a dump and restore.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -9,3 +11,32 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directories: [/backend, /frontend]
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: postgres
+        update-types: [version-update:semver-major]

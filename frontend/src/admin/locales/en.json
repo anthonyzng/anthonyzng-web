@@ -107,8 +107,8 @@
     "cvOnline": "{{filename}} ({{size}})",
     "cvMissing": "No CV uploaded",
     "syncTitle": "After editing content",
-    "syncBody": "The site also keeps a built-in copy of its content for when the API cannot be reached. To refresh that copy, run this command in the frontend/ folder:",
-    "syncLater": "Automatic deployment (Phase 7) will take care of this step.",
+    "syncBody": "The site also keeps a built-in copy of its content for when the API cannot be reached. Once a day, GitHub compares it with what is saved here and, when they differ, opens a pull request that updates it. To update it at once, run the “Content snapshot sync” workflow in the repository's Actions tab, or run this command in the frontend/ folder and commit the result:",
+    "syncLater": "Merging that pull request deploys the updated copy.",
     "totpOffTitle": "Two-factor sign-in is off",
     "totpOffBody": "Anyone who learns the password can sign in. With two-factor sign-in, a code from an authenticator app on your phone is needed as well.",
     "totpOffLink": "Set up two-factor sign-in"
