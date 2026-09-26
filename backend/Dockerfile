@@ -3,10 +3,10 @@
 # The same image runs the one-off `migrate` service (`alembic upgrade head`) and the seed CLI.
 # Configuration comes from the environment only: `.env` files are never copied in.
 
-ARG PYTHON_VERSION=3.13
+# Python is named in both FROM lines (not through an ARG), so Dependabot can propose updates.
 
 # --- dependencies ---------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-slim AS build
+FROM python:3.13-slim AS build
 COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
 # --- runtime --------------------------------------------------------------------------------
-FROM python:${PYTHON_VERSION}-slim AS runtime
+FROM python:3.13-slim AS runtime
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

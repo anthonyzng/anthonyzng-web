@@ -2,7 +2,8 @@
 /**
  * Refreshes the site's static fallback content (`src/content/snapshot/<locale>.json`) from a running
  * API, so the page's first paint (and any visit while the API is down) shows what the admin panel
- * last saved. Run it after editing content, then commit the two files; Phase 7 runs it on deploy.
+ * last saved. The Content snapshot sync workflow (.github/workflows/content-sync.yml) runs it daily
+ * against production and opens a pull request when the files change; run it by hand to update at once.
  *
  *   npm run content:sync                                   # http://localhost:8000 (or VITE_API_BASE_URL)
  *   npm run content:sync -- --api https://api.owwsolution.com

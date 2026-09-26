@@ -107,8 +107,8 @@
     "cvOnline": "{{filename}}（{{size}}）",
     "cvMissing": "尚未上載履歷",
     "syncTitle": "編輯內容後",
-    "syncBody": "網站另備一份內建內容，供 API 無法連線時使用。如要更新這份內容，請在 frontend/ 資料夾執行以下指令：",
-    "syncLater": "自動部署（第 7 階段）完成後，這一步會自動進行。",
+    "syncBody": "網站另備一份內建內容，供 API 無法連線時使用。GitHub 每日會將它與此處儲存的內容比對，有差異時便開一個 pull request 更新它。如要立即更新，可在儲存庫的 Actions 分頁執行「Content snapshot sync」，或在 frontend/ 資料夾執行以下指令並 commit 結果：",
+    "syncLater": "合併該 pull request 後，更新的內建內容便會隨部署上線。",
     "totpOffTitle": "雙重驗證尚未啟用",
     "totpOffBody": "任何人只要知道密碼就能登入。啟用雙重驗證後，登入時還需要手機驗證器應用程式上的驗證碼。",
     "totpOffLink": "設定雙重驗證"
