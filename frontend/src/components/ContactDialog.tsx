@@ -1,13 +1,19 @@
 import type Lenis from 'lenis'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLenis } from '../animations/useSmoothScroll'
 import { ContactForm } from './ContactForm'
 import { CloseIcon, ICON_BUTTON } from './MobileMenu'
 
+/** Opens the dialog from elsewhere on the page (the Email channel). */
+export interface ContactDialogHandle {
+  open(): void
+}
+
 interface ContactDialogProps {
   /** Classes of the button that opens the form. */
   buttonClassName: string
+  ref?: Ref<ContactDialogHandle>
 }
 
 /**
@@ -16,8 +22,9 @@ interface ContactDialogProps {
  * the Turnstile widget loads only for visitors who want to write, and stays mounted afterwards, so
  * closing the dialog by mistake keeps the draft. The page does not scroll behind it (Lenis stopped,
  * `html:has(dialog.contact-dialog[open])`); the panel scrolls on its own (`data-lenis-prevent`).
+ * `ref.open()` opens it from another control (the Email channel writes through the form too).
  */
-export function ContactDialog({ buttonClassName }: ContactDialogProps) {
+export function ContactDialog({ buttonClassName, ref }: ContactDialogProps) {
   const { t } = useTranslation()
   const lenis = useLenis()
   const lenisRef = useRef<Lenis | null>(null)
@@ -46,6 +53,7 @@ export function ContactDialog({ buttonClassName }: ContactDialogProps) {
     lenisRef.current?.stop()
     setOpen(true)
   }
+  useImperativeHandle(ref, () => ({ open: show }))
 
   return (
     <>

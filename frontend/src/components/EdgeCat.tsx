@@ -3,23 +3,21 @@ import type { CatKind } from './cats'
 
 interface EdgeCatProps {
   kind: CatKind
-  /** `lap`: one run across and back; longer for wide parents (cards) so the pace stays the same. */
-  lap?: 'short' | 'long'
 }
 
 /**
  * A tiny cartoon cat that runs back and forth along the top edge of its positioned parent, turning
  * round at each end, legs paddling (all CSS: `.edge-cat*` in index.css, transforms and opacity
- * only). The parent decides when it shows (`group-hover`, focus, a data attribute); with reduced
+ * only). Its `.cat-host` parent decides when it shows (hover, focus); with reduced
  * motion the cat sits still at the left end. Purely decorative. Colours come from the
  * `data-cat` tokens in index.css; the rainbow cat fills with a gradient of its own.
  */
-export function EdgeCat({ kind, lap = 'short' }: EdgeCatProps) {
+export function EdgeCat({ kind }: EdgeCatProps) {
   const gradient = `cat-rainbow-${useId().replace(/:/g, '')}`
   const fill = kind === 'rainbow' ? `url(#${gradient})` : 'var(--cat-fill)'
 
   return (
-    <span aria-hidden="true" className="edge-cat-track" data-lap={lap}>
+    <span aria-hidden="true" className="edge-cat-track">
       <span className="edge-cat" data-cat={kind}>
         <svg viewBox="0 0 20 14" width="20" height="14" className="block overflow-visible">
           {kind === 'rainbow' ? (

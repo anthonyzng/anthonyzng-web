@@ -207,14 +207,26 @@ describe('section content', () => {
       expect(within(contact).getByRole('heading', { level: 2, name: 'Get in touch' })).toHaveAttribute('tabindex', '-1')
 
       const channels = within(contact).getByRole('list', { name: 'Contact channels' })
+      // The email channel opens the contact form (a mailto link does nothing without a mail app).
+      expect(within(channels).getByRole('button', { name: 'Email hello@example.com' })).toHaveAttribute(
+        'aria-haspopup',
+        'dialog',
+      )
       const links = within(channels).getAllByRole('link')
       expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
-        ['Email hello@example.com', 'mailto:hello@example.com'],
         ['GitHub github.com/example', 'https://github.com/example'],
       ])
       expect(within(channels).getByText('Toronto, Canada')).toBeInTheDocument()
       // Without motion there is no moving copy of the channels.
       expect(contact.querySelector('[data-zipper-row]')).toBeNull()
+    })
+
+    it('opens the form from the email channel', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      within(contactSection()).getByRole('button', { name: 'Email hello@example.com' }).click()
+      const dialog = await screen.findByRole('dialog', { name: 'Send a message' })
+      expect(within(dialog).getByRole('form', { name: 'Send a message' })).toBeInTheDocument()
     })
 
     it('opens the form in a dialog and closes it again', async () => {
@@ -240,7 +252,6 @@ describe('section content', () => {
       expect(download).toHaveAttribute('download')
       expect(download).toHaveAttribute('type', 'application/pdf')
       expect(within(channels).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
-        'mailto:hello@example.com',
         'https://github.com/example',
         `http://localhost:8000${CV.url}`,
       ])

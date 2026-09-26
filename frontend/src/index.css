@@ -287,7 +287,7 @@
 
 /*
  * Edge cat (components/EdgeCat.tsx): a tiny cat running back and forth along the top edge of a
- * `.cat-host` (a tag chip, a project card) while it is hovered, focused or marked active. The track
+ * `.cat-host` (a tag chip) while it is hovered or focused. The track
  * spans exactly the run (the host's width less the insets and the cat), so translateX(100%) of the
  * track is the far end; the cat turns round halfway through the lap. Transforms and opacity only.
  */
@@ -305,15 +305,9 @@
     animation: edge-cat-run var(--cat-lap) ease-in-out infinite;
   }
 
-  .edge-cat-track[data-lap='long'] {
-    --cat-inset: 1.25rem;
-    --cat-lap: 9s;
-  }
-
   .cat-host:hover .edge-cat-track,
   .cat-host:focus-visible .edge-cat-track,
-  .cat-host:has(:focus-visible) .edge-cat-track,
-  .cat-host[data-cat-active] .edge-cat-track {
+  .cat-host:has(:focus-visible) .edge-cat-track {
     display: block;
   }
 
@@ -433,5 +427,147 @@
   }
   50% {
     opacity: 0;
+  }
+}
+
+/*
+ * Project light (components/ProjectCard.tsx): a comet of light running round a `.light-host`
+ * card's border, a lap each way (about 4s), while the card is hovered, focused or crosses the middle
+ * of the screen. Three layers: the ring (`.card-light-ring`, masked to the border) through which a
+ * rotating conic comet shows (a transform; mirrored for the way back so its tail trails); the glow
+ * (`.card-light-glow`: drop shadows, the RGB cycle by hue-rotate and brief flares by brightness, a
+ * filter animation, like the ink canvas an exception to "transform and opacity only"); the flicker
+ * (`.card-light`: opacity dips now and then). Reduced motion: a still comet at the top.
+ */
+@layer components {
+  .card-light {
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    display: none;
+    animation: card-light-flicker 5.3s linear infinite;
+  }
+
+  .light-host:hover .card-light,
+  .light-host:has(:focus-visible) .card-light,
+  .light-host[data-light-active] .card-light {
+    display: block;
+  }
+
+  .card-light-glow {
+    position: absolute;
+    inset: 0;
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7));
+    animation: card-light-hue 6s linear infinite;
+  }
+
+  .card-light-ring {
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    overflow: hidden;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box exclude,
+      linear-gradient(#000 0 0);
+  }
+
+  .card-light-ring::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg 250deg,
+      hsl(0 100% 60% / 0.25) 300deg,
+      hsl(0 100% 62%) 350deg,
+      #fff 358deg,
+      transparent 360deg
+    );
+    animation: card-light-orbit 8s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-light,
+    .card-light-glow,
+    .card-light-ring::before {
+      animation: none;
+    }
+  }
+}
+
+@keyframes card-light-orbit {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scaleX(1);
+  }
+  49.99% {
+    transform: translate(-50%, -50%) rotate(360deg) scaleX(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) rotate(360deg) scaleX(-1);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg) scaleX(-1);
+  }
+}
+
+/* The hue turns steadily through the colours; brightness spikes are the flares. */
+@keyframes card-light-hue {
+  0% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(0deg) brightness(1);
+  }
+  18% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(64.8deg) brightness(1);
+  }
+  20% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(72deg) brightness(1.9);
+  }
+  23% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(82.8deg) brightness(1);
+  }
+  60% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(216deg) brightness(1);
+  }
+  61.5% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(221.4deg) brightness(1.6);
+  }
+  64% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(230.4deg) brightness(1);
+  }
+  100% {
+    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(360deg) brightness(1);
+  }
+}
+
+/* Mostly steady, with a few quick dips, like a light that is not quite stable. */
+@keyframes card-light-flicker {
+  0%,
+  12%,
+  14.5%,
+  47%,
+  50.5%,
+  78%,
+  80%,
+  100% {
+    opacity: 1;
+  }
+  13% {
+    opacity: 0.45;
+  }
+  48% {
+    opacity: 0.7;
+  }
+  49% {
+    opacity: 0.35;
+  }
+  79% {
+    opacity: 0.6;
   }
 }

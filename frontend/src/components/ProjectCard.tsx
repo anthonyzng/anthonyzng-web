@@ -2,8 +2,6 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fileUrl } from '../api/files'
 import type { ResolvedProject } from '../content/resolved'
-import { randomCat, type CatKind } from './cats'
-import { EdgeCat } from './EdgeCat'
 import { TagList } from './TagList'
 
 interface ProjectCardProps {
@@ -15,31 +13,19 @@ interface ProjectCardProps {
 /** The band around the middle of the viewport in which a card counts as the one being read. */
 const READING_BAND = '-35% 0px -35% 0px'
 
-/**
- * True while `element` crosses the middle of the viewport (never without IntersectionObserver);
- * `onEnter` runs each time it comes in.
- */
-function useInReadingBand(element: RefObject<HTMLElement | null>, enabled: boolean, onEnter: () => void): boolean {
+/** True while `element` crosses the middle of the viewport (never without IntersectionObserver). */
+function useInReadingBand(element: RefObject<HTMLElement | null>): boolean {
   const [inBand, setInBand] = useState(false)
-  const enter = useRef(onEnter)
-  useEffect(() => {
-    enter.current = onEnter
-  })
   useEffect(() => {
     const node = element.current
-    if (!enabled || !node || typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const inside = entry?.isIntersecting ?? false
-        if (inside) enter.current()
-        setInBand(inside)
-      },
-      { rootMargin: READING_BAND },
-    )
+    if (!node || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setInBand(entry?.isIntersecting ?? false), {
+      rootMargin: READING_BAND,
+    })
     observer.observe(node)
     return () => observer.disconnect()
-  }, [element, enabled])
-  return enabled && inBand
+  }, [element])
+  return inBand
 }
 
 /**
@@ -49,8 +35,9 @@ function useInReadingBand(element: RefObject<HTMLElement | null>, enabled: boole
  *
  * A real project with a link is clickable as a whole: the title is the link (its accessible name)
  * and stretches over the card (`after:inset-0`), opening the address set in the admin panel in a
- * new tab; the tags stay their own links above it. While the card is hovered, focused or crosses
- * the middle of the screen, a tiny cat of a random colour runs along its top edge (`EdgeCat`).
+ * new tab; the tags stay their own links above it. While any card (a reserved slot too) is
+ * hovered, focused or crosses the middle of the screen, a comet of light runs round its border,
+ * changing colour and flickering (`.card-light*` in index.css; decorative).
  *
  * The frame holds a plane that drifts inside it on scroll (`useParallax`): the hatch texture, with
  * the uploaded cover image over it when there is one, cropped to the frame. An image that cannot be
@@ -68,16 +55,13 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
   const image = project.placeholder ? null : project.image
   const real = !project.placeholder
   const link = real ? project.url : null
-  const [cat, setCat] = useState<CatKind>(randomCat)
-  // A new cat each time the card comes into the middle of the screen, or under the pointer.
-  const inBand = useInReadingBand(card, real, () => setCat(randomCat()))
+  const inBand = useInReadingBand(card)
 
   return (
     <article
       ref={card}
-      data-cat-active={inBand || undefined}
-      onPointerEnter={real ? () => setCat(randomCat()) : undefined}
-      className={`relative flex h-full flex-col border border-line bg-surface${real ? ' cat-host' : ''}${
+      data-light-active={inBand || undefined}
+      className={`light-host relative flex h-full flex-col border border-line bg-surface${
         link
           ? ' transition-colors duration-200 hover:border-accent has-[.card-link:focus-visible]:outline-2 has-[.card-link:focus-visible]:outline-offset-4 has-[.card-link:focus-visible]:outline-accent'
           : ''
@@ -140,7 +124,11 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
           </span>
         ) : null}
       </div>
-      {real ? <EdgeCat kind={cat} lap="long" /> : null}
+      <span aria-hidden="true" className="card-light">
+        <span className="card-light-glow">
+          <span className="card-light-ring" />
+        </span>
+      </span>
     </article>
   )
 }

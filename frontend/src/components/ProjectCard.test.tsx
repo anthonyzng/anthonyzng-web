@@ -43,19 +43,18 @@ describe('ProjectCard (real project)', () => {
     expect(link).toHaveClass('after:absolute', 'after:inset-0')
   })
 
-  it('carries a cat for the pointer and the reading band, and none on a reserved slot', () => {
-    const { container, unmount } = render(<ProjectCard project={REAL} index={1} />)
-    const card = container.querySelector('article')
-    expect(card).toHaveClass('cat-host')
-    const cat = card?.querySelector(':scope > .edge-cat-track')
-    expect(cat).toHaveAttribute('aria-hidden', 'true')
-    expect(cat).toHaveAttribute('data-lap', 'long')
-    expect(cat?.querySelector('[data-cat]')?.getAttribute('data-cat')).toMatch(/^(black|orange|white|rainbow)$/)
-    unmount()
-
-    const slot = render(<ProjectCard project={{ ...REAL, placeholder: true, url: null }} index={2} />)
-    expect(slot.container.querySelector('article')).not.toHaveClass('cat-host')
-    expect(slot.container.querySelector(':scope article > .edge-cat-track')).toBeNull()
+  it('carries the border light on every card, a reserved slot too, and no cat', () => {
+    for (const project of [REAL, { ...REAL, placeholder: true, url: null }]) {
+      const { container, unmount } = render(<ProjectCard project={project} index={1} />)
+      const card = container.querySelector('article')
+      expect(card).toHaveClass('light-host')
+      const light = card?.querySelector(':scope > .card-light')
+      expect(light).toHaveAttribute('aria-hidden', 'true')
+      expect(light?.querySelector('.card-light-glow > .card-light-ring')).not.toBeNull()
+      // The cats stay on the tags; the card has the light instead.
+      expect(card?.querySelector(':scope > .edge-cat-track')).toBeNull()
+      unmount()
+    }
   })
 
   it('carries no placeholder badge', () => {
