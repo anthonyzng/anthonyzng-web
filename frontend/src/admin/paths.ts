@@ -18,6 +18,7 @@ export const adminPaths = {
     return query ? `/admin/messages?${query}` : '/admin/messages'
   },
   cv: '/admin/cv',
+  security: '/admin/security',
 } as const
 
 /** 1 to 9,999,999: far beyond any real inbox, and well inside the API's offset range. */

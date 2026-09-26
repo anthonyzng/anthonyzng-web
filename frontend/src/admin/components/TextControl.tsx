@@ -11,7 +11,8 @@ interface TextControlProps {
   value: string
   onChange(value: string): void
   onBlur?(event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>): void
-  control?: ControlKind | 'email' | 'password'
+  /** `otp`: a one-time code (numeric keyboard, filled from the phone's SMS or authenticator suggestions). */
+  control?: ControlKind | 'email' | 'password' | 'otp'
   /** The language of the text typed here (a zh-Hant field gets Chinese spellcheck and pronunciation). */
   lang?: string
   hint?: string | null
@@ -27,7 +28,7 @@ interface TextControlProps {
   subLabel?: boolean
 }
 
-const INPUT_TYPE: Record<ControlKind | 'email' | 'password', string> = {
+const INPUT_TYPE: Record<ControlKind | 'email' | 'password' | 'otp', string> = {
   text: 'text',
   textarea: 'text',
   url: 'url',
@@ -35,6 +36,7 @@ const INPUT_TYPE: Record<ControlKind | 'email' | 'password', string> = {
   year: 'text',
   email: 'email',
   password: 'password',
+  otp: 'text',
 }
 
 /**
@@ -100,7 +102,7 @@ export function TextControl({
             {...common}
             type={INPUT_TYPE[control]}
             autoComplete={autoComplete}
-            inputMode={control === 'year' ? 'numeric' : undefined}
+            inputMode={control === 'year' || control === 'otp' ? 'numeric' : undefined}
             placeholder={control === 'month' ? 'YYYY-MM' : control === 'year' ? 'YYYY' : undefined}
             className={code ? `${INPUT} font-mono text-sm` : INPUT}
           />

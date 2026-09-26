@@ -4,7 +4,10 @@ Argon2 is deliberately slow (tens of milliseconds of CPU per hash): every hash a
 runs in the thread pool so a login attempt never stalls the event loop for other requests.
 """
 
+import asyncio
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
@@ -12,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
+from app.core.errors import RateLimitedError
 from app.core.security import (
     SessionClaims,
     hash_password,
@@ -26,6 +30,21 @@ PASSWORD_CHECK_CONCURRENCY = 2
 """Argon2 checks allowed at once: a flood of logins queues instead of exhausting memory."""
 PASSWORD_CHECK_WAIT_SECONDS = 5
 """How long a login waits for a free check before it is answered 429 (try again shortly)."""
+
+
+@asynccontextmanager
+async def password_check_slot(checks: asyncio.Semaphore) -> AsyncIterator[None]:
+    """Holds one of the PASSWORD_CHECK_CONCURRENCY Argon2 slots; 429 when none frees up within
+    PASSWORD_CHECK_WAIT_SECONDS."""
+    try:
+        async with asyncio.timeout(PASSWORD_CHECK_WAIT_SECONDS):
+            await checks.acquire()
+    except TimeoutError:
+        raise RateLimitedError(PASSWORD_CHECK_WAIT_SECONDS) from None
+    try:
+        yield
+    finally:
+        checks.release()
 
 
 def normalize_email(email: str) -> str:
@@ -98,6 +117,11 @@ async def authenticate_admin(
     if not await run_in_threadpool(verify_password, user.password_hash, password):
         return None
     return user
+
+
+async def password_matches(user: AdminUser, password: str) -> bool:
+    """The signed-in admin's password check (turning two-factor sign-in on or off)."""
+    return await run_in_threadpool(verify_password, user.password_hash, password)
 
 
 async def get_admin_for_session(session: AsyncSession, claims: SessionClaims) -> AdminUser | None:

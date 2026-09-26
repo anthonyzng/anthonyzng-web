@@ -15,7 +15,7 @@ interface AdminNavProps {
   onLogout(): void
 }
 
-/** The panel's navigation: dashboard, the content collections, messages (with the unread count), CV, then the account. */
+/** The panel's navigation: dashboard, the content collections, messages (with the unread count), CV, security, then the account. */
 export function AdminNav({ email, unread, signingOut, onLogout }: AdminNavProps) {
   const { t, i18n } = useTranslation(ADMIN_NS)
   const contentLabel = useId()
@@ -54,6 +54,9 @@ export function AdminNav({ email, unread, signingOut, onLogout }: AdminNavProps)
         </li>
         <li>
           <AdminNavLink to={adminPaths.cv}>{t('nav.cv')}</AdminNavLink>
+        </li>
+        <li>
+          <AdminNavLink to={adminPaths.security}>{t('nav.security')}</AdminNavLink>
         </li>
       </ul>
 

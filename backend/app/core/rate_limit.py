@@ -29,6 +29,13 @@ LOGIN_EMAIL_IP_RULE = RateLimitRule(limit=5, window_seconds=900)
 LOGIN_EMAIL_RULE = RateLimitRule(limit=30, window_seconds=900)
 """One email from anywhere: bounds a distributed guess (counted on arrival, cleared on success).
 High enough that one address alone cannot lock the admin out; each attempt also needs Turnstile."""
+LOGIN_TOTP_RULE = RateLimitRule(limit=5, window_seconds=900)
+LOGIN_TOTP_DAILY_RULE = RateLimitRule(limit=20, window_seconds=86_400)
+"""Authenticator codes per admin, both counted on arrival and cleared on success. Only someone who
+already has the password gets this far; three codes are valid at any moment, so 20 guesses a day
+leave about a one-in-16,000 chance a day."""
+ADMIN_REAUTH_RULE = RateLimitRule(limit=5, window_seconds=900)
+"""Password + code confirmations in the admin panel (turning two-factor sign-in on or off)."""
 
 _SWEEP_EVERY = 1000
 
@@ -43,6 +50,8 @@ class SlidingWindowRateLimiter:
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._clock = clock
         self._events: dict[str, deque[float]] = {}
+        self._windows: dict[str, float] = {}
+        """Each key's window, so the sweep keeps a key exactly as long as its rule needs it."""
         self._operations = 0
 
     def check(self, key: str, rule: RateLimitRule) -> RateLimitDecision:
@@ -63,6 +72,7 @@ class SlidingWindowRateLimiter:
         if events is None:
             events = self._events.setdefault(key, deque())
         events.append(now)
+        self._windows[key] = max(self._windows.get(key, 0.0), rule.window_seconds)
 
     def hit(self, key: str, rule: RateLimitRule) -> RateLimitDecision:
         """Check, and record the event when it is allowed ("counted on arrival" rules)."""
@@ -73,9 +83,11 @@ class SlidingWindowRateLimiter:
 
     def clear(self, key: str) -> None:
         self._events.pop(key, None)
+        self._windows.pop(key, None)
 
     def reset(self) -> None:
         self._events.clear()
+        self._windows.clear()
         self._operations = 0
 
     def _prune(self, key: str, now: float, window: float) -> deque[float] | None:
@@ -87,6 +99,7 @@ class SlidingWindowRateLimiter:
             events.popleft()
         if not events:
             del self._events[key]
+            self._windows.pop(key, None)
             return None
         return events
 
@@ -96,14 +109,10 @@ class SlidingWindowRateLimiter:
         if self._operations % _SWEEP_EVERY:
             return
         for key, events in list(self._events.items()):
-            if not events or events[-1] <= now - _MAX_WINDOW:
+            if not events or events[-1] <= now - self._windows.get(key, 0.0):
                 del self._events[key]
+                self._windows.pop(key, None)
 
-
-_MAX_WINDOW = max(
-    rule.window_seconds
-    for rule in (CONTACT_IP_RULE, LOGIN_IP_RULE, LOGIN_EMAIL_IP_RULE, LOGIN_EMAIL_RULE)
-)
 
 rate_limiter = SlidingWindowRateLimiter()
 """The process-wide limiter; tests call `reset()` between cases."""

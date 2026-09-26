@@ -105,3 +105,17 @@ def test_expired_keys_are_swept() -> None:
     for _ in range(1_000):
         limiter.check("other", RULE)
     assert "stale" not in limiter._events
+
+
+def test_the_sweep_keeps_each_key_for_its_own_window() -> None:
+    limiter, clock = make_limiter()
+    short = RateLimitRule(limit=5, window_seconds=900)
+    daily = RateLimitRule(limit=5, window_seconds=86_400)
+    limiter.record("short", short)
+    limiter.record("daily", daily)
+    clock.advance(1_000)
+    for _ in range(1_000):
+        limiter.check("other", short)
+    assert "short" not in limiter._events
+    assert "daily" in limiter._events
+    assert limiter.check("daily", daily).allowed

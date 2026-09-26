@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import i18n from '../../i18n'
 import { navigation } from '../../test/navigation'
 import { turnstileFake } from '../../test/turnstileFake'
-import { ADMIN_EMAIL, summary } from '../test/fixtures'
+import { ADMIN_EMAIL, loginResult, summary } from '../test/fixtures'
 import { deferred, failWith, mockApi, ok, sequence } from '../test/mockApi'
 import { findPageHeading, renderAdmin } from '../test/renderAdmin'
 
@@ -71,7 +71,7 @@ describe('LoginPage', () => {
   })
 
   it('signs in with the token and opens the dashboard by default', async () => {
-    const api = mockApi({ 'POST /auth/login': ok({ email: ADMIN_EMAIL }), 'GET /admin/summary': ok(summary()) })
+    const api = mockApi({ 'POST /auth/login': ok(loginResult()), 'GET /admin/summary': ok(summary()) })
     const { user } = renderAdmin('/admin/login')
     await findPageHeading('Sign in')
     expect(email()).toHaveAttribute('autocomplete', 'username')
@@ -92,7 +92,7 @@ describe('LoginPage', () => {
 
   it('holds the sign-in until the verification check has issued a token', async () => {
     turnstileFake.autoSolve = false
-    const api = mockApi({ 'POST /auth/login': ok({ email: ADMIN_EMAIL }), 'GET /admin/summary': ok(summary()) })
+    const api = mockApi({ 'POST /auth/login': ok(loginResult()), 'GET /admin/summary': ok(summary()) })
     const { user } = renderAdmin('/admin/login')
     await findPageHeading('Sign in')
 
@@ -182,7 +182,7 @@ describe('LoginPage', () => {
   it('asks for the check again when the server rejects it, and sends the new token', async () => {
     const pending = deferred()
     const api = mockApi({
-      'POST /auth/login': sequence(pending.handler, ok({ email: ADMIN_EMAIL })),
+      'POST /auth/login': sequence(pending.handler, ok(loginResult())),
       'GET /admin/summary': ok(summary()),
     })
     const { user } = renderAdmin('/admin/login')
@@ -275,5 +275,88 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('密碼'), 'correct horse')
     await user.click(screen.getByRole('button', { name: '登入' }))
     expect(screen.getByText('請先完成驗證。')).toBeInTheDocument()
+  })
+
+  describe('with two-factor sign-in on', () => {
+    const codeField = () => screen.getByLabelText('Authentication code')
+    const verify = () => screen.getByRole('button', { name: /Verify|Verifying/ })
+
+    it('asks for the code after the password, then signs in', async () => {
+      const api = mockApi({
+        'POST /auth/login': ok(loginResult(true)),
+        'POST /auth/login/totp': sequence(failWith(400, 'totp_invalid'), ok(loginResult())),
+        'GET /admin/summary': ok(summary()),
+      })
+      const { user } = renderAdmin('/admin/login')
+      await findPageHeading('Sign in')
+      await fillAndSubmit(user)
+
+      await waitFor(() => expect(codeField()).toHaveFocus())
+      expect(codeField()).toHaveAttribute('autocomplete', 'one-time-code')
+      expect(codeField()).toHaveAttribute('inputmode', 'numeric')
+      expect(screen.getByText('Enter the 6-digit code from your authenticator app.')).toBeInTheDocument()
+      expect(screen.queryByTestId('turnstile')).toBeNull()
+
+      await user.click(verify())
+      expect(codeField()).toHaveAccessibleDescription(expect.stringContaining('Please enter the 6-digit code.'))
+      await user.type(codeField(), '12345')
+      await user.click(verify())
+      expect(codeField()).toHaveAccessibleDescription(expect.stringContaining('The code is 6 digits.'))
+      expect(api.to('POST /auth/login/totp')).toEqual([])
+
+      await user.type(codeField(), '6')
+      await user.click(verify())
+      await waitFor(() => expect(codeField()).toHaveValue(''))
+      expect(codeField()).toHaveFocus()
+      expect(codeField()).toHaveAccessibleDescription(expect.stringContaining('That code is not right.'))
+
+      await user.type(codeField(), '654 321')
+      await user.click(verify())
+      expect(await findPageHeading('Dashboard')).toBeInTheDocument()
+      const [first, second] = api.to('POST /auth/login/totp')
+      expect(first.json).toEqual({ code: '123456' })
+      expect(second.json).toEqual({ code: '654321' })
+      expect(second.init?.credentials).toBe('include')
+    })
+
+    it('returns to the password step when the pending sign-in has run out', async () => {
+      const api = mockApi({
+        'POST /auth/login': ok(loginResult(true)),
+        'POST /auth/login/totp': failWith(401, 'unauthorized'),
+      })
+      const { user } = renderAdmin('/admin/login')
+      await findPageHeading('Sign in')
+      await fillAndSubmit(user)
+      await user.type(await screen.findByLabelText('Authentication code'), '123456')
+      await user.click(verify())
+
+      await waitFor(() => expect(loginStatus()).toHaveTextContent('The sign-in took too long. Please sign in again.'))
+      expect(email()).toHaveValue(ADMIN_EMAIL)
+      expect(password()).toHaveValue('')
+      await waitFor(() => expect(password()).toHaveFocus())
+      // The first token was spent: the form needs a new one from the widget, which is back.
+      expect(widget()).toBeInTheDocument()
+      expect(api.to('POST /auth/login')).toHaveLength(1)
+    })
+
+    it('can start again, and says when to try another code', async () => {
+      mockApi({
+        'POST /auth/login': ok(loginResult(true)),
+        'POST /auth/login/totp': failWith(429, 'rate_limited', { headers: { 'Retry-After': '600' } }),
+      })
+      const { user } = renderAdmin('/admin/login')
+      await findPageHeading('Sign in')
+      await fillAndSubmit(user)
+      await user.type(await screen.findByLabelText('Authentication code'), '123456')
+      await user.click(verify())
+      await waitFor(() =>
+        expect(screen.getByText('Too many attempts. Please try again in 10 minutes.')).toBeInTheDocument(),
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Start again' }))
+      expect(screen.queryByLabelText('Authentication code')).toBeNull()
+      expect(loginStatus()).toHaveTextContent('')
+      expect(widget()).toBeInTheDocument()
+    })
   })
 })

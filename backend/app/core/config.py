@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # HMAC key for contact-message IP hashes: raw visitor IPs are never stored, emailed or logged.
     IP_HASH_SECRET: Annotated[SecretStr, Field(min_length=32)]
 
+    # Encrypts the admin's TOTP secret at rest (AES-256-GCM, key derived with HKDF). Changing it
+    # makes a stored secret unreadable: reset two-factor sign-in with `python -m app.admin_totp`.
+    TOTP_ENCRYPTION_KEY: Annotated[SecretStr, Field(min_length=32)]
+
     # The single admin account, upserted at startup.
     ADMIN_EMAIL: EmailStr
     ADMIN_PASSWORD: Annotated[SecretStr, Field(min_length=1)]
@@ -106,6 +110,7 @@ class Settings(BaseSettings):
         configured = {
             "JWT_SECRET": self.JWT_SECRET,
             "IP_HASH_SECRET": self.IP_HASH_SECRET,
+            "TOTP_ENCRYPTION_KEY": self.TOTP_ENCRYPTION_KEY,
             "ADMIN_PASSWORD": self.ADMIN_PASSWORD,
         }
         for name, secret in configured.items():
@@ -115,8 +120,15 @@ class Settings(BaseSettings):
             problems.append(
                 f"ADMIN_PASSWORD must be at least {PRODUCTION_MIN_ADMIN_PASSWORD_LENGTH} characters"
             )
-        if self.JWT_SECRET.get_secret_value() == self.IP_HASH_SECRET.get_secret_value():
-            problems.append("JWT_SECRET and IP_HASH_SECRET must be different values")
+        keys = [
+            self.JWT_SECRET.get_secret_value(),
+            self.IP_HASH_SECRET.get_secret_value(),
+            self.TOTP_ENCRYPTION_KEY.get_secret_value(),
+        ]
+        if len(set(keys)) != len(keys):
+            problems.append(
+                "JWT_SECRET, IP_HASH_SECRET and TOTP_ENCRYPTION_KEY must be different values"
+            )
         if self.TURNSTILE_SECRET_KEY.get_secret_value() in TURNSTILE_TEST_SECRETS:
             problems.append("TURNSTILE_SECRET_KEY is a Cloudflare test secret")
         if self.EMAIL_PROVIDER != "resend":

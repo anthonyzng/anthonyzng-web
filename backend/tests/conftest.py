@@ -33,8 +33,9 @@ TEST_ADMIN_PASSWORD = "correct horse battery staple"
 TEST_CONTACT_TO_EMAIL = "inbox@example.com"
 TEST_JWT_SECRET = "unit-test-secret-not-for-production"
 TEST_IP_HASH_SECRET = "unit-test-ip-hash-secret-0123456789"
+TEST_TOTP_ENCRYPTION_KEY = "unit-test-totp-encryption-key-0123456789"
 TEST_ORIGIN = "http://localhost:5173"
-HEAD_REVISION = "0002_admin_panel"
+HEAD_REVISION = "0003_admin_totp"
 
 TABLES = (
     "admin_users",
@@ -58,6 +59,7 @@ def build_settings(**overrides: Any) -> Settings:
         "DATABASE_URL": SecretStr("postgresql+asyncpg://unused:unused@127.0.0.1:1/unused"),
         "JWT_SECRET": SecretStr(TEST_JWT_SECRET),
         "IP_HASH_SECRET": SecretStr(TEST_IP_HASH_SECRET),
+        "TOTP_ENCRYPTION_KEY": SecretStr(TEST_TOTP_ENCRYPTION_KEY),
         "ADMIN_EMAIL": TEST_ADMIN_EMAIL,
         "ADMIN_PASSWORD": SecretStr(TEST_ADMIN_PASSWORD),
         "CONTACT_TO_EMAIL": TEST_CONTACT_TO_EMAIL,
