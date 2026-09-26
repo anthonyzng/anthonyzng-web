@@ -16,6 +16,7 @@ const en: ResolvedContent = {
     {
       id: 'acme',
       company: 'Acme Corp',
+      companyUrl: 'https://acme.example',
       role: 'Lead Developer',
       location: 'Toronto, ON, Canada',
       start: '2024-03',
@@ -26,6 +27,7 @@ const en: ResolvedContent = {
     {
       id: 'globex',
       company: 'Globex Ltd',
+      companyUrl: null,
       role: 'Software Engineer',
       location: 'Hong Kong',
       start: '2019-06',

@@ -92,6 +92,8 @@ class ExperienceIn(StrictCamelModel):
     slug: Slug
     sort_order: SortOrder | None = None
     company: Text200
+    company_url: HttpUrl | None = None
+    """The employer's website, linked from the company name; optional."""
     start: Month
     end: Month | None
     tech: TagList

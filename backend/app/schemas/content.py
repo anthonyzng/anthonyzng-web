@@ -25,6 +25,7 @@ class CvRef(CamelModel):
 class ExperienceItem(CamelModel):
     id: str
     company: str
+    company_url: str | None
     role: str
     location: str
     start: Month

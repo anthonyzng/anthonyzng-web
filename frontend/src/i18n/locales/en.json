@@ -13,7 +13,9 @@
     "skipToContent": "Skip to content",
     "menu": "Menu",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "top": "Top",
+    "dock": "Sections"
   },
   "theme": {
     "toLight": "Switch to light mode",
@@ -35,6 +37,12 @@
     "scrollCue": "Scroll",
     "statement": {
       "label": "In brief"
+    },
+    "closing": {
+      "title": "Get in touch",
+      "send": "Send a message",
+      "close": "Close",
+      "channels": "Contact channels"
     }
   },
   "sections": {
@@ -50,10 +58,6 @@
     "skills": {
       "title": "Skills",
       "tagline": "Languages, frameworks and tools."
-    },
-    "contact": {
-      "title": "Contact",
-      "tagline": "Questions, projects or opportunities: get in touch."
     }
   },
   "content": {
@@ -137,5 +141,12 @@
   },
   "footer": {
     "rights": "© {{year}} Anthony Ng. All rights reserved."
+  },
+  "tags": {
+    "searchQuery": "what is {{tag}}",
+    "searchHint": "(search the web in a new tab)"
+  },
+  "common": {
+    "newTab": "(opens in a new tab)"
   }
 }

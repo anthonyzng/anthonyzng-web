@@ -52,6 +52,21 @@ export const TRIGGER = {
   lineEnd: 'clamp(bottom 60%)',
 } as const
 
+/**
+ * Hero ink wash (`useInkWash`): the scroll progress over the hero's travel at which ink starts and at
+ * which it covers the hero; how much darker its wet edge pools per theme; the canvas resolution
+ * relative to device pixels; how often its slow drift is redrawn while the scroll rests (the ink is soft, so a reduced resolution costs nothing visible and
+ * keeps the shader cheap on phones).
+ */
+export const INK = { start: 0.02, full: 0.7, poolLight: 0.55, poolDark: 0.6, scale: 0.6, scaleMobile: 0.5, driftFps: 30 } as const
+
+/**
+ * Closing loop (`useZipperLoop`): how far the rows travel over the section's scroll (in loop
+ * lengths), their drift in px per second, the row gap and the margin (px) kept around the title
+ * when a row parts, and the width of the parting bell in row pitches.
+ */
+export const ZIPPER = { scroll: 0.6, drift: 18, driftMobile: 12, baseGap: 24, margin: 32, spread: 0.55 } as const
+
 /** Statement pin length, as a multiple of window.innerHeight. */
 export const PIN_LENGTH = 1
 

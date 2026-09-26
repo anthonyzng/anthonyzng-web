@@ -131,6 +131,7 @@ async def test_list_returns_both_locales_in_order(admin_client: httpx.AsyncClien
         "slug",
         "sortOrder",
         "company",
+        "companyUrl",
         "start",
         "end",
         "tech",
@@ -170,7 +171,8 @@ async def test_create_then_public_content_shows_it(admin_client: httpx.AsyncClie
     response = await admin_client.post(f"{ADMIN}/content/experience", json=NEW_EXPERIENCE)
     assert response.status_code == 201
     created = response.json()
-    assert writable(created) == NEW_EXPERIENCE
+    # companyUrl is optional on the way in and always present (null) on the way out.
+    assert writable(created) == {**NEW_EXPERIENCE, "companyUrl": None}
     assert created["updatedAt"]
 
     public = await admin_client.get("/api/v1/content", params={"locale": "zh-Hant"})
@@ -493,3 +495,39 @@ async def test_summary(admin_client: httpx.AsyncClient) -> None:
         "cv": None,
         "totpEnabled": False,
     }
+
+
+# --- experience company links -------------------------------------------------------------
+
+
+async def test_experience_company_url_is_saved_and_published(
+    admin_client: httpx.AsyncClient,
+) -> None:
+    created = await admin_client.post(
+        f"{ADMIN}/content/experience",
+        json={**NEW_EXPERIENCE, "companyUrl": "https://newco.example/about"},
+    )
+    assert created.status_code == 201
+    assert created.json()["companyUrl"] == "https://newco.example/about"
+    public = await admin_client.get("/api/v1/content", params={"locale": "zh-Hant"})
+    entry = next(item for item in public.json()["experience"] if item["id"] == "newco")
+    assert entry["companyUrl"] == "https://newco.example/about"
+
+    cleared = await admin_client.put(
+        f"{ADMIN}/content/experience/newco", json={**NEW_EXPERIENCE, "companyUrl": None}
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["companyUrl"] is None
+
+
+@pytest.mark.parametrize(
+    "url", ["javascript:alert(1)", "ftp://newco.example", "newco.example", "https://new co.example"]
+)
+async def test_experience_company_url_must_be_a_web_address(
+    admin_client: httpx.AsyncClient, url: str
+) -> None:
+    response = await admin_client.post(
+        f"{ADMIN}/content/experience", json={**NEW_EXPERIENCE, "companyUrl": url}
+    )
+    assert response.status_code == 422
+    assert "companyUrl" in response.json()["error"]["fields"]

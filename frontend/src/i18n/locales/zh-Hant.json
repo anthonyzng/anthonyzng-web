@@ -13,7 +13,9 @@
     "skipToContent": "跳至主要內容",
     "menu": "選單",
     "openMenu": "開啟選單",
-    "closeMenu": "關閉選單"
+    "closeMenu": "關閉選單",
+    "top": "頂部",
+    "dock": "章節"
   },
   "theme": {
     "toLight": "切換至淺色模式",
@@ -35,6 +37,12 @@
     "scrollCue": "向下捲動",
     "statement": {
       "label": "簡介"
+    },
+    "closing": {
+      "title": "保持聯絡",
+      "send": "發送訊息",
+      "close": "關閉",
+      "channels": "聯絡方式"
     }
   },
   "sections": {
@@ -50,10 +58,6 @@
     "skills": {
       "title": "技能",
       "tagline": "程式語言、框架與工具。"
-    },
-    "contact": {
-      "title": "聯絡",
-      "tagline": "如有查詢、合作項目或工作機會，歡迎聯絡。"
     }
   },
   "content": {
@@ -137,5 +141,12 @@
   },
   "footer": {
     "rights": "© {{year}} Anthony Ng。版權所有。"
+  },
+  "tags": {
+    "searchQuery": "{{tag}} 是什麼",
+    "searchHint": "（在新分頁搜尋網絡）"
+  },
+  "common": {
+    "newTab": "（在新分頁開啟）"
   }
 }

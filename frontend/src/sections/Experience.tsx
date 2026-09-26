@@ -10,6 +10,8 @@ import { formatMonth } from '../i18n/formatMonth'
  * itself in the right one. `RevealItem`'s outer div is the untransformed trigger, so the rule that
  * separates the entries lives there and never moves with the reveal.
  *
+ * The company name links to its website (set in the admin panel) in a new tab when there is one.
+ *
  * Every string arrives resolved for the active locale (static snapshot first, then the API). Dates
  * are stored as `YYYY-MM` and formatted per locale, so the Chinese page never shows English month
  * names and `<time datetime>` always carries the same date the label shows.
@@ -43,7 +45,21 @@ export function Experience() {
 
                 <div className="md:col-span-8">
                   <h3 className="text-title font-medium text-balance">{entry.role}</h3>
-                  <p className="mt-2 font-mono text-sm text-accent">{entry.company}</p>
+                  <p className="mt-2 font-mono text-sm text-accent">
+                    {entry.companyUrl ? (
+                      <a
+                        href={entry.companyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 items-center underline decoration-muted underline-offset-4 transition-colors duration-200 hover:decoration-accent"
+                      >
+                        {entry.company}{' '}
+                        <span className="sr-only">{t('common.newTab')}</span>
+                      </a>
+                    ) : (
+                      entry.company
+                    )}
+                  </p>
 
                   <ul role="list" className="mt-7 flex flex-col gap-4 text-muted">
                     {entry.bullets.map((bullet, index) => (

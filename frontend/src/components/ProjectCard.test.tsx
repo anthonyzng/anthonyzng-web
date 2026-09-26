@@ -29,19 +29,32 @@ describe('ProjectCard (real project)', () => {
   it('renders the title, summary, chips and link from the project itself', () => {
     render(<ProjectCard project={REAL} index={1} />)
 
-    expect(screen.getByRole('heading', { level: 3, name: 'Demo project' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: /^Demo project/ })).toBeInTheDocument()
     expect(screen.getByText('What it does.')).toBeInTheDocument()
 
     const tech = screen.getByRole('list', { name: 'Technologies: Demo project' })
-    expect(
-      within(tech)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual(['React', 'Data pipelines'])
+    expect(within(tech).getAllByRole('link').map((chip) => chip.firstChild?.textContent)).toEqual(['React', 'Data pipelines'])
 
-    const link = screen.getByRole('link', { name: /Demo project/ })
+    // The title is the card's link: it stretches over the card and opens in a new tab.
+    const link = screen.getByRole('link', { name: 'Demo project (opens in a new tab)' })
     expect(link).toHaveAttribute('href', 'https://example.com/demo')
-    expect(link).toHaveAccessibleName('View project Demo project')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(link).toHaveClass('after:absolute', 'after:inset-0')
+  })
+
+  it('carries the border light on every card, a reserved slot too, and no cat', () => {
+    for (const project of [REAL, { ...REAL, placeholder: true, url: null }]) {
+      const { container, unmount } = render(<ProjectCard project={project} index={1} />)
+      const card = container.querySelector('article')
+      expect(card).toHaveClass('light-host')
+      const light = card?.querySelector(':scope > .card-light')
+      expect(light).toHaveAttribute('aria-hidden', 'true')
+      expect(light?.querySelector('.card-light-glow > .card-light-ring')).not.toBeNull()
+      // The cats stay on the tags; the card has the light instead.
+      expect(card?.querySelector(':scope > .edge-cat-track')).toBeNull()
+      unmount()
+    }
   })
 
   it('carries no placeholder badge', () => {
@@ -49,15 +62,16 @@ describe('ProjectCard (real project)', () => {
     expect(screen.queryByText(/placeholder/i)).not.toBeInTheDocument()
   })
 
-  it('renders no link when the project has no url', () => {
-    render(<ProjectCard project={{ ...REAL, url: null }} index={1} />)
-    expect(screen.queryAllByRole('link')).toHaveLength(0)
+  it('renders no card link when the project has no url (the chips keep theirs)', () => {
+    const { container } = render(<ProjectCard project={{ ...REAL, url: null }} index={1} />)
+    expect(container.querySelector('.card-link')).toBeNull()
+    expect(screen.queryByRole('link', { name: /Demo project/ })).toBeNull()
     expect(screen.getByRole('heading', { level: 3, name: 'Demo project' })).toBeInTheDocument()
   })
 
   it('falls back to the slot copy for a project that arrives without its own text', () => {
     render(<ProjectCard project={{ ...REAL, title: null, summary: null }} index={2} />)
-    expect(screen.getByRole('heading', { level: 3, name: 'Project 2' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: /^Project 2/ })).toBeInTheDocument()
     expect(screen.getByText(i18n.t('content.projects.placeholder.summary'))).toBeInTheDocument()
   })
 

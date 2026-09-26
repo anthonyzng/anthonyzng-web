@@ -9,7 +9,7 @@ import { SectionLink } from './SectionLink'
 
 /** The same query as the md:hidden on the menu button, so the JS and CSS layouts always agree. */
 const DESKTOP_QUERY = MD_UP
-const ICON_BUTTON =
+export const ICON_BUTTON =
   'inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-surface hover:text-fg'
 
 interface MobileMenuProps {
@@ -160,7 +160,7 @@ function MenuIcon() {
   )
 }
 
-function CloseIcon() {
+export function CloseIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round">
       <path d="M6 6l12 12M18 6L6 18" />

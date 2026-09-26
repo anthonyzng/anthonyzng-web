@@ -3,6 +3,11 @@ export const SECTION_IDS = ['experience', 'projects', 'skills', 'contact'] as co
 
 export type SectionId = (typeof SECTION_IDS)[number]
 
+/** The numbered chapters ("01 / 03"): Contact is the closing screen, not a numbered section. */
+export const NUMBERED_SECTION_IDS = ['experience', 'projects', 'skills'] as const
+
+export type NumberedSectionId = (typeof NUMBERED_SECTION_IDS)[number]
+
 /** "In brief" has no nav link, but a language switch made while reading it lands there. */
 export const STATEMENT_ID = 'statement'
 

@@ -4,6 +4,7 @@
     {
       "id": "sksys",
       "company": "BABYSOFT o/a SKSYS Corporation",
+      "companyUrl": null,
       "role": "Software Developer / Assistant Manager",
       "location": "Markham, ON, Canada",
       "start": "2023-11",
@@ -28,6 +29,7 @@
     {
       "id": "hactl",
       "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
+      "companyUrl": null,
       "role": "Senior IT Coordinator",
       "location": "Hong Kong",
       "start": "2021-08",
@@ -47,6 +49,7 @@
     {
       "id": "ivc",
       "company": "IVC Consulting Group",
+      "companyUrl": null,
       "role": "ABAP Programmer",
       "location": "Hong Kong",
       "start": "2020-08",

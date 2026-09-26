@@ -187,6 +187,7 @@
     "optional": "（選填）",
     "slug": "代號（slug）",
     "company": "公司",
+    "companyUrl": "公司網站",
     "role": "職位",
     "location": "地點",
     "start": "開始月份",
@@ -222,7 +223,8 @@
     "projectUrl": "公開的網址，最好以 https:// 開頭。如沒有可連結的網頁，請留空。",
     "href": "電郵地址請填 mailto:name@example.com，網址請填完整地址（最好以 https:// 開頭）。",
     "display": "訪客看到的文字，例如不含 https:// 的網址。",
-    "siteText": "網站會按兩種語言各自的內容照樣顯示。"
+    "siteText": "網站會按兩種語言各自的內容照樣顯示。",
+    "companyUrl": "僱主的公開網址，最好以 https:// 開頭。網站上的公司名稱會連結到這個網址。如不需要連結，請留空。"
   },
   "tags": {
     "chip": "第 {{position}} 個標籤",

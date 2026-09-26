@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { DRIFT_X, SPEED } from '../animations/motion'
 import { HERO_PARALLAX, useParallax } from '../animations/useParallax'
 import { useHeroIntro } from '../animations/useHeroIntro'
+import { useInkWash } from '../animations/useInkWash'
 
 const ROLES = ['fullStack', 'ai', 'manager'] as const
 
@@ -11,12 +12,16 @@ const ROLES = ['fullStack', 'ai', 'manager'] as const
  * roles as the deck. While it scrolls away its layers move slower than the page, at speeds that
  * decrease from top to bottom, so the clipped bottom edge swallows the deck first and the name last.
  * Outer `[data-speed]` wrappers belong to the parallax; inner `[data-intro]` elements to the intro.
+ * Over it all, the ink wash (`useInkWash`) washes the hero into the page as it leaves; its canvas is
+ * decorative, lets every pointer event through and stays empty without motion or WebGL.
  */
 export function Hero() {
   const { t } = useTranslation()
   const scope = useRef<HTMLElement>(null)
+  const ink = useRef<HTMLCanvasElement>(null)
   useHeroIntro(scope)
   useParallax(scope, HERO_PARALLAX)
+  useInkWash(scope, ink)
 
   return (
     <section ref={scope} aria-labelledby="hero-title" className="relative flex min-h-hero flex-col overflow-hidden">
@@ -98,6 +103,8 @@ export function Hero() {
           </div>
         </div>
       </div>
+
+      <canvas ref={ink} aria-hidden="true" className="pointer-events-none absolute inset-0 size-full" />
     </section>
   )
 }

@@ -36,7 +36,6 @@ const SECTIONS = [
   { id: 'experience', title: 'Experience', tagline: 'A timeline of roles and responsibilities.' },
   { id: 'projects', title: 'Projects', tagline: 'Selected work and the technology behind it.' },
   { id: 'skills', title: 'Skills', tagline: 'Languages, frameworks and tools.' },
-  { id: 'contact', title: 'Contact', tagline: 'Questions, projects or opportunities: get in touch.' },
 ] as const
 
 async function headerNav() {
@@ -64,7 +63,11 @@ describe('HomePage (static path: no motion)', () => {
       expect(within(region).getByRole('heading', { level: 2, name: title })).toHaveAttribute('tabindex', '-1')
       expect(within(region).getByText(tagline)).toBeInTheDocument()
     }
-    expect(screen.getByText('04 / 04')).toBeInTheDocument()
+    expect(screen.getByText('03 / 03')).toBeInTheDocument()
+    // Contact is the closing screen: a landing target with a focusable heading, not a numbered chapter.
+    const contact = screen.getByRole('region', { name: 'Get in touch' })
+    expect(contact).toHaveAttribute('id', 'contact')
+    expect(within(contact).getByRole('heading', { level: 2, name: 'Get in touch' })).toHaveAttribute('tabindex', '-1')
   })
 
   it('renders the statement as a screen-reader copy plus an aria-hidden visual copy', async () => {
@@ -90,7 +93,7 @@ describe('HomePage (static path: no motion)', () => {
 
   it('renders the sections in Traditional Chinese under /zh-hant', async () => {
     renderAt('/zh-hant')
-    for (const title of ['工作經驗', '項目作品', '技能', '聯絡']) {
+    for (const title of ['工作經驗', '項目作品', '技能', '保持聯絡']) {
       expect(await screen.findByRole('heading', { level: 2, name: title })).toBeInTheDocument()
     }
     expect(screen.getByRole('heading', { level: 2, name: '簡介' })).toBeInTheDocument()
