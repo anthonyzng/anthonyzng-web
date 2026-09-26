@@ -148,7 +148,8 @@
   }
 
   /* Native scroll lock while the mobile menu is open (Lenis, when present, is stopped as well). */
-  html:has(dialog.mobile-menu[open]) {
+  html:has(dialog.mobile-menu[open]),
+  html:has(dialog.contact-dialog[open]) {
     overflow: hidden;
   }
 
@@ -281,5 +282,156 @@
     .mobile-menu[open] .menu-link-label {
       transform: translateY(100%);
     }
+  }
+}
+
+/*
+ * Edge cat (components/EdgeCat.tsx): a tiny cat running back and forth along the top edge of a
+ * `.cat-host` (a tag chip, a project card) while it is hovered, focused or marked active. The track
+ * spans exactly the run (the host's width less the insets and the cat), so translateX(100%) of the
+ * track is the far end; the cat turns round halfway through the lap. Transforms and opacity only.
+ */
+@layer components {
+  .edge-cat-track {
+    --cat-inset: 0.625rem;
+    --cat-lap: 3.2s;
+    position: absolute;
+    bottom: calc(100% - 3px);
+    left: var(--cat-inset);
+    right: calc(var(--cat-inset) + 20px);
+    height: 14px;
+    pointer-events: none;
+    display: none;
+    animation: edge-cat-run var(--cat-lap) ease-in-out infinite;
+  }
+
+  .edge-cat-track[data-lap='long'] {
+    --cat-inset: 1.25rem;
+    --cat-lap: 9s;
+  }
+
+  .cat-host:hover .edge-cat-track,
+  .cat-host:focus-visible .edge-cat-track,
+  .cat-host:has(:focus-visible) .edge-cat-track,
+  .cat-host[data-cat-active] .edge-cat-track {
+    display: block;
+  }
+
+  .edge-cat {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    animation: edge-cat-turn var(--cat-lap) linear infinite;
+  }
+
+  .edge-cat svg {
+    animation: edge-cat-bob 240ms ease-in-out infinite alternate;
+  }
+
+  .edge-cat-legs-a,
+  .edge-cat-legs-b {
+    animation: edge-cat-step 240ms steps(1) infinite;
+  }
+
+  .edge-cat-legs-b {
+    animation-delay: -120ms;
+  }
+
+  /* Colours: fill, outline (visible on both themes), eye and nose. */
+  .edge-cat[data-cat='black'] {
+    --cat-fill: #1c1917;
+    --cat-line: #a8a29e;
+    --cat-eye: #facc15;
+    --cat-nose: #f9a8d4;
+  }
+
+  .edge-cat[data-cat='orange'] {
+    --cat-fill: #f59e0b;
+    --cat-line: #b45309;
+    --cat-eye: #1c1917;
+    --cat-nose: #be185d;
+  }
+
+  .edge-cat[data-cat='white'] {
+    --cat-fill: #fafaf9;
+    --cat-line: #a8a29e;
+    --cat-eye: #1c1917;
+    --cat-nose: #f472b6;
+  }
+
+  .edge-cat[data-cat='rainbow'] {
+    --cat-line: #7c3aed;
+    --cat-eye: #1c1917;
+    --cat-nose: #be185d;
+  }
+
+  .cat-rainbow-1 {
+    stop-color: #ef4444;
+  }
+  .cat-rainbow-2 {
+    stop-color: #f59e0b;
+  }
+  .cat-rainbow-3 {
+    stop-color: #22c55e;
+  }
+  .cat-rainbow-4 {
+    stop-color: #3b82f6;
+  }
+  .cat-rainbow-5 {
+    stop-color: #8b5cf6;
+  }
+
+  /* Reduced motion: the cat sits still at the left end, one pair of legs down. */
+  @media (prefers-reduced-motion: reduce) {
+    .edge-cat-track,
+    .edge-cat,
+    .edge-cat svg,
+    .edge-cat-legs-a,
+    .edge-cat-legs-b {
+      animation: none;
+    }
+
+    .edge-cat-legs-b {
+      opacity: 0;
+    }
+  }
+}
+
+@keyframes edge-cat-run {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes edge-cat-turn {
+  0%,
+  49.99% {
+    transform: scaleX(1);
+  }
+  50%,
+  100% {
+    transform: scaleX(-1);
+  }
+}
+
+@keyframes edge-cat-bob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes edge-cat-step {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
   }
 }

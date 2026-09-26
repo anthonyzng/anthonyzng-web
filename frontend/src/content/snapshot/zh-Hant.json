@@ -4,6 +4,7 @@
     {
       "id": "sksys",
       "company": "BABYSOFT o/a SKSYS Corporation",
+      "companyUrl": null,
       "role": "軟件開發員 / 助理經理",
       "location": "加拿大安大略省萬錦市",
       "start": "2023-11",
@@ -28,6 +29,7 @@
     {
       "id": "hactl",
       "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
+      "companyUrl": null,
       "role": "高級資訊科技協調員",
       "location": "香港",
       "start": "2021-08",
@@ -47,6 +49,7 @@
     {
       "id": "ivc",
       "company": "IVC Consulting Group",
+      "companyUrl": null,
       "role": "ABAP 程式開發員",
       "location": "香港",
       "start": "2020-08",

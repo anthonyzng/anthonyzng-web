@@ -1,8 +1,8 @@
 import { useActiveSection } from '../animations/useActiveSection'
 import { useHashScroll } from '../animations/useHashScroll'
+import { SectionDock } from '../components/SectionDock'
 import { ContentProvider } from '../content/ContentProvider'
 import { Closing } from '../sections/Closing'
-import { Contact } from '../sections/Contact'
 import { Experience } from '../sections/Experience'
 import { Hero } from '../sections/Hero'
 import { Projects } from '../sections/Projects'
@@ -23,8 +23,8 @@ export function HomePage() {
       <Experience />
       <Projects />
       <Skills />
-      <Contact />
       <Closing />
+      <SectionDock />
     </ContentProvider>
   )
 }

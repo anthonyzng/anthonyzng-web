@@ -130,6 +130,7 @@ const experience = define<ExperienceItem>({
   itemSchema: experienceItemSchema,
   fields: [
     text('company', 200),
+    text('companyUrl', 2048, { control: 'url', scheme: 'web', required: false, hint: 'companyUrl' }),
     { kind: 'slug', label: 'slug', source: 'company' },
     localizedText('role', 200),
     localizedText('location', 200),
@@ -144,6 +145,7 @@ const experience = define<ExperienceItem>({
   emptyDraft: () => ({
     slug: '',
     company: '',
+    companyUrl: '',
     start: '',
     end: '',
     tech: [],
@@ -154,6 +156,7 @@ const experience = define<ExperienceItem>({
     return {
       slug: item.slug,
       company: item.company,
+      companyUrl: item.companyUrl ?? '',
       start: item.start,
       end: item.end,
       tech: item.tech.map(cleanTag),
@@ -163,6 +166,12 @@ const experience = define<ExperienceItem>({
         bullets: locale === 'en' ? bullets.en : bullets.zh,
       })),
     }
+  },
+  // An empty website field means "no link".
+  toPayload: (draft) => {
+    const payload = trimmedPayload(draft)
+    const companyUrl = getString(payload, 'companyUrl')
+    return { ...payload, companyUrl: companyUrl === '' ? null : companyUrl }
   },
 })
 

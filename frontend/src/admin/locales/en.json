@@ -187,6 +187,7 @@
     "optional": "(optional)",
     "slug": "Slug",
     "company": "Company",
+    "companyUrl": "Company website",
     "role": "Role",
     "location": "Location",
     "start": "Start month",
@@ -222,7 +223,8 @@
     "projectUrl": "A public web address, preferably https://. Leave it empty when there is nothing to link to.",
     "href": "mailto:name@example.com for an email address, or a web address (preferably https://).",
     "display": "The text visitors see, such as the address without https://.",
-    "siteText": "Shown on the site as written, in each language."
+    "siteText": "Shown on the site as written, in each language.",
+    "companyUrl": "The employer's public website, preferably https://. The company name links to it on the site. Leave it empty for no link."
   },
   "tags": {
     "chip": "chip {{position}}",

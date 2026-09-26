@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { fileUrl } from '../api/files'
 import { useMotionAllowed } from '../animations/useMotionAllowed'
 import { useZipperLoop } from '../animations/useZipperLoop'
+import { ContactDialog } from '../components/ContactDialog'
 import { useResolvedContent } from '../content/contentContext'
 import { formatFileSize } from '../i18n/formatFileSize'
 
@@ -18,11 +19,13 @@ interface Row {
 }
 
 /**
- * The closing screen after Contact: the page fades into ink, "Get in touch" sits in the middle, and
- * the channels (and the CV, once uploaded) loop past it, each row parting around the title like a
- * zipper (`useZipperLoop`). It repeats what the Contact section already offers, so it is decorative:
- * hidden from assistive technology, its links out of the tab order (a pointer can still use them).
- * Without motion it is one still screen: the title, then each channel once.
+ * The contact section, as the page's closing screen: the page fades into ink, "Get in touch" sits in
+ * the middle of a sticky screen, and the channels (and the CV, once uploaded) loop past it, each row
+ * parting around the title like a zipper (`useZipperLoop`). The moving rows are decorative (hidden
+ * from assistive technology, out of the tab order); the bar at the foot of the screen carries the
+ * same channels as real links, the location and the "Send a message" button (`ContactDialog`), so
+ * every visitor has a still, reachable way to get in touch. Without motion: one still screen, the
+ * title and that bar, no rows.
  */
 export function Closing() {
   const { t, i18n } = useTranslation()
@@ -44,11 +47,10 @@ export function Closing() {
         ]
       : []),
   ]
-  const copies = motion ? LOOP_COPIES : 1
   // The language too: the title's width sets how far the rows part.
-  useZipperLoop(scope, `${rows.map((row) => row.key).join()}:${copies}:${i18n.language}`)
+  useZipperLoop(scope, `${rows.map((row) => row.key).join()}:${motion}:${i18n.language}`)
 
-  const list = Array.from({ length: copies }, (_, copy) =>
+  const loop = Array.from({ length: LOOP_COPIES }, (_, copy) =>
     rows.map((row) => (
       <a
         key={`${copy}-${row.key}`}
@@ -71,28 +73,74 @@ export function Closing() {
     )),
   )
 
+  const screenHeight = 'calc(100svh - var(--header-h))'
+
   return (
-    <section ref={scope} data-closing aria-hidden="true" className={motion ? 'relative h-[260svh]' : 'relative'}>
-      {/* The page washes into ink before the screen arrives. */}
-      <div className="h-[40svh] bg-linear-to-b from-bg to-ink" />
-      <div
-        data-zipper-screen
-        className={`${motion ? 'sticky top-0 h-svh' : 'min-h-svh'} overflow-hidden bg-ink text-ink-fg`}
+    <>
+      {/* The page washes into ink before the section; the section itself starts on ink, so a link
+          to #contact lands on the whole screen. */}
+      <div aria-hidden="true" className="h-[30svh] bg-linear-to-b from-bg to-ink" />
+      <section
+        ref={scope}
+        id="contact"
+        data-closing
+        aria-labelledby="contact-title"
+        className={`relative bg-ink ${motion ? 'h-[260svh]' : ''}`}
       >
-        {motion ? (
-          <>
-            <div className="absolute inset-x-0 top-0 flex flex-col">{list}</div>
-            <p data-zipper-title className="pointer-events-none absolute inset-0 grid place-items-center">
-              <span className="text-title font-medium md:text-headline">{t('home.closing.title')}</span>
-            </p>
-          </>
-        ) : (
-          <div className="flex min-h-svh flex-col items-center justify-center gap-10 px-5 py-24">
-            <p className="text-title font-medium md:text-headline">{t('home.closing.title')}</p>
-            <div className="flex w-full flex-col">{list}</div>
+        <div
+          data-zipper-screen
+          style={motion ? { height: screenHeight } : { minHeight: screenHeight }}
+          className={`${motion ? 'sticky top-(--header-h)' : 'relative'} overflow-hidden text-ink-fg`}
+        >
+          {motion ? (
+            <div aria-hidden="true" className="absolute inset-x-0 top-0 flex flex-col">
+              {loop}
+            </div>
+          ) : null}
+
+          <div data-zipper-title className="pointer-events-none absolute inset-0 grid place-items-center pb-24">
+            <h2 id="contact-title" tabIndex={-1} className="text-title font-medium outline-none md:text-headline">
+              <span data-zipper-title-text>{t('home.closing.title')}</span>
+            </h2>
           </div>
-        )}
-      </div>
-    </section>
+
+          {/* The still way in: real links, the location and the form. Rows fade out behind it. */}
+          {/* Below md the channels show their labels only (the addresses stay in the accessible
+              name), so the bar never crowds out the screen on a phone. */}
+          <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink from-60% to-transparent pt-12 pb-20 md:pt-16 md:pb-24">
+            <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 sm:px-8 md:flex-row md:items-end md:justify-between md:gap-6">
+              <ul role="list" aria-label={t('home.closing.channels')} className="flex flex-wrap gap-x-5 gap-y-0 md:gap-x-8 md:gap-y-1">
+                {rows.map((row) => (
+                  <li key={row.key}>
+                    <a
+                      href={row.href}
+                      download={row.download || undefined}
+                      type={row.download ? 'application/pdf' : undefined}
+                      className="group inline-flex min-h-11 items-baseline gap-3"
+                    >
+                      <span className="font-mono text-xs uppercase tracking-label text-ink-fg underline decoration-ink-muted underline-offset-4 md:text-ink-muted md:no-underline">
+                        {row.label}
+                      </span>{' '}
+                      <span className="sr-only text-ink-fg underline decoration-ink-muted underline-offset-4 transition-colors duration-200 group-hover:text-ink-accent group-hover:decoration-ink-accent md:not-sr-only">
+                        {row.value}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+                {contact.location ? (
+                  <li className="inline-flex min-h-11 items-baseline gap-3">
+                    <span className="hidden font-mono text-xs uppercase tracking-label text-ink-muted md:inline">
+                      {t('content.contact.labels.location')}
+                    </span>
+                    <span className="text-sm text-ink-muted md:text-base md:text-ink-fg">{contact.location}</span>
+                  </li>
+                ) : null}
+              </ul>
+              <ContactDialog buttonClassName="inline-flex min-h-11 shrink-0 cursor-pointer items-center self-start rounded-full bg-ink-fg px-6 text-sm font-medium text-ink transition-colors duration-200 hover:bg-ink-accent md:self-auto" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   )
 }

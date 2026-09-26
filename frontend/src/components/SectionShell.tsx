@@ -3,11 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { SPEED } from '../animations/motion'
 import { useParallax } from '../animations/useParallax'
 import { useSectionReveal } from '../animations/useSectionReveal'
-import { formatIndex, SECTION_IDS, type SectionId } from '../sections/sectionIds'
+import { formatIndex, NUMBERED_SECTION_IDS, type NumberedSectionId } from '../sections/sectionIds'
 
 interface SectionShellProps {
-  id: SectionId
-  headingSize?: 'headline' | 'display'
+  id: NumberedSectionId
   /**
    * The ids of the section's items, joined. When the API payload adds or removes an item, the
    * reveal and parallax choreography is rebuilt for the new set of cards and rows.
@@ -22,14 +21,14 @@ interface SectionShellProps {
  * creating a scroll container (so the CSS-sticky counter still works); `isolate` keeps the ghost
  * behind the content even where overflow: clip is unsupported.
  */
-export function SectionShell({ id, headingSize = 'headline', motionKey = '', children }: SectionShellProps) {
+export function SectionShell({ id, motionKey = '', children }: SectionShellProps) {
   const { t } = useTranslation()
   const scope = useRef<HTMLElement>(null)
   useSectionReveal(scope, motionKey)
   useParallax(scope, undefined, motionKey)
 
-  const number = formatIndex(SECTION_IDS.indexOf(id))
-  const total = formatIndex(SECTION_IDS.length - 1)
+  const number = formatIndex(NUMBERED_SECTION_IDS.indexOf(id))
+  const total = formatIndex(NUMBERED_SECTION_IDS.length - 1)
 
   return (
     <section ref={scope} id={id} aria-labelledby={`${id}-title`} className="relative isolate overflow-clip py-24 md:py-40">
@@ -57,7 +56,7 @@ export function SectionShell({ id, headingSize = 'headline', motionKey = '', chi
             <h2
               id={`${id}-title`}
               tabIndex={-1}
-              className={`${headingSize === 'display' ? 'text-display' : 'text-headline'} font-semibold text-balance`}
+              className="text-headline font-semibold text-balance"
             >
               <span className="mask-line">
                 <span data-reveal="heading" className="block">

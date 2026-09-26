@@ -34,6 +34,7 @@ describe('content editor', () => {
       slug: 'initech',
       sortOrder: 0,
       company: 'Initech',
+      companyUrl: null,
       start: '2024-03',
       end: null,
       tech: ['Go', { en: 'Testing', 'zh-Hant': '測試' }],
@@ -92,6 +93,7 @@ describe('content editor', () => {
     expect(post.json).toEqual({
       slug: 'initech',
       company: 'Initech',
+      companyUrl: null,
       start: '2024-03',
       end: null,
       tech: ['Go', { en: 'Testing', 'zh-Hant': '測試' }],

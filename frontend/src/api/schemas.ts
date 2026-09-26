@@ -27,6 +27,8 @@ export const localeSchema = z.enum(['en', 'zh-Hant'])
 const experienceItem = z.object({
   id,
   company: z.string(),
+  /** Like a project link: a website the browser cannot parse becomes null, costing only the link. */
+  companyUrl: z.catch(z.nullable(z.url({ protocol: /^https?$/ })), null),
   role: z.string(),
   location: z.string(),
   start: month,

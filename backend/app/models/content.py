@@ -44,6 +44,8 @@ class ExperienceEntry(TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(Text, primary_key=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     company: Mapped[str] = mapped_column(Text, nullable=False)
+    company_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """The employer's website: the company name links to it on the site."""
     start_month: Mapped[str] = mapped_column(Text, nullable=False)
     end_month: Mapped[str | None] = mapped_column(Text, nullable=True)
     tech: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, server_default=EMPTY_JSON_ARRAY)

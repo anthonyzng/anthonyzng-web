@@ -51,6 +51,7 @@ export const experienceItemSchema = z.object({
   slug,
   sortOrder,
   company: z.string(),
+  companyUrl: z.nullable(z.string()),
   start: z.string(),
   end: z.nullable(z.string()),
   tech: tags,

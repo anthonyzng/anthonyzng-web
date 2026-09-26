@@ -44,6 +44,7 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
         {
             "id": row["slug"],
             "company": row["company"],
+            "companyUrl": row.get("companyUrl"),
             "role": row["translations"][locale]["role"],
             "location": row["translations"][locale]["location"],
             "start": row["start"],

@@ -21,6 +21,16 @@ function renderAt(path: string) {
 
 const region = (name: string) => screen.getByRole('region', { name })
 
+/** What a sighted reader sees: the text without the screen-reader-only hints ("opens in a new tab"). */
+function visibleText(element: Element): string {
+  const copy = element.cloneNode(true) as Element
+  for (const hint of copy.querySelectorAll('.sr-only')) hint.remove()
+  return copy.textContent?.trim() ?? ''
+}
+
+/** The chips of a tag list, as their visible text. */
+const chips = (list: HTMLElement) => within(list).getAllByRole('listitem').map(visibleText)
+
 /**
  * Matches an element by its whole text, including text split across children (a date range is a
  * <time>, a dash and a second <time>). getByText's default matcher only reads direct text nodes.
@@ -62,14 +72,35 @@ describe('section content', () => {
         // Each tech list is named after its own employer, so the lists are told apart by name
         // rather than by position: a screen-reader rotor shows whose stack it is.
         const list = within(experience).getByRole('list', { name: `Technologies: ${entry.company}` })
-        const tags = within(list)
-          .getAllByRole('listitem')
-          .map((item) => item.textContent)
-        expect(tags).toEqual(entry.tech)
+        expect(chips(list)).toEqual(entry.tech)
       }
 
       expect(within(experience).getByText(wholeText('Mar 2024 – Present'))).toBeInTheDocument()
       expect(within(experience).getByText(wholeText('Jun 2019 – Dec 2023'))).toBeInTheDocument()
+    })
+
+    it('links a company name to its website in a new tab, when it has one', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const experience = region('Experience')
+      const acme = within(experience).getByRole('link', { name: 'Acme Corp (opens in a new tab)' })
+      expect(acme).toHaveAttribute('href', 'https://acme.example')
+      expect(acme).toHaveAttribute('target', '_blank')
+      expect(acme).toHaveAttribute('rel', 'noopener noreferrer')
+      // Globex has no website: its name is plain text.
+      expect(within(experience).queryByRole('link', { name: /Globex/ })).toBeNull()
+      expect(within(experience).getByText('Globex Ltd')).toBeInTheDocument()
+    })
+
+    it('drops a company website the browser cannot parse, keeping the name', async () => {
+      const payload = editable()
+      payload.experience = [{ ...payload.experience[0], companyUrl: 'javascript:alert(1)' }]
+      queueJson(payload)
+      renderAt('/en')
+      const experience = region('Experience')
+      await waitFor(() => expect(within(experience).queryByText('Globex Ltd')).toBeNull())
+      expect(within(experience).queryByRole('link', { name: /Acme/ })).toBeNull()
+      expect(within(experience).getByText('Acme Corp')).toBeInTheDocument()
     })
 
     it('gives every date a machine-readable value and no end date to the current role', async () => {
@@ -96,16 +127,15 @@ describe('section content', () => {
 
       // A slot remains, so the note that write-ups are coming stays.
       expect(within(projects).getByText('Selected projects are being written up.')).toBeInTheDocument()
-      const titles = within(projects)
-        .getAllByRole('heading', { level: 3 })
-        .map((heading) => heading.textContent)
+      const titles = within(projects).getAllByRole('heading', { level: 3 }).map(visibleText)
       expect(titles).toEqual(['Orbit dashboard', 'Project 2'])
       expect(within(projects).getAllByText('Placeholder')).toHaveLength(1)
       expect(within(projects).getByRole('list', { name: 'Technologies: Orbit dashboard' })).toBeInTheDocument()
-      expect(within(projects).getByRole('link', { name: 'View project Orbit dashboard' })).toHaveAttribute(
-        'href',
-        'https://example.com/orbit',
-      )
+      // The whole card is the link, named by its title; the slot is not a link.
+      const link = within(projects).getByRole('link', { name: 'Orbit dashboard (opens in a new tab)' })
+      expect(link).toHaveAttribute('href', 'https://example.com/orbit')
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(within(projects).queryByRole('link', { name: /Project 2/ })).toBeNull()
       // Only the real project has an image; the slot keeps the hatch plane.
       const images = projects.querySelectorAll('img')
       expect(images).toHaveLength(1)
@@ -120,9 +150,7 @@ describe('section content', () => {
       const projects = region('Projects')
       // The fixture's slot is on screen until the API payload is swapped in.
       await waitFor(() => expect(within(projects).queryByText('Placeholder')).toBeNull())
-      expect(within(projects).getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
-        'Orbit dashboard',
-      ])
+      expect(within(projects).getAllByRole('heading', { level: 3 }).map(visibleText)).toEqual(['Orbit dashboard'])
       expect(within(projects).queryByText('Selected projects are being written up.')).toBeNull()
     })
   })
@@ -135,11 +163,19 @@ describe('section content', () => {
 
       for (const group of content.skills.groups) {
         const list = within(skills).getByRole('list', { name: group.label })
-        const items = within(list)
-          .getAllByRole('listitem')
-          .map((item) => item.textContent)
-        expect(items).toEqual(group.items)
+        expect(chips(list)).toEqual(group.items)
       }
+    })
+
+    it('makes every chip a web search for the term, in the page language, in a new tab', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const react = within(region('Skills')).getByRole('link', { name: 'React (search the web in a new tab)' })
+      expect(react).toHaveAttribute('href', 'https://www.google.com/search?q=what%20is%20React')
+      expect(react).toHaveAttribute('target', '_blank')
+      expect(react).toHaveAttribute('rel', 'noopener noreferrer')
+      // Decorative, and hidden until the chip is hovered or focused.
+      expect(react.querySelector('.edge-cat-track')).toHaveAttribute('aria-hidden', 'true')
     })
 
     it('renders the credentials block', async () => {
@@ -161,49 +197,61 @@ describe('section content', () => {
   })
 
   describe('Contact', () => {
+    const contactSection = () => region('Get in touch')
+
     it('links every channel in order, says where the owner is and offers the form', async () => {
       renderAt('/en')
       await screen.findByRole('heading', { level: 1 })
-      const contact = region('Contact')
+      const contact = contactSection()
+      expect(contact).toHaveAttribute('id', 'contact')
+      expect(within(contact).getByRole('heading', { level: 2, name: 'Get in touch' })).toHaveAttribute('tabindex', '-1')
 
-      const links = within(contact).getAllByRole('link')
+      const channels = within(contact).getByRole('list', { name: 'Contact channels' })
+      const links = within(channels).getAllByRole('link')
       expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
-        ['hello@example.com', 'mailto:hello@example.com'],
-        ['github.com/example', 'https://github.com/example'],
+        ['Email hello@example.com', 'mailto:hello@example.com'],
+        ['GitHub github.com/example', 'https://github.com/example'],
       ])
-      const labels = within(contact)
-        .getAllByRole('listitem')
-        .map((row) => row.querySelector('p')?.textContent)
-      // No CV in this content, so there is no download row.
-      expect(labels).toEqual(['Email', 'GitHub', 'Based in'])
-      expect(within(contact).getByText('Toronto, Canada')).toBeInTheDocument()
-      // The form replaced the "on its way" note.
-      expect(within(contact).getByRole('form', { name: 'Send a message' })).toBeInTheDocument()
-      expect(within(contact).getByRole('button', { name: 'Send message' })).toBeInTheDocument()
-      expect(within(contact).queryByText(/on the way/i)).not.toBeInTheDocument()
+      expect(within(channels).getByText('Toronto, Canada')).toBeInTheDocument()
+      // Without motion there is no moving copy of the channels.
+      expect(contact.querySelector('[data-zipper-row]')).toBeNull()
     })
 
-    it('offers the uploaded CV as a download, after the channels and before the location', async () => {
+    it('opens the form in a dialog and closes it again', async () => {
+      const { container } = renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const open = within(contactSection()).getByRole('button', { name: 'Send a message' })
+      expect(open).toHaveAttribute('aria-haspopup', 'dialog')
+      open.click()
+      const dialog = await screen.findByRole('dialog', { name: 'Send a message' })
+      expect(within(dialog).getByRole('form', { name: 'Send a message' })).toBeInTheDocument()
+      expect(open).toHaveAttribute('aria-expanded', 'true')
+      within(dialog).getByRole('button', { name: 'Close' }).click()
+      await waitFor(() => expect(open).toHaveAttribute('aria-expanded', 'false'))
+      expect(container.querySelector('dialog')?.open).toBe(false)
+    })
+
+    it('offers the uploaded CV as a download, after the channels', async () => {
       queueJson({ ...editable(), cv: CV })
       renderAt('/en')
-      const contact = region('Contact')
-      const download = await within(contact).findByRole('link', { name: 'Download CV (PDF, 180 KB)' })
+      const channels = within(contactSection()).getByRole('list', { name: 'Contact channels' })
+      const download = await within(channels).findByRole('link', { name: 'CV Download CV (PDF, 180 KB)' })
       expect(download).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
       expect(download).toHaveAttribute('download')
       expect(download).toHaveAttribute('type', 'application/pdf')
-
-      const labels = within(contact)
-        .getAllByRole('listitem')
-        .map((row) => row.querySelector('p')?.textContent)
-      expect(labels).toEqual(['Email', 'GitHub', 'CV', 'Based in'])
+      expect(within(channels).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+        'mailto:hello@example.com',
+        'https://github.com/example',
+        `http://localhost:8000${CV.url}`,
+      ])
     })
 
     it('labels the CV download in Chinese on the Chinese page', async () => {
       queueJson({ ...editable('zh-Hant'), cv: CV })
       renderAt('/zh-hant')
-      const download = await screen.findByRole('link', { name: '下載履歷（PDF，180 KB）' })
+      const download = await screen.findByRole('link', { name: '履歷 下載履歷（PDF，180 KB）' })
       expect(download).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
-      expect(within(region('聯絡')).getByText('履歷')).toBeInTheDocument()
+      expect(within(region('保持聯絡')).getByRole('button', { name: '發送訊息' })).toBeInTheDocument()
     })
   })
 
@@ -219,11 +267,12 @@ describe('section content', () => {
       expect(within(experience).getByText(wholeText('2024年3月 – 至今'))).toBeInTheDocument()
       expect(within(experience).getByText(wholeText('2019年6月 – 2023年12月'))).toBeInTheDocument()
       expect(within(experience).getByRole('list', { name: '技術：Acme Corp' })).toBeInTheDocument()
-      expect(
-        within(within(experience).getByRole('list', { name: '技術：Acme Corp' }))
-          .getAllByRole('listitem')
-          .map((item) => item.textContent),
-      ).toEqual(['TypeScript', '數據管道'])
+      expect(chips(within(experience).getByRole('list', { name: '技術：Acme Corp' }))).toEqual(['TypeScript', '數據管道'])
+      // Chinese pages search in Chinese.
+      expect(within(experience).getByRole('link', { name: 'TypeScript （在新分頁搜尋網絡）' })).toHaveAttribute(
+        'href',
+        `https://www.google.com/search?q=${encodeURIComponent('TypeScript 是什麼')}`,
+      )
 
       const skills = region('技能')
       expect(within(skills).getByRole('list', { name: '前端' })).toBeInTheDocument()
@@ -231,7 +280,7 @@ describe('section content', () => {
       expect(within(skills).getByText(wholeText('PMP（進行中）'))).toBeInTheDocument()
 
       expect(within(region('項目作品')).getAllByText('預留位置')).toHaveLength(1)
-      expect(within(region('聯絡')).getByText('加拿大多倫多')).toBeInTheDocument()
+      expect(within(region('保持聯絡')).getByText('加拿大多倫多')).toBeInTheDocument()
     })
   })
 
@@ -239,45 +288,11 @@ describe('section content', () => {
     renderAt('/en')
     await screen.findByRole('heading', { level: 1 })
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument()
-    for (const name of ['Experience', 'Skills', 'Contact']) {
+    for (const name of ['Experience', 'Skills', 'Get in touch']) {
       const section = region(name)
       expect(within(section).queryByText(/placeholder/i)).not.toBeInTheDocument()
       // An image plane only belongs to a project card.
       expect(section.querySelector('[data-plane]')).toBeNull()
     }
-  })
-
-  describe('Closing', () => {
-    const closing = () => document.querySelector<HTMLElement>('[data-closing]')
-
-    it('repeats the channels once without motion, hidden from assistive technology and the tab order', async () => {
-      renderAt('/en')
-      await screen.findByRole('heading', { level: 1 })
-      const screenEl = closing()
-      expect(screenEl).not.toBeNull()
-      expect(screenEl).toHaveAttribute('aria-hidden', 'true')
-      expect(screenEl).toHaveTextContent('Get in touch')
-      const links = [...(screenEl?.querySelectorAll('a') ?? [])]
-      expect(links.map((link) => link.getAttribute('href'))).toEqual(content.contact.links.map((link) => link.href))
-      expect(links.every((link) => link.tabIndex === -1)).toBe(true)
-      // The accessible channels stay in the Contact section.
-      expect(within(region('Contact')).getAllByRole('link').length).toBeGreaterThanOrEqual(content.contact.links.length)
-    })
-
-    it('adds the CV download once one is uploaded', async () => {
-      queueJson({ ...editable(), cv: CV })
-      renderAt('/en')
-      await waitFor(() => expect(closing()?.querySelector('a[download]')).not.toBeNull())
-      const cv = closing()?.querySelector('a[download]')
-      expect(cv).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
-      expect(cv).toHaveTextContent('Download CV (PDF, 180 KB)')
-    })
-
-    it('is titled in Chinese on the Chinese page', async () => {
-      await i18n.changeLanguage('zh-Hant')
-      renderAt('/zh-hant')
-      await screen.findByRole('heading', { level: 1 })
-      expect(closing()).toHaveTextContent('保持聯絡')
-    })
   })
 })

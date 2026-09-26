@@ -67,6 +67,7 @@ async def _experience(session: AsyncSession, locale: Locale) -> list[ExperienceI
             ExperienceItem(
                 id=row.slug,
                 company=row.company,
+                company_url=row.company_url,
                 role=text.role,
                 location=text.location,
                 start=row.start_month,

@@ -16,6 +16,8 @@ export interface ResolvedExperience {
   readonly id: string
   /** Untranslated. */
   readonly company: string
+  /** The employer's website, linked from the company name; null when there is none. */
+  readonly companyUrl: string | null
   readonly role: string
   readonly location: string
   readonly start: Month
