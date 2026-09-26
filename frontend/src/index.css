@@ -432,9 +432,9 @@
 
 /*
  * Project light (components/ProjectCard.tsx): a comet of light running round a `.light-host`
- * card's border, a lap each way (about 4s), while the card is hovered, focused or crosses the middle
+ * card's border, clockwise without end (a lap about 4s), while the card is hovered, focused or crosses the middle
  * of the screen. Three layers: the ring (`.card-light-ring`, masked to the border) through which a
- * rotating conic comet shows (a transform; mirrored for the way back so its tail trails); the glow
+ * rotating conic comet shows (a transform, its tail trailing); the glow
  * (`.card-light-glow`: drop shadows, the RGB cycle by hue-rotate and brief flares by brightness, a
  * filter animation, like the ink canvas an exception to "transform and opacity only"); the flicker
  * (`.card-light`: opacity dips now and then). Reduced motion: a still comet at the top.
@@ -491,7 +491,7 @@
       #fff 358deg,
       transparent 360deg
     );
-    animation: card-light-orbit 8s linear infinite;
+    animation: card-light-orbit 4s linear infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -503,18 +503,13 @@
   }
 }
 
+/* One direction for ever: 360deg is where 0deg started, so the laps join seamlessly. */
 @keyframes card-light-orbit {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg) scaleX(1);
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
   }
-  49.99% {
-    transform: translate(-50%, -50%) rotate(360deg) scaleX(1);
-  }
-  50% {
-    transform: translate(-50%, -50%) rotate(360deg) scaleX(-1);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(0deg) scaleX(-1);
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 
