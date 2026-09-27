@@ -11,6 +11,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.models.content import (
+    ArchiveEntry,
     Certification,
     ContactLink,
     EducationEntry,
@@ -19,8 +20,10 @@ from app.models.content import (
     SiteText,
     SkillGroup,
     SpokenLanguage,
+    Tool,
 )
 from app.schemas.admin import (
+    ArchiveOut,
     CertificationOut,
     ContactLinkOut,
     EducationOut,
@@ -29,9 +32,11 @@ from app.schemas.admin import (
     SiteTextOut,
     SkillGroupOut,
     SpokenLanguageOut,
+    ToolOut,
 )
 from app.schemas.common import TAG_LIST, Localized, Tag
 from app.schemas.content_write import (
+    ArchiveIn,
     CertificationIn,
     ContactLinkIn,
     EducationIn,
@@ -40,6 +45,7 @@ from app.schemas.content_write import (
     SiteTextIn,
     SkillGroupIn,
     SpokenLanguageIn,
+    ToolIn,
 )
 
 
@@ -138,6 +144,7 @@ def _education_row(item: EducationIn) -> dict[str, Any]:
         "slug": item.slug,
         "sort_order": item.sort_order,
         "school": item.school,
+        "url": item.url,
         "year": item.year,
         "translations": translations_json(item.translations),
     }
@@ -148,6 +155,7 @@ def _education_fields(row: EducationEntry) -> dict[str, Any]:
         "slug": row.slug,
         "sort_order": row.sort_order,
         "school": row.school,
+        "url": row.url,
         "year": row.year,
         "translations": row.translations,
     }
@@ -158,6 +166,7 @@ def _certification_row(item: CertificationIn) -> dict[str, Any]:
         "slug": item.slug,
         "sort_order": item.sort_order,
         "name": item.name,
+        "url": item.url,
         "in_progress": item.in_progress,
     }
 
@@ -167,7 +176,50 @@ def _certification_fields(row: Certification) -> dict[str, Any]:
         "slug": row.slug,
         "sort_order": row.sort_order,
         "name": row.name,
+        "url": row.url,
         "in_progress": row.in_progress,
+    }
+
+
+def _tool_row(item: ToolIn) -> dict[str, Any]:
+    return {
+        "slug": item.slug,
+        "sort_order": item.sort_order,
+        "name": item.name,
+        "url": item.url,
+        "tech": tags_json(item.tech),
+        "translations": translations_json(item.translations),
+    }
+
+
+def _tool_fields(row: Tool) -> dict[str, Any]:
+    return {
+        "slug": row.slug,
+        "sort_order": row.sort_order,
+        "name": row.name,
+        "url": row.url,
+        "tech": row.tech,
+        "translations": row.translations,
+    }
+
+
+def _archive_row(item: ArchiveIn) -> dict[str, Any]:
+    return {
+        "slug": item.slug,
+        "sort_order": item.sort_order,
+        "month": item.month,
+        "url": item.url,
+        "translations": translations_json(item.translations),
+    }
+
+
+def _archive_fields(row: ArchiveEntry) -> dict[str, Any]:
+    return {
+        "slug": row.slug,
+        "sort_order": row.sort_order,
+        "month": row.month,
+        "url": row.url,
+        "translations": row.translations,
     }
 
 
@@ -229,6 +281,8 @@ CERTIFICATIONS = Collection(
     _certification_row,
     _certification_fields,
 )
+TOOLS = Collection("tools", Tool, ToolIn, ToolOut, _tool_row, _tool_fields)
+ARCHIVE = Collection("archive", ArchiveEntry, ArchiveIn, ArchiveOut, _archive_row, _archive_fields)
 LANGUAGES = Collection(
     "languages",
     SpokenLanguage,
@@ -264,7 +318,9 @@ COLLECTIONS: dict[str, Collection] = {
         EDUCATION,
         CERTIFICATIONS,
         LANGUAGES,
+        TOOLS,
         CONTACT_LINKS,
+        ARCHIVE,
         SITE_TEXTS,
     )
 }

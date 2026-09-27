@@ -54,18 +54,38 @@ class EducationItem(CamelModel):
     id: str
     degree: str
     school: str
+    url: str | None
     year: str
 
 
 class CertificationItem(CamelModel):
     id: str
     name: str
+    url: str | None
     in_progress: bool
 
 
 class SpokenLanguageItem(CamelModel):
     id: str
     name: str
+
+
+class ToolItem(CamelModel):
+    id: str
+    name: str
+    kind: str
+    summary: str
+    tech: list[str]
+    url: str
+
+
+class ArchiveItem(CamelModel):
+    id: str
+    kind: str
+    title: str
+    summary: str | None
+    month: Month
+    url: str
 
 
 class ContactLinkItem(CamelModel):
@@ -92,5 +112,7 @@ class ContentPayload(CamelModel):
     experience: list[ExperienceItem]
     projects: list[ProjectItem]
     skills: SkillsPayload
+    tools: list[ToolItem]
     contact: ContactPayload
+    archive: list[ArchiveItem]
     cv: CvRef | None

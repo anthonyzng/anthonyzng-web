@@ -185,11 +185,17 @@ describe('section content', () => {
 
       expect(within(skills).getByRole('heading', { level: 3, name: 'Credentials' })).toBeInTheDocument()
       expect(within(skills).getByText('BSc Computing')).toBeInTheDocument()
-      expect(within(skills).getByText('Example University')).toBeInTheDocument()
       expect(within(skills).getByText('2018')).toBeInTheDocument()
+      // A school or certification with a web address links its name there, in a new tab.
+      const school = within(skills).getByRole('link', { name: 'Example University (opens in a new tab)' })
+      expect(school).toHaveAttribute('href', 'https://uni.example/')
+      expect(school).toHaveAttribute('target', '_blank')
+      expect(school).toHaveAttribute('rel', 'noopener noreferrer')
+      const aws = within(skills).getByRole('link', { name: 'AWS Certified Developer (opens in a new tab)' })
+      expect(aws).toHaveAttribute('href', 'https://certs.example/aws')
       // Each certification keeps its own name; only the status suffix comes from the locale.
-      expect(within(skills).getByText(wholeText('AWS Certified Developer'))).toBeInTheDocument()
       expect(within(skills).getByText(wholeText('PMP (in progress)'))).toBeInTheDocument()
+      expect(within(skills).queryByRole('link', { name: /PMP/ })).toBeNull()
       for (const language of ['English', 'Cantonese']) {
         expect(within(skills).getByText(language)).toBeInTheDocument()
       }
@@ -263,6 +269,93 @@ describe('section content', () => {
       const download = await screen.findByRole('link', { name: '履歷 下載履歷（PDF，180 KB）' })
       expect(download).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
       expect(within(region('保持聯絡')).getByRole('button', { name: '發送訊息' })).toBeInTheDocument()
+    })
+  })
+
+  describe('Tools', () => {
+    it('renders one card per tool, each opening the tool in a new tab', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const tools = region('Tools')
+      expect(within(tools).getByText('04 / 04')).toBeInTheDocument()
+
+      const cards = within(tools).getAllByRole('article')
+      expect(cards.map((card) => within(card).getByRole('heading', { level: 3 }).textContent)).toEqual([
+        'Tidy (opens in a new tab)',
+        'shipit (opens in a new tab)',
+      ])
+      const [tidy] = cards
+      expect(within(tidy).getByText('Web app')).toBeInTheDocument()
+      expect(within(tidy).getByText('Cleans up pasted text.')).toBeInTheDocument()
+      const link = within(tidy).getByRole('link', { name: 'Tidy (opens in a new tab)' })
+      expect(link).toHaveAttribute('href', 'https://tools.example/tidy')
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+      // The name's link stretches over the card; the chips stay their own links above it.
+      expect(link).toHaveClass('after:absolute', 'after:inset-0')
+      expect(chips(within(tidy).getByRole('list', { name: 'Technologies: Tidy' }))).toEqual(['TypeScript', 'Automation'])
+    })
+
+    it('says more is coming while the list is empty', async () => {
+      queueJson({ ...editable(), tools: [] })
+      renderAt('/en')
+      expect(await within(region('Tools')).findByText('New tools are on the way.')).toBeInTheDocument()
+      expect(within(region('Tools')).queryAllByRole('article')).toHaveLength(0)
+    })
+  })
+
+  describe('Archive', () => {
+    it('lists the entries after the contact screen, each row a link in a new tab', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const archive = region('Archive')
+      expect(archive).toHaveAttribute('id', 'archive')
+      // After the closing screen in the page, and no numbered chapter.
+      expect(region('Get in touch').compareDocumentPosition(archive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(within(archive).getByRole('heading', { level: 2, name: 'Archive' })).toHaveAttribute('tabindex', '-1')
+
+      const rows = within(archive).getAllByRole('link')
+      expect(rows.map((row) => row.getAttribute('href'))).toEqual(['https://v1.example.com/', 'https://blog.example/motion'])
+      expect(rows[0]).toHaveAttribute('target', '_blank')
+      expect(rows[0]).toHaveAccessibleName('May 2021 Portfolio Portfolio, first version A static site. (opens in a new tab)')
+      expect(within(rows[0]).getByText('May 2021')).toHaveAttribute('datetime', '2021-05')
+      // No summary, no second line.
+      expect(rows[1]).toHaveAccessibleName('Feb 2023 Blog Notes on scroll motion (opens in a new tab)')
+    })
+
+    it('is left out while there is nothing in it', async () => {
+      queueJson({ ...editable(), archive: [] })
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      await waitFor(() => expect(screen.queryByRole('region', { name: 'Archive' })).toBeNull())
+    })
+  })
+
+  describe('CV download in the hero and the dock', () => {
+    it('offers nothing while no CV is uploaded', async () => {
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      expect(screen.queryByRole('link', { name: /Download CV/ })).toBeNull()
+    })
+
+    it('puts the download beside the roles and at the end of the dock', async () => {
+      queueJson({ ...editable(), cv: CV })
+      renderAt('/en')
+      const hero = await screen.findByRole('region', { name: 'Anthony Ng' })
+      const heroLink = await within(hero).findByRole('link', { name: 'Download CV PDF · 180 KB' })
+      expect(heroLink).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
+      expect(heroLink).toHaveAttribute('download')
+      expect(heroLink).toHaveAttribute('type', 'application/pdf')
+
+      const dock = screen.getByRole('navigation', { name: 'Sections' })
+      const dockLink = within(dock).getByRole('link', { name: 'Download CV (PDF, 180 KB)' })
+      expect(dockLink).toHaveTextContent('CV')
+      expect(dockLink).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
+      expect(dockLink).toHaveAttribute('download')
+      // The section links come first, the download last.
+      const links = within(dock).getAllByRole('link')
+      expect(links.at(-1)).toBe(dockLink)
+      expect(links.map((link) => link.textContent)).toEqual(['Top', 'Experience', 'Projects', 'Skills', 'Tools', 'Contact', 'CV'])
     })
   })
 

@@ -49,7 +49,9 @@
     "education": "Education",
     "certifications": "Certifications",
     "languages": "Languages",
+    "tools": "Tools",
     "contact-links": "Contact links",
+    "archive": "Archive",
     "site-texts": "Site texts"
   },
   "leave": {
@@ -141,7 +143,9 @@
       "education": "Education, under Credentials in the Skills section.",
       "certifications": "Certifications, under Credentials in the Skills section.",
       "languages": "Spoken languages, under Credentials in the Skills section.",
+      "tools": "The tool cards in the Tools section, after Skills, in this order. Each card opens its link.",
       "contact-links": "The direct channels at the top of the Contact section.",
+      "archive": "The Archive after Get in touch: earlier portfolio versions, blog posts and other links. Hidden while empty.",
       "site-texts": "Single lines of text used around the site. They can be edited, but not added or removed."
     }
   },
@@ -211,7 +215,14 @@
     "linkLabel": "Label",
     "href": "Link",
     "display": "Shown as",
-    "text": "Text"
+    "text": "Text",
+    "schoolUrl": "School website",
+    "certificationUrl": "Certificate link",
+    "toolName": "Tool name",
+    "kind": "Type",
+    "toolUrl": "Tool link",
+    "archiveMonth": "Month",
+    "archiveUrl": "Link"
   },
   "hints": {
     "slug": "The entry's id in the site's code. A lower-case letter first, then letters, digits, - or _ (up to 64 characters). It cannot be changed later.",
@@ -224,7 +235,14 @@
     "href": "mailto:name@example.com for an email address, or a web address (preferably https://).",
     "display": "The text visitors see, such as the address without https://.",
     "siteText": "Shown on the site as written, in each language.",
-    "companyUrl": "The employer's public website, preferably https://. The company name links to it on the site. Leave it empty for no link."
+    "companyUrl": "The employer's public website, preferably https://. The company name links to it on the site. Leave it empty for no link.",
+    "schoolUrl": "The school's or course's public website, preferably https://. The school name links to it on the site. Leave it empty for no link.",
+    "certificationUrl": "The certificate's page (the issuer's or a verification page), preferably https://. The name links to it on the site. Leave it empty for no link.",
+    "toolKind": "What sort of tool it is, shown above its name: Web app, CLI, Browser extension…",
+    "toolUrl": "Where the tool lives, preferably https://. The whole card opens it.",
+    "archiveKind": "What the entry is, shown on its row: Portfolio, Blog, Article…",
+    "archiveUrl": "Where the entry lives, preferably https://. The whole row opens it.",
+    "archiveSummary": "One line under the title. Leave it empty in a language for none."
   },
   "tags": {
     "chip": "chip {{position}}",

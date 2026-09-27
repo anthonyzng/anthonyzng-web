@@ -109,6 +109,8 @@ class EducationEntry(TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(Text, primary_key=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     school: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """The school's (or the course's) website: the school name links to it on the site."""
     year: Mapped[str] = mapped_column(Text, nullable=False)
     translations: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
@@ -120,7 +122,48 @@ class Certification(TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(Text, primary_key=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    """The credential's page (issuer or verification): the name links to it on the site."""
     in_progress: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+
+
+class Tool(TimestampMixin, Base):
+    """A tool the owner built (the Tools section): every card links to the tool itself."""
+
+    __tablename__ = "tools"
+    __table_args__ = (
+        slug_check(),
+        sort_order_check(),
+        json_array_check("tech"),
+        translations_check(),
+        Index("tools_sort_idx", "sort_order", "slug"),
+    )
+
+    slug: Mapped[str] = mapped_column(Text, primary_key=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    tech: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, server_default=EMPTY_JSON_ARRAY)
+    translations: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+
+
+class ArchiveEntry(TimestampMixin, Base):
+    """An earlier version of the portfolio, a blog post or another link (the Archive section)."""
+
+    __tablename__ = "archive_entries"
+    __table_args__ = (
+        slug_check(),
+        sort_order_check(),
+        month_check("month"),
+        translations_check(),
+        Index("archive_entries_sort_idx", "sort_order", "slug"),
+    )
+
+    slug: Mapped[str] = mapped_column(Text, primary_key=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    month: Mapped[str] = mapped_column(Text, nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    translations: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
 
 class SpokenLanguage(TimestampMixin, Base):

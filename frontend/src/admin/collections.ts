@@ -4,6 +4,7 @@ import { cleanTag, getBoolean, getString, trimDeep, type Draft, type Json } from
 import type { FieldConfig, TextField } from './fields'
 import type { Translate } from './i18n'
 import {
+  archiveItemSchema,
   certificationItemSchema,
   contactLinkItemSchema,
   educationItemSchema,
@@ -12,6 +13,8 @@ import {
   projectItemSchema,
   siteTextItemSchema,
   skillGroupItemSchema,
+  toolItemSchema,
+  type ArchiveItem,
   type ExperienceItem,
   type ProjectItem,
 } from './schemas'
@@ -24,7 +27,9 @@ export const COLLECTION_IDS = [
   'education',
   'certifications',
   'languages',
+  'tools',
   'contact-links',
+  'archive',
   'site-texts',
 ] as const
 
@@ -114,6 +119,13 @@ const bothLocales = (make: (locale: 'en' | 'zh-Hant') => Draft): Draft => ({ en:
 const joined = (...parts: readonly (string | null | undefined)[]): string => parts.filter((part) => part).join(' · ')
 
 const notPlaceholder = (draft: Draft): boolean => !getBoolean(draft, 'placeholder')
+
+/** An optional web address: the empty field is sent as null ("no link"). */
+function withOptionalUrl(draft: Draft): Record<string, Json> {
+  const payload = trimmedPayload(draft)
+  const url = getString(payload, 'url')
+  return { ...payload, url: url === '' ? null : url }
+}
 
 /** Bullet rows pair the locales by index; a stored mismatch (never valid) is padded rather than lost. */
 function pairedBullets(item: ExperienceItem): { en: string[]; zh: string[] } {
@@ -245,19 +257,22 @@ const education = define({
   itemSchema: educationItemSchema,
   fields: [
     text('school', 200),
+    text('url', 2048, { control: 'url', scheme: 'web', required: false, label: 'schoolUrl', hint: 'schoolUrl' }),
     { kind: 'slug', label: 'slug', source: 'school' },
     localizedText('degree', 200),
     text('year', 4, { control: 'year' }),
   ],
   title: (item) => item.school || item.slug,
   detail: (item) => joined(item.translations.en.degree, item.year),
-  emptyDraft: () => ({ slug: '', school: '', year: '', translations: bothLocales(() => ({ degree: '' })) }),
+  emptyDraft: () => ({ slug: '', school: '', url: '', year: '', translations: bothLocales(() => ({ degree: '' })) }),
   toDraft: (item) => ({
     slug: item.slug,
     school: item.school,
+    url: item.url ?? '',
     year: item.year,
     translations: bothLocales((locale) => ({ degree: item.translations[locale].degree })),
   }),
+  toPayload: withOptionalUrl,
 })
 
 const certifications = define({
@@ -267,13 +282,83 @@ const certifications = define({
   itemSchema: certificationItemSchema,
   fields: [
     text('name', 200, { label: 'certificationName' }),
+    text('url', 2048, { control: 'url', scheme: 'web', required: false, label: 'certificationUrl', hint: 'certificationUrl' }),
     { kind: 'slug', label: 'slug', source: 'name' },
     { kind: 'boolean', name: 'inProgress', label: 'inProgress' },
   ],
   title: (item) => item.name || item.slug,
   detail: (item, t) => (item.inProgress ? t('list.inProgress') : null),
-  emptyDraft: () => ({ slug: '', name: '', inProgress: false }),
-  toDraft: (item) => ({ slug: item.slug, name: item.name, inProgress: item.inProgress }),
+  emptyDraft: () => ({ slug: '', name: '', url: '', inProgress: false }),
+  toDraft: (item) => ({ slug: item.slug, name: item.name, url: item.url ?? '', inProgress: item.inProgress }),
+  toPayload: withOptionalUrl,
+})
+
+const tools = define({
+  id: 'tools',
+  sortable: true,
+  creatable: true,
+  itemSchema: toolItemSchema,
+  fields: [
+    text('name', 200, { label: 'toolName' }),
+    { kind: 'slug', label: 'slug', source: 'name' },
+    localizedText('kind', 100, { hint: 'toolKind' }),
+    localizedText('summary', 1000, { control: 'textarea' }),
+    text('url', 2048, { control: 'url', scheme: 'web', label: 'toolUrl', hint: 'toolUrl' }),
+    { kind: 'tags', name: 'tech', label: 'tech', hint: 'tags', min: 0, max: 50 },
+  ],
+  title: (item) => item.name || item.slug,
+  detail: (item) => joined(item.translations.en.kind, item.url),
+  emptyDraft: () => ({ slug: '', name: '', url: '', tech: [], translations: bothLocales(() => ({ kind: '', summary: '' })) }),
+  toDraft: (item) => ({
+    slug: item.slug,
+    name: item.name,
+    url: item.url,
+    tech: item.tech.map(cleanTag),
+    translations: bothLocales((locale) => ({
+      kind: item.translations[locale].kind,
+      summary: item.translations[locale].summary,
+    })),
+  }),
+})
+
+const archive = define<ArchiveItem>({
+  id: 'archive',
+  sortable: true,
+  creatable: true,
+  itemSchema: archiveItemSchema,
+  fields: [
+    localizedText('title', 200),
+    { kind: 'slug', label: 'slug', source: 'translations.en.title' },
+    localizedText('kind', 100, { hint: 'archiveKind' }),
+    text('month', 7, { control: 'month', label: 'archiveMonth' }),
+    text('url', 2048, { control: 'url', scheme: 'web', label: 'archiveUrl', hint: 'archiveUrl' }),
+    localizedText('summary', 1000, { control: 'textarea', required: false, hint: 'archiveSummary' }),
+  ],
+  title: (item) => item.translations.en.title || item.slug,
+  detail: (item, _t, language) => joined(item.translations.en.kind, formatMonth(item.month, language)),
+  emptyDraft: () => ({ slug: '', month: '', url: '', translations: bothLocales(() => ({ kind: '', title: '', summary: '' })) }),
+  toDraft: (item) => ({
+    slug: item.slug,
+    month: item.month,
+    url: item.url,
+    translations: bothLocales((locale) => ({
+      kind: item.translations[locale].kind,
+      title: item.translations[locale].title,
+      summary: item.translations[locale].summary ?? '',
+    })),
+  }),
+  // An empty summary means "none", in each language on its own.
+  toPayload: (draft) => {
+    const payload = trimmedPayload(draft)
+    const translations = payload.translations as Record<string, Record<string, Json>>
+    return {
+      ...payload,
+      translations: bothLocales((locale) => {
+        const text = translations[locale] ?? {}
+        return { ...text, summary: text.summary === '' || text.summary === undefined ? null : text.summary }
+      }),
+    }
+  },
 })
 
 const languages = define({
@@ -336,7 +421,9 @@ const COLLECTIONS: Readonly<Record<CollectionId, Collection>> = {
   education,
   certifications,
   languages,
+  tools,
   'contact-links': contactLinks,
+  archive,
   'site-texts': siteTexts,
 }
 

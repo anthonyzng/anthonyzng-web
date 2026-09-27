@@ -27,6 +27,31 @@ NEW_EXPERIENCE: dict[str, Any] = {
 }
 
 
+NEW_TOOL: dict[str, Any] = {
+    "slug": "tidy",
+    "name": "Tidy",
+    "url": "https://tools.example/tidy",
+    "tech": ["TypeScript", {"en": "Automation", "zh-Hant": "自動化"}],
+    "translations": {
+        "en": {"kind": "Web app", "summary": "Cleans up pasted text."},
+        "zh-Hant": {"kind": "網頁應用程式", "summary": "整理貼上的文字。"},
+    },
+}
+
+NEW_ARCHIVE: dict[str, Any] = {
+    "slug": "portfolio-v1",
+    "month": "2021-05",
+    "url": "https://v1.example.com/",
+    "translations": {
+        "en": {"kind": "Portfolio", "title": "Portfolio, first version", "summary": "Static."},
+        "zh-Hant": {"kind": "作品集", "title": "作品集第一版", "summary": "靜態網站。"},
+    },
+}
+
+SEEDLESS = {"tools": NEW_TOOL, "archive": NEW_ARCHIVE}
+"""Collections the seed leaves empty (the owner fills them in the admin panel)."""
+
+
 def writable(item: dict[str, Any]) -> dict[str, Any]:
     """An item as the admin sends it back: without the read-only fields."""
     return {key: value for key, value in item.items() if key not in READ_ONLY}
@@ -151,6 +176,11 @@ async def test_every_collection_round_trips_unchanged(
     admin_client: httpx.AsyncClient, collection: str
 ) -> None:
     """What the list returns, sent back as is, is accepted and changes nothing."""
+    if collection in SEEDLESS:
+        created = await admin_client.post(
+            f"{ADMIN}/content/{collection}", json=SEEDLESS[collection]
+        )
+        assert created.status_code == 201, created.json()
     before = await items(admin_client, collection)
     assert before
     for item in before:
@@ -488,7 +518,9 @@ async def test_summary(admin_client: httpx.AsyncClient) -> None:
             "education": 1,
             "certifications": 3,
             "languages": 3,
+            "tools": 0,
             "contact-links": 3,
+            "archive": 0,
             "site-texts": 1,
         },
         "unreadMessages": 0,
@@ -531,3 +563,101 @@ async def test_experience_company_url_must_be_a_web_address(
     )
     assert response.status_code == 422
     assert "companyUrl" in response.json()["error"]["fields"]
+
+
+# --- tools, archive and credential links --------------------------------------------------
+
+
+async def test_tools_and_archive_are_published_in_each_locale(
+    admin_client: httpx.AsyncClient,
+) -> None:
+    for collection, body in SEEDLESS.items():
+        created = await admin_client.post(f"{ADMIN}/content/{collection}", json=body)
+        assert created.status_code == 201, created.json()
+        assert writable(created.json()) == {**body, "sortOrder": 0}
+    english = (await admin_client.get("/api/v1/content", params={"locale": "en"})).json()
+    chinese = (await admin_client.get("/api/v1/content", params={"locale": "zh-Hant"})).json()
+    assert english["tools"] == [
+        {
+            "id": "tidy",
+            "name": "Tidy",
+            "kind": "Web app",
+            "summary": "Cleans up pasted text.",
+            "tech": ["TypeScript", "Automation"],
+            "url": "https://tools.example/tidy",
+        }
+    ]
+    assert chinese["tools"][0]["tech"] == ["TypeScript", "自動化"]
+    assert chinese["tools"][0]["kind"] == "網頁應用程式"
+    assert english["archive"] == [
+        {
+            "id": "portfolio-v1",
+            "kind": "Portfolio",
+            "title": "Portfolio, first version",
+            "summary": "Static.",
+            "month": "2021-05",
+            "url": "https://v1.example.com/",
+        }
+    ]
+    assert chinese["archive"][0]["title"] == "作品集第一版"
+
+
+async def test_an_archive_summary_is_optional(admin_client: httpx.AsyncClient) -> None:
+    body = copy.deepcopy(NEW_ARCHIVE)
+    for locale in ("en", "zh-Hant"):
+        del body["translations"][locale]["summary"]
+    created = await admin_client.post(f"{ADMIN}/content/archive", json=body)
+    assert created.status_code == 201, created.json()
+    assert created.json()["translations"]["en"]["summary"] is None
+    public = await admin_client.get("/api/v1/content", params={"locale": "en"})
+    assert public.json()["archive"][0]["summary"] is None
+
+
+@pytest.mark.parametrize(
+    ("collection", "body"),
+    [("tools", NEW_TOOL), ("archive", NEW_ARCHIVE)],
+)
+@pytest.mark.parametrize("url", [None, "javascript:alert(1)", "tools.example/tidy"])
+async def test_tools_and_archive_need_a_web_address(
+    admin_client: httpx.AsyncClient, collection: str, body: dict[str, Any], url: str | None
+) -> None:
+    response = await admin_client.post(f"{ADMIN}/content/{collection}", json={**body, "url": url})
+    assert response.status_code == 422
+    assert "url" in response.json()["error"]["fields"]
+
+
+async def test_an_archive_month_is_checked(admin_client: httpx.AsyncClient) -> None:
+    response = await admin_client.post(
+        f"{ADMIN}/content/archive", json={**NEW_ARCHIVE, "month": "2021-13"}
+    )
+    assert response.status_code == 422
+    assert "month" in response.json()["error"]["fields"]
+
+
+@pytest.mark.usefixtures("seeded")
+@pytest.mark.parametrize("collection", ["education", "certifications"])
+async def test_credential_links_are_saved_published_and_cleared(
+    admin_client: httpx.AsyncClient, collection: str
+) -> None:
+    item = writable((await items(admin_client, collection))[0])
+    assert item["url"] is None
+    linked = await admin_client.put(
+        f"{ADMIN}/content/{collection}/{item['slug']}",
+        json={**item, "url": "https://school.example/"},
+    )
+    assert linked.status_code == 200, linked.json()
+    public = (await admin_client.get("/api/v1/content", params={"locale": "en"})).json()
+    entry = next(row for row in public["skills"][collection] if row["id"] == item["slug"])
+    assert entry["url"] == "https://school.example/"
+
+    refused = await admin_client.put(
+        f"{ADMIN}/content/{collection}/{item['slug']}", json={**item, "url": "ftp://school.example"}
+    )
+    assert refused.status_code == 422
+    assert "url" in refused.json()["error"]["fields"]
+
+    cleared = await admin_client.put(
+        f"{ADMIN}/content/{collection}/{item['slug']}", json={**item, "url": None}
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["url"] is None

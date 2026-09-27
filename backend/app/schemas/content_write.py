@@ -76,6 +76,19 @@ class EducationText(StrictCamelModel):
     degree: Text200
 
 
+class ToolText(StrictCamelModel):
+    kind: Text100
+    """What sort of tool it is, as shown on its card: "Web app", "CLI", "Browser extension"..."""
+    summary: Text1000
+
+
+class ArchiveText(StrictCamelModel):
+    kind: Text100
+    """What the entry is, as shown on its row: "Portfolio", "Blog", "Article"..."""
+    title: Text200
+    summary: Text1000 | None = None
+
+
 class SpokenLanguageText(StrictCamelModel):
     name: Text100
 
@@ -142,6 +155,8 @@ class EducationIn(StrictCamelModel):
     slug: Slug
     sort_order: SortOrder | None = None
     school: Text200
+    url: HttpUrl | None = None
+    """The school's website, linked from the school name; optional."""
     year: Year
     translations: Localized[EducationText]
 
@@ -150,7 +165,27 @@ class CertificationIn(StrictCamelModel):
     slug: Slug
     sort_order: SortOrder | None = None
     name: Text200
+    url: HttpUrl | None = None
+    """The credential's page (issuer or verification), linked from the name; optional."""
     in_progress: bool
+
+
+class ToolIn(StrictCamelModel):
+    slug: Slug
+    sort_order: SortOrder | None = None
+    name: Text200
+    url: HttpUrl
+    """Where the tool lives; its card links there."""
+    tech: TagList
+    translations: Localized[ToolText]
+
+
+class ArchiveIn(StrictCamelModel):
+    slug: Slug
+    sort_order: SortOrder | None = None
+    month: Month
+    url: HttpUrl
+    translations: Localized[ArchiveText]
 
 
 class SpokenLanguageIn(StrictCamelModel):

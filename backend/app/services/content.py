@@ -13,6 +13,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from app.models.content import (
     CONTACT_LOCATION_SLUG,
+    ArchiveEntry,
     Certification,
     ContactLink,
     EducationEntry,
@@ -21,10 +22,12 @@ from app.models.content import (
     SiteText,
     SkillGroup,
     SpokenLanguage,
+    Tool,
 )
 from app.models.stored_file import StoredFile
 from app.schemas.common import TAG_LIST, Locale, Localized, resolve_tags
 from app.schemas.content import (
+    ArchiveItem,
     CertificationItem,
     ContactLinkItem,
     ContactPayload,
@@ -35,8 +38,10 @@ from app.schemas.content import (
     SkillGroupItem,
     SkillsPayload,
     SpokenLanguageItem,
+    ToolItem,
 )
 from app.schemas.content_write import (
+    ArchiveText,
     ContactLinkText,
     EducationText,
     ExperienceText,
@@ -44,6 +49,7 @@ from app.schemas.content_write import (
     SiteTextText,
     SkillGroupText,
     SpokenLanguageText,
+    ToolText,
 )
 from app.services.files import get_cv_ref, image_ref
 
@@ -117,6 +123,7 @@ async def _skills(session: AsyncSession, locale: Locale) -> SkillsPayload:
             id=row.slug,
             degree=Localized[EducationText].model_validate(row.translations).get(locale).degree,
             school=row.school,
+            url=row.url,
             year=row.year,
         )
         for row in await _rows(
@@ -124,7 +131,7 @@ async def _skills(session: AsyncSession, locale: Locale) -> SkillsPayload:
         )
     ]
     certifications = [
-        CertificationItem(id=row.slug, name=row.name, in_progress=row.in_progress)
+        CertificationItem(id=row.slug, name=row.name, url=row.url, in_progress=row.in_progress)
         for row in await _rows(session, Certification, Certification.sort_order, Certification.slug)
     ]
     languages = [
@@ -139,6 +146,40 @@ async def _skills(session: AsyncSession, locale: Locale) -> SkillsPayload:
     return SkillsPayload(
         groups=groups, education=education, certifications=certifications, languages=languages
     )
+
+
+async def _tools(session: AsyncSession, locale: Locale) -> list[ToolItem]:
+    items: list[ToolItem] = []
+    for row in await _rows(session, Tool, Tool.sort_order, Tool.slug):
+        text = Localized[ToolText].model_validate(row.translations).get(locale)
+        items.append(
+            ToolItem(
+                id=row.slug,
+                name=row.name,
+                kind=text.kind,
+                summary=text.summary,
+                tech=resolve_tags(TAG_LIST.validate_python(row.tech), locale),
+                url=row.url,
+            )
+        )
+    return items
+
+
+async def _archive(session: AsyncSession, locale: Locale) -> list[ArchiveItem]:
+    items: list[ArchiveItem] = []
+    for row in await _rows(session, ArchiveEntry, ArchiveEntry.sort_order, ArchiveEntry.slug):
+        text = Localized[ArchiveText].model_validate(row.translations).get(locale)
+        items.append(
+            ArchiveItem(
+                id=row.slug,
+                kind=text.kind,
+                title=text.title,
+                summary=text.summary,
+                month=row.month,
+                url=row.url,
+            )
+        )
+    return items
 
 
 async def _contact(session: AsyncSession, locale: Locale) -> ContactPayload:
@@ -166,7 +207,9 @@ async def build_content_payload(session: AsyncSession, locale: Locale) -> Conten
         experience=await _experience(session, locale),
         projects=await _projects(session, locale),
         skills=await _skills(session, locale),
+        tools=await _tools(session, locale),
         contact=await _contact(session, locale),
+        archive=await _archive(session, locale),
         cv=await get_cv_ref(session),
     )
 

@@ -50,8 +50,8 @@ export const experience = (): ExperienceItem[] => [
 ]
 
 export const certifications = (): CertificationItem[] => [
-  { slug: 'cloud101', sortOrder: 0, name: 'Cloud Basics 101', inProgress: false, updatedAt: UPDATED },
-  { slug: 'pm202', sortOrder: 3, name: 'Project Management 202', inProgress: true, updatedAt: UPDATED },
+  { slug: 'cloud101', sortOrder: 0, name: 'Cloud Basics 101', url: 'https://certs.example/cloud101', inProgress: false, updatedAt: UPDATED },
+  { slug: 'pm202', sortOrder: 3, name: 'Project Management 202', url: null, inProgress: true, updatedAt: UPDATED },
 ]
 
 export const projects = (): ProjectItem[] => [

@@ -4,6 +4,10 @@ import { DRIFT_X, SPEED } from '../animations/motion'
 import { HERO_PARALLAX, useParallax } from '../animations/useParallax'
 import { useHeroIntro } from '../animations/useHeroIntro'
 import { useInkWash } from '../animations/useInkWash'
+import { fileUrl } from '../api/files'
+import { DownloadIcon } from '../components/DownloadIcon'
+import { useResolvedContent } from '../content/contentContext'
+import { formatFileSize } from '../i18n/formatFileSize'
 
 const ROLES = ['fullStack', 'ai', 'manager'] as const
 
@@ -14,9 +18,11 @@ const ROLES = ['fullStack', 'ai', 'manager'] as const
  * Outer `[data-speed]` wrappers belong to the parallax; inner `[data-intro]` elements to the intro.
  * Over it all, the ink wash (`useInkWash`) washes the hero into the page as it leaves; its canvas is
  * decorative, lets every pointer event through and stays empty without motion or WebGL.
+ * Once a CV is uploaded, its download sits in the cell left of the roles, above the scroll cue.
  */
 export function Hero() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const { cv } = useResolvedContent()
   const scope = useRef<HTMLElement>(null)
   const ink = useRef<HTMLCanvasElement>(null)
   useHeroIntro(scope)
@@ -90,14 +96,29 @@ export function Hero() {
             <div
               data-speed={SPEED.heroDeck}
               data-fade-out="0.2"
-              aria-hidden="true"
               className="self-end md:col-span-4 md:col-start-1 md:row-start-1"
             >
-              <div data-intro="cue" className="flex items-center gap-3 font-mono text-xs uppercase tracking-label text-muted">
-                <span className="relative h-12 w-px overflow-hidden bg-line">
-                  <span className="scroll-cue-segment absolute inset-x-0 top-0 h-3 bg-accent" />
-                </span>
-                <span>{t('home.scrollCue')}</span>
+              <div data-intro="cue" className="flex flex-col items-start gap-8">
+                {cv ? (
+                  <a
+                    href={fileUrl(cv.url)}
+                    download
+                    type="application/pdf"
+                    className="group inline-flex min-h-11 items-center gap-3 rounded-full border border-line bg-surface/70 py-2 pl-4 pr-5 text-sm transition-colors duration-200 hover:border-accent"
+                  >
+                    <DownloadIcon className="size-4 text-accent transition-transform duration-300 ease-out-expo group-hover:translate-y-0.5 motion-reduce:transition-none" />
+                    <span className="font-medium text-fg">{t('home.cv.download')}</span>{' '}
+                    <span className="font-mono text-xs text-muted">
+                      {t('home.cv.meta', { size: formatFileSize(cv.size, i18n.language) })}
+                    </span>
+                  </a>
+                ) : null}
+                <div aria-hidden="true" className="flex items-center gap-3 font-mono text-xs uppercase tracking-label text-muted">
+                  <span className="relative h-12 w-px overflow-hidden bg-line">
+                    <span className="scroll-cue-segment absolute inset-x-0 top-0 h-3 bg-accent" />
+                  </span>
+                  <span>{t('home.scrollCue')}</span>
+                </div>
               </div>
             </div>
           </div>

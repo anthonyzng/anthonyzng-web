@@ -19,7 +19,9 @@ EXPECTED_COUNTS = {
     "education_entries": 1,
     "certifications": 3,
     "spoken_languages": 3,
+    "tools": 0,
     "contact_links": 3,
+    "archive_entries": 0,
     "site_texts": 1,
 }
 

@@ -23,6 +23,8 @@ describe('collections', () => {
     expect(collection('certifications').toPayload(collection('certifications').toDraft(certifications()[1]))).toEqual({
       slug: 'pm202',
       name: 'Project Management 202',
+      // An empty link field is sent as "no link".
+      url: null,
       inProgress: true,
     })
   })

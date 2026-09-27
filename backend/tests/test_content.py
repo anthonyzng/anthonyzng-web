@@ -79,12 +79,18 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
             "id": row["slug"],
             "degree": row["translations"][locale]["degree"],
             "school": row["school"],
+            "url": row.get("url"),
             "year": row["year"],
         }
         for row in ordered(raw["education"])
     ]
     assert body["skills"]["certifications"] == [
-        {"id": row["slug"], "name": row["name"], "inProgress": row["inProgress"]}
+        {
+            "id": row["slug"],
+            "name": row["name"],
+            "url": row.get("url"),
+            "inProgress": row["inProgress"],
+        }
         for row in ordered(raw["certifications"])
     ]
     assert body["skills"]["languages"] == [
@@ -102,6 +108,9 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
     ]
     location = next(row for row in raw["siteTexts"] if row["slug"] == "contact_location")
     assert body["contact"]["location"] == location["translations"][locale]["text"]
+    # The seed has no tools or archive entries: the owner adds them in the admin panel.
+    assert body["tools"] == []
+    assert body["archive"] == []
     # No CV uploaded yet.
     assert body["cv"] is None
 
@@ -189,7 +198,9 @@ async def test_empty_tables_give_empty_arrays(client: httpx.AsyncClient) -> None
         "experience": [],
         "projects": [],
         "skills": {"groups": [], "education": [], "certifications": [], "languages": []},
+        "tools": [],
         "contact": {"links": [], "location": ""},
+        "archive": [],
         "cv": None,
     }
 

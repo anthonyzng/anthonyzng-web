@@ -5,7 +5,8 @@ import type { Locale, ResolvedContent } from '../content/resolved'
  * depend on the saved snapshot, which `npm run content:sync` rewrites whenever the owner edits
  * content in the admin panel. Invented data only. It covers every rendering path the snapshot can
  * produce: a current and a past role, a real project with a cover image next to a reserved slot, a
- * translated chip, an in-progress certification and no CV (the CV row is tested through an API
+ * translated chip, an in-progress certification, linked and unlinked credentials, two tools, an
+ * archive entry with and one without a summary, and no CV (the CV row is tested through an API
  * payload). `src/content/snapshot.test.ts` checks the real snapshot files instead.
  */
 const IMAGE = { url: '/api/v1/files/0b7e7c1e-6f3a-4d2b-9a57-1c1b2f0e9d44', width: 1600, height: 1200 }
@@ -53,16 +54,29 @@ const en: ResolvedContent = {
       { id: 'frontend', label: 'Front-end', items: ['React', 'Responsive UI/UX'] },
       { id: 'ai', label: 'AI development', items: ['Prompt design'] },
     ],
-    education: [{ id: 'uni', degree: 'BSc Computing', school: 'Example University', year: '2018' }],
+    education: [
+      { id: 'uni', degree: 'BSc Computing', school: 'Example University', url: 'https://uni.example/', year: '2018' },
+    ],
     certifications: [
-      { id: 'aws', name: 'AWS Certified Developer', inProgress: false },
-      { id: 'pmp', name: 'PMP', inProgress: true },
+      { id: 'aws', name: 'AWS Certified Developer', url: 'https://certs.example/aws', inProgress: false },
+      { id: 'pmp', name: 'PMP', url: null, inProgress: true },
     ],
     languages: [
       { id: 'english', name: 'English' },
       { id: 'cantonese', name: 'Cantonese' },
     ],
   },
+  tools: [
+    {
+      id: 'tidy',
+      name: 'Tidy',
+      kind: 'Web app',
+      summary: 'Cleans up pasted text.',
+      tech: ['TypeScript', 'Automation'],
+      url: 'https://tools.example/tidy',
+    },
+    { id: 'shipit', name: 'shipit', kind: 'CLI', summary: 'Deploys in one command.', tech: ['Go'], url: 'https://tools.example/shipit' },
+  ],
   contact: {
     links: [
       { id: 'email', label: 'Email', href: 'mailto:hello@example.com', display: 'hello@example.com' },
@@ -70,6 +84,17 @@ const en: ResolvedContent = {
     ],
     location: 'Toronto, Canada',
   },
+  archive: [
+    {
+      id: 'v1',
+      kind: 'Portfolio',
+      title: 'Portfolio, first version',
+      summary: 'A static site.',
+      month: '2021-05',
+      url: 'https://v1.example.com/',
+    },
+    { id: 'post', kind: 'Blog', title: 'Notes on scroll motion', summary: null, month: '2023-02', url: 'https://blog.example/motion' },
+  ],
   cv: null,
 }
 
@@ -101,6 +126,10 @@ const zhHant: ResolvedContent = {
       { id: 'cantonese', name: '廣東話' },
     ],
   },
+  tools: [
+    { ...en.tools[0], kind: '網頁應用程式', summary: '整理貼上的文字。', tech: ['TypeScript', '自動化'] },
+    { ...en.tools[1], kind: '命令列工具', summary: '一個指令完成部署。' },
+  ],
   contact: {
     links: [
       { ...en.contact.links[0], label: '電郵' },
@@ -108,6 +137,10 @@ const zhHant: ResolvedContent = {
     ],
     location: '加拿大多倫多',
   },
+  archive: [
+    { ...en.archive[0], kind: '作品集', title: '作品集第一版', summary: '靜態網站。' },
+    { ...en.archive[1], kind: '網誌', title: '滾動動畫筆記' },
+  ],
   cv: null,
 }
 

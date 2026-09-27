@@ -14,6 +14,7 @@ from pydantic import Field
 from app.schemas.common import CamelModel, Slug, StrictCamelModel
 from app.schemas.content import CvRef, ImageRef
 from app.schemas.content_write import (
+    ArchiveIn,
     CertificationIn,
     ContactLinkIn,
     EducationIn,
@@ -23,6 +24,7 @@ from app.schemas.content_write import (
     SkillGroupIn,
     SortOrder,
     SpokenLanguageIn,
+    ToolIn,
 )
 
 
@@ -48,6 +50,16 @@ class EducationOut(EducationIn):
 
 
 class CertificationOut(CertificationIn):
+    sort_order: SortOrder
+    updated_at: datetime
+
+
+class ToolOut(ToolIn):
+    sort_order: SortOrder
+    updated_at: datetime
+
+
+class ArchiveOut(ArchiveIn):
     sort_order: SortOrder
     updated_at: datetime
 

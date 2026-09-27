@@ -80,6 +80,8 @@ describe('locales', () => {
         'content.skills.credentials.certifications.label',
         'content.skills.credentials.certifications.inProgress',
         'content.skills.credentials.languages.label',
+        'content.tools.empty',
+        'content.tools.open',
         'content.contact.labels.cv',
         'content.contact.labels.location',
         'content.contact.cvDownload',

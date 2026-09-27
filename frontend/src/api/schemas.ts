@@ -49,15 +49,28 @@ const projectItem = z.object({
   image: z.nullable(z.object({ url: filePath, width: positiveInt, height: positiveInt })),
 })
 
+/** Every optional web link in the payload: one the browser cannot parse becomes null (the item keeps its text). */
+const webLink = z.catch(z.nullable(z.url({ protocol: /^https?$/ })), null)
+
 const skillGroupItem = z.object({ id, label: z.string(), items: strings })
-const educationItem = z.object({ id, degree: z.string(), school: z.string(), year: z.string() })
-const certificationItem = z.object({ id, name: z.string(), inProgress: z.boolean() })
+const educationItem = z.object({ id, degree: z.string(), school: z.string(), url: webLink, year: z.string() })
+const certificationItem = z.object({ id, name: z.string(), url: webLink, inProgress: z.boolean() })
 const spokenLanguageItem = z.object({ id, name: z.string() })
 // The backend admits only these schemes (LinkHref); checked again here, so a javascript: or data:
 // link can never reach an <a href> even if a row slipped past it (the payload is then refused and
 // the page keeps its snapshot).
 const linkHref = z.string().check(z.regex(/^(mailto:|https:\/\/|http:\/\/)/))
 const contactLinkItem = z.object({ id, label: z.string(), href: linkHref, display: z.string() })
+// Required by the API; still caught, so a link the browser refuses costs that card its link only.
+const toolItem = z.object({ id, name: z.string(), kind: z.string(), summary: z.string(), tech: strings, url: webLink })
+const archiveItem = z.object({
+  id,
+  kind: z.string(),
+  title: z.string(),
+  summary: z.nullable(z.string()),
+  month,
+  url: webLink,
+})
 
 export const contentPayloadSchema = z.object({
   locale: localeSchema,
@@ -69,7 +82,9 @@ export const contentPayloadSchema = z.object({
     certifications: z.array(certificationItem),
     languages: z.array(spokenLanguageItem),
   }),
+  tools: z.array(toolItem),
   contact: z.object({ links: z.array(contactLinkItem), location: z.string() }),
+  archive: z.array(archiveItem),
   cv: z.nullable(z.object({ url: filePath, filename: id, size: positiveInt, updatedAt: z.string() })),
 }) satisfies z.ZodMiniType<ResolvedContent>
 

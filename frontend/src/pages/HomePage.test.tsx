@@ -36,6 +36,7 @@ const SECTIONS = [
   { id: 'experience', title: 'Experience', tagline: 'A timeline of roles and responsibilities.' },
   { id: 'projects', title: 'Projects', tagline: 'Selected work and the technology behind it.' },
   { id: 'skills', title: 'Skills', tagline: 'Languages, frameworks and tools.' },
+  { id: 'tools', title: 'Tools', tagline: 'Small tools I built and use. Each one opens in a click.' },
 ] as const
 
 async function headerNav() {
@@ -63,7 +64,7 @@ describe('HomePage (static path: no motion)', () => {
       expect(within(region).getByRole('heading', { level: 2, name: title })).toHaveAttribute('tabindex', '-1')
       expect(within(region).getByText(tagline)).toBeInTheDocument()
     }
-    expect(screen.getByText('03 / 03')).toBeInTheDocument()
+    expect(screen.getByText('04 / 04')).toBeInTheDocument()
     // Contact is the closing screen: a landing target with a focusable heading, not a numbered chapter.
     const contact = screen.getByRole('region', { name: 'Get in touch' })
     expect(contact).toHaveAttribute('id', 'contact')
@@ -80,6 +81,20 @@ describe('HomePage (static path: no motion)', () => {
     expect(copies.every((copy) => !copy.hasAttribute('aria-label'))).toBe(true)
   })
 
+  it('puts the cats photo behind the statement as decoration', async () => {
+    renderAt('/en')
+    const statement = await screen.findByRole('region', { name: 'In brief' })
+    const photo = statement.querySelector('.statement-photo')
+    expect(photo).toHaveAttribute('aria-hidden', 'true')
+    // A drifting parallax layer; the image itself is decorative and loads lazily, in two sizes.
+    expect(photo).toHaveAttribute('data-speed')
+    const image = photo?.querySelector('img')
+    expect(image).toHaveAttribute('alt', '')
+    expect(image).toHaveAttribute('loading', 'lazy')
+    expect(image?.getAttribute('srcset')).toMatch(/720w, .+ 1280w$/)
+    expect(within(statement).queryByRole('img')).toBeNull()
+  })
+
   it('links the header nav to localized section anchors', async () => {
     renderAt('/en')
     const { nav } = await headerNav()
@@ -87,6 +102,7 @@ describe('HomePage (static path: no motion)', () => {
       '/en#experience',
       '/en#projects',
       '/en#skills',
+      '/en#tools',
       '/en#contact',
     ])
   })
