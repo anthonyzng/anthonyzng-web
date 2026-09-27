@@ -433,11 +433,17 @@
 /*
  * Project light (components/ProjectCard.tsx): a comet of light running round a `.light-host`
  * card's border, clockwise without end (a lap about 4s), while the card is hovered, focused or crosses the middle
- * of the screen. Three layers: the ring (`.card-light-ring`, masked to the border) through which a
- * rotating conic comet shows (a transform, its tail trailing); the glow
- * (`.card-light-glow`: drop shadows, the RGB cycle by hue-rotate and brief flares by brightness, a
- * filter animation, like the ink canvas an exception to "transform and opacity only"); the flicker
- * (`.card-light`: opacity dips now and then). Reduced motion: a still comet at the top.
+ * of the screen. Layers: the ring (`.card-light-ring`, masked to the 2px border) and the halo
+ * (`.card-light-halo`, a wider band masked with soft edges, the glow) through which the same
+ * rotating conic comet shows (a transform, its tail trailing); the colour (`.card-light-glow`: the
+ * RGB cycle by hue-rotate and brief flares by brightness, a filter animation, like the ink canvas an
+ * exception to "transform and opacity only"); the flicker (`.card-light`: opacity dips now and then).
+ * Every moving part stays on the compositor, which phones need: the masks are static, the comet a
+ * transform, and the filter holds only colour functions, which both Blink and WebKit composite (a
+ * drop-shadow glow is painted by the main thread in WebKit, and repainting the rotating comet through
+ * it every frame stalls the light on phones). The comet is sized from the card's longer side
+ * (container units), just over the diagonal, not a fixed 300% of the width. Reduced motion: a still
+ * comet at the top.
  */
 @layer components {
   .card-light {
@@ -457,15 +463,19 @@
   .card-light-glow {
     position: absolute;
     inset: 0;
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7));
     animation: card-light-hue 6s linear infinite;
   }
 
-  .card-light-ring {
+  .card-light-ring,
+  .card-light-halo {
     position: absolute;
+    overflow: hidden;
+    container-type: size;
+  }
+
+  .card-light-ring {
     inset: 0;
     padding: 2px;
-    overflow: hidden;
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
@@ -475,12 +485,37 @@
       linear-gradient(#000 0 0);
   }
 
-  .card-light-ring::before {
+  /*
+   * The glow without a filter: 10px either side of the border line, fading out both ways. Four
+   * strips along the sides, and a quarter disc round each outer corner, so it wraps the corners.
+   */
+  .card-light-halo {
+    inset: -10px;
+    opacity: 0.6;
+    --fade: transparent, #000 10px, transparent 20px;
+    --dot: #000, transparent 10px;
+    --halo:
+      linear-gradient(to right, var(--fade)) left 0 top 10px / 20px calc(100% - 20px) no-repeat,
+      linear-gradient(to left, var(--fade)) right 0 top 10px / 20px calc(100% - 20px) no-repeat,
+      linear-gradient(to bottom, var(--fade)) left 10px top 0 / calc(100% - 20px) 20px no-repeat,
+      linear-gradient(to top, var(--fade)) left 10px bottom 0 / calc(100% - 20px) 20px no-repeat,
+      radial-gradient(circle at 100% 100%, var(--dot)) left top / 10px 10px no-repeat,
+      radial-gradient(circle at 0 100%, var(--dot)) right top / 10px 10px no-repeat,
+      radial-gradient(circle at 100% 0, var(--dot)) left bottom / 10px 10px no-repeat,
+      radial-gradient(circle at 0 0, var(--dot)) right bottom / 10px 10px no-repeat;
+    -webkit-mask: var(--halo);
+    mask: var(--halo);
+  }
+
+  .card-light-ring::before,
+  .card-light-halo::before {
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     width: 300%;
+    /* Over sqrt(2) times the longer side: the square covers the corners at every angle of its turn. */
+    width: calc(max(100cqw, 100cqh) * 1.5);
     aspect-ratio: 1;
     transform: translate(-50%, -50%);
     background: conic-gradient(
@@ -497,7 +532,8 @@
   @media (prefers-reduced-motion: reduce) {
     .card-light,
     .card-light-glow,
-    .card-light-ring::before {
+    .card-light-ring::before,
+    .card-light-halo::before {
       animation: none;
     }
   }
@@ -516,28 +552,28 @@
 /* The hue turns steadily through the colours; brightness spikes are the flares. */
 @keyframes card-light-hue {
   0% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(0deg) brightness(1);
+    filter: hue-rotate(0deg) brightness(1);
   }
   18% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(64.8deg) brightness(1);
+    filter: hue-rotate(64.8deg) brightness(1);
   }
   20% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(72deg) brightness(1.9);
+    filter: hue-rotate(72deg) brightness(1.9);
   }
   23% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(82.8deg) brightness(1);
+    filter: hue-rotate(82.8deg) brightness(1);
   }
   60% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(216deg) brightness(1);
+    filter: hue-rotate(216deg) brightness(1);
   }
   61.5% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(221.4deg) brightness(1.6);
+    filter: hue-rotate(221.4deg) brightness(1.6);
   }
   64% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(230.4deg) brightness(1);
+    filter: hue-rotate(230.4deg) brightness(1);
   }
   100% {
-    filter: drop-shadow(0 0 3px hsl(0 100% 60%)) drop-shadow(0 0 12px hsl(0 100% 60% / 0.7)) hue-rotate(360deg) brightness(1);
+    filter: hue-rotate(360deg) brightness(1);
   }
 }
 
