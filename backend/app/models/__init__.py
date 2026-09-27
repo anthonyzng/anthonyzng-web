@@ -4,6 +4,7 @@ from app.models.admin_user import AdminUser
 from app.models.base import Base
 from app.models.contact_message import ContactMessage
 from app.models.content import (
+    ArchiveEntry,
     Certification,
     ContactLink,
     EducationEntry,
@@ -12,11 +13,13 @@ from app.models.content import (
     SiteText,
     SkillGroup,
     SpokenLanguage,
+    Tool,
 )
 from app.models.stored_file import StoredFile
 
 __all__ = [
     "AdminUser",
+    "ArchiveEntry",
     "Base",
     "Certification",
     "ContactLink",
@@ -28,4 +31,5 @@ __all__ = [
     "SkillGroup",
     "SpokenLanguage",
     "StoredFile",
+    "Tool",
 ]

@@ -64,6 +64,8 @@ export interface ResolvedEducation {
   readonly degree: string
   /** Untranslated. */
   readonly school: string
+  /** The school's website, linked from its name; null when there is none. */
+  readonly url: string | null
   readonly year: string
 }
 
@@ -71,12 +73,39 @@ export interface ResolvedCertification {
   readonly id: string
   /** Untranslated; the status suffix comes from `content.skills.credentials.certifications.inProgress`. */
   readonly name: string
+  /** The credential's page (issuer or verification), linked from its name; null when there is none. */
+  readonly url: string | null
   readonly inProgress: boolean
 }
 
 export interface ResolvedSpokenLanguage {
   readonly id: string
   readonly name: string
+}
+
+/** A tool the owner built (the Tools section); its card opens `url` in a new tab. */
+export interface ResolvedTool {
+  readonly id: string
+  /** Untranslated. */
+  readonly name: string
+  /** What sort of tool it is ("Web app", "CLI"...), in the locale. */
+  readonly kind: string
+  readonly summary: string
+  readonly tech: readonly string[]
+  /** Absolute http(s) URL; null only if the browser cannot parse the stored one. */
+  readonly url: string | null
+}
+
+/** An earlier version of the portfolio, a blog post or another link (the Archive section). */
+export interface ResolvedArchiveEntry {
+  readonly id: string
+  /** "Portfolio", "Blog"..., in the locale. */
+  readonly kind: string
+  readonly title: string
+  readonly summary: string | null
+  readonly month: Month
+  /** Absolute http(s) URL; null only if the browser cannot parse the stored one. */
+  readonly url: string | null
 }
 
 export interface ResolvedContactLink {
@@ -111,11 +140,15 @@ export interface ResolvedContent {
     readonly certifications: readonly ResolvedCertification[]
     readonly languages: readonly ResolvedSpokenLanguage[]
   }
+  /** In the order the admin panel sets; empty until the owner adds one. */
+  readonly tools: readonly ResolvedTool[]
   readonly contact: {
     readonly links: readonly ResolvedContactLink[]
     /** Empty when unset. */
     readonly location: string
   }
+  /** In the order the admin panel sets; the section is left out while empty. */
+  readonly archive: readonly ResolvedArchiveEntry[]
   /** `null` until a CV is uploaded; the Contact section then offers no download. */
   readonly cv: ResolvedCv | null
 }

@@ -18,7 +18,15 @@ export const SCRUB = { parallax: true, reveal: 0.5, pin: 0.6, mobile: true } as 
  * data-speed: 1 is native, below 1 is slower than the page, above 1 is faster.
  * Displacement is (1 - speed) x range. Speeds never increase from top to bottom within a composition.
  */
-export const SPEED = { heroName1: 0.85, heroName2: 0.7, heroRule: 0.62, heroDeck: 0.55, ghost: 0.8 } as const
+export const SPEED = {
+  heroName1: 0.85,
+  heroName2: 0.7,
+  heroRule: 0.62,
+  heroDeck: 0.55,
+  ghost: 0.8,
+  /** The photo behind "In brief": a slow drift (its box overscans 12% top and bottom for it). */
+  statementPhoto: 0.9,
+} as const
 
 /** xPercent drift of the two name lines; desktop only. */
 export const DRIFT_X = { heroName1: -3, heroName2: 8 } as const

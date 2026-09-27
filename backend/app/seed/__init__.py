@@ -23,6 +23,7 @@ from app.models.content import Project
 from app.models.stored_file import FILE_KIND_PROJECT_IMAGE, StoredFile
 from app.schemas.common import StrictCamelModel
 from app.schemas.content_write import (
+    ArchiveIn,
     CertificationIn,
     ContactLinkIn,
     EducationIn,
@@ -31,8 +32,10 @@ from app.schemas.content_write import (
     SiteTextIn,
     SkillGroupIn,
     SpokenLanguageIn,
+    ToolIn,
 )
 from app.services.collections import (
+    ARCHIVE,
     CERTIFICATIONS,
     CONTACT_LINKS,
     EDUCATION,
@@ -41,6 +44,7 @@ from app.services.collections import (
     PROJECTS,
     SITE_TEXTS,
     SKILL_GROUPS,
+    TOOLS,
     Collection,
 )
 
@@ -55,7 +59,9 @@ class SeedFile(StrictCamelModel):
     education: list[EducationIn] = []
     certifications: list[CertificationIn] = []
     spoken_languages: list[SpokenLanguageIn] = []
+    tools: list[ToolIn] = []
     contact_links: list[ContactLinkIn] = []
+    archive: list[ArchiveIn] = []
     site_texts: list[SiteTextIn] = []
 
 
@@ -66,7 +72,9 @@ SEED_SECTIONS: tuple[tuple[str, Collection], ...] = (
     ("education", EDUCATION),
     ("certifications", CERTIFICATIONS),
     ("spoken_languages", LANGUAGES),
+    ("tools", TOOLS),
     ("contact_links", CONTACT_LINKS),
+    ("archive", ARCHIVE),
     ("site_texts", SITE_TEXTS),
 )
 """`SeedFile` attribute -> collection, in seeding order."""

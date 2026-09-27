@@ -281,7 +281,10 @@ describe('motion setup and cleanup', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[animations]'), expect.any(Error))
     expect(pinSpacers()).toHaveLength(0)
     const statement = screen.getByRole('region', { name: 'In brief' })
+    // The decorative photo is the parallax's own layer (another hook, unaffected): it still drifts.
+    const photo = statement.querySelector('.statement-photo')!
     for (const element of [statement, ...statement.querySelectorAll<HTMLElement>('*')]) {
+      if (photo.contains(element)) continue
       expect(element.style.opacity).not.toBe('0')
       expect(element.style.transform).toBe('')
     }

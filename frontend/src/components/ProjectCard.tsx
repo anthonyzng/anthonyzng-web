@@ -126,6 +126,7 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
       </div>
       <span aria-hidden="true" className="card-light">
         <span className="card-light-glow">
+          <span className="card-light-halo" />
           <span className="card-light-ring" />
         </span>
       </span>

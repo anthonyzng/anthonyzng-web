@@ -152,7 +152,7 @@ describe('content editor', () => {
     expect(statusRegion()).toHaveTextContent('Saved “Project Management 303”.')
     const [put] = api.to('PUT /admin/content/certifications/pm202')
     // The server keeps the row's place: no sortOrder is sent.
-    expect(put.json).toEqual({ slug: 'pm202', name: 'Project Management 303', inProgress: false })
+    expect(put.json).toEqual({ slug: 'pm202', name: 'Project Management 303', url: null, inProgress: false })
     // The version the edit started from, exactly as the API returned it, quoted.
     expect(ifMatch(put)).toBe(`"${pm.updatedAt}"`)
     expect(new Headers(put.init?.headers).get('Content-Type')).toBe('application/json')
@@ -381,7 +381,7 @@ describe('content editor', () => {
   })
 
   it('takes typing made while a new entry was being created to its edit page', async () => {
-    const created: CertificationItem = { slug: 'data-things', sortOrder: 2, name: 'Data Things', inProgress: false, updatedAt: UPDATED }
+    const created: CertificationItem = { slug: 'data-things', sortOrder: 2, name: 'Data Things', url: null, inProgress: false, updatedAt: UPDATED }
     const pending = deferred()
     const api = mockApi({
       ...signedIn(),
@@ -570,7 +570,7 @@ describe('content editor', () => {
 
   it('lets a restored draft be discarded, and forgets a draft the user chose to leave', async () => {
     const [, pm] = certifications()
-    writeDraft('certifications/pm202', { slug: 'pm202', name: 'Draft name', inProgress: true }, pm.updatedAt)
+    writeDraft('certifications/pm202', { slug: 'pm202', name: 'Draft name', url: '', inProgress: true }, pm.updatedAt)
     mockApi({ ...signedIn(), 'GET /admin/content/certifications': ok({ items: [pm] }) })
     const { user } = renderAdmin('/admin/content/certifications/pm202')
 
@@ -593,7 +593,7 @@ describe('content editor', () => {
 
   it('offers nothing back when a kept draft has the saved content in another key order', async () => {
     const [, pm] = certifications()
-    writeDraft('certifications/pm202', { inProgress: pm.inProgress, name: pm.name, slug: pm.slug }, pm.updatedAt)
+    writeDraft('certifications/pm202', { inProgress: pm.inProgress, url: '', name: pm.name, slug: pm.slug }, pm.updatedAt)
     mockApi({ ...signedIn(), 'GET /admin/content/certifications': ok({ items: [pm] }) })
     renderAdmin('/admin/content/certifications/pm202')
     expect(await screen.findByLabelText('Certification')).toHaveValue('Project Management 202')
@@ -606,7 +606,7 @@ describe('content editor', () => {
 
   it('warns when a restored draft started from an older version of the row', async () => {
     const [, pm] = certifications()
-    writeDraft('certifications/pm202', { slug: 'pm202', name: 'Old draft', inProgress: true }, '2026-01-01T00:00:00Z')
+    writeDraft('certifications/pm202', { slug: 'pm202', name: 'Old draft', url: '', inProgress: true }, '2026-01-01T00:00:00Z')
     mockApi({ ...signedIn(), 'GET /admin/content/certifications': ok({ items: [pm] }) })
     renderAdmin('/admin/content/certifications/pm202')
     expect(await screen.findByLabelText('Certification')).toHaveValue('Old draft')

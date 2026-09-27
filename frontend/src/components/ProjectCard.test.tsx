@@ -51,6 +51,7 @@ describe('ProjectCard (real project)', () => {
       const light = card?.querySelector(':scope > .card-light')
       expect(light).toHaveAttribute('aria-hidden', 'true')
       expect(light?.querySelector('.card-light-glow > .card-light-ring')).not.toBeNull()
+      expect(light?.querySelector('.card-light-glow > .card-light-halo')).not.toBeNull()
       // The cats stay on the tags; the card has the light instead.
       expect(card?.querySelector(':scope > .edge-cat-track')).toBeNull()
       unmount()

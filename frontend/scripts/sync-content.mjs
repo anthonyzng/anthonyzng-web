@@ -21,7 +21,7 @@
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 
 const LOCALES = ['en', 'zh-Hant']
-const LISTS = ['experience', 'projects']
+const LISTS = ['experience', 'projects', 'tools', 'archive']
 const SKILL_LISTS = ['groups', 'education', 'certifications', 'languages']
 const TIMEOUT_MS = 15_000
 
@@ -69,9 +69,11 @@ async function fetchPayload(base, locale) {
 function facts(payload) {
   const ids = (items) => items.map((item) => item.id)
   return JSON.stringify({
-    experience: payload.experience.map(({ id, company, start, end }) => [id, company, start, end]),
+    experience: payload.experience.map(({ id, company, companyUrl, start, end }) => [id, company, companyUrl, start, end]),
     projects: payload.projects.map(({ id, placeholder, url, image }) => [id, placeholder, url, image]),
     skills: Object.fromEntries(SKILL_LISTS.map((key) => [key, ids(payload.skills[key])])),
+    tools: payload.tools.map(({ id, name, url }) => [id, name, url]),
+    archive: payload.archive.map(({ id, month, url }) => [id, month, url]),
     links: payload.contact.links.map(({ id, href, display }) => [id, href, display]),
     cv: payload.cv,
   })

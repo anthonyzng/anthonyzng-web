@@ -42,10 +42,16 @@ describe('content snapshot', () => {
       a.projects.map((p) => [p.id, p.placeholder, p.url, p.image, p.tech.length]),
     )
     expect(b.skills.groups.map((g) => [g.id, g.items.length])).toEqual(a.skills.groups.map((g) => [g.id, g.items.length]))
-    expect(b.skills.education.map((e) => [e.id, e.school, e.year])).toEqual(a.skills.education.map((e) => [e.id, e.school, e.year]))
+    expect(b.skills.education.map((e) => [e.id, e.school, e.url, e.year])).toEqual(
+      a.skills.education.map((e) => [e.id, e.school, e.url, e.year]),
+    )
     expect(b.skills.certifications).toEqual(a.skills.certifications)
     expect(ids(b.skills.languages)).toEqual(ids(a.skills.languages))
+    expect(b.tools.map((t) => [t.id, t.name, t.url, t.tech.length])).toEqual(a.tools.map((t) => [t.id, t.name, t.url, t.tech.length]))
     expect(b.contact.links.map((l) => [l.id, l.href, l.display])).toEqual(a.contact.links.map((l) => [l.id, l.href, l.display]))
+    expect(b.archive.map((e) => [e.id, e.month, e.url, e.summary === null])).toEqual(
+      a.archive.map((e) => [e.id, e.month, e.url, e.summary === null]),
+    )
     expect(b.cv).toEqual(a.cv)
   })
 
@@ -60,7 +66,9 @@ describe('content snapshot', () => {
         ...content.skills.groups.flatMap((g) => [g.label, ...g.items]),
         ...content.skills.education.map((e) => e.degree),
         ...content.skills.languages.map((l) => l.name),
+        ...content.tools.flatMap((t) => [t.kind, t.summary, ...t.tech]),
         ...content.contact.links.map((l) => l.label),
+        ...content.archive.flatMap((e) => [e.kind, e.title]),
       ]
       for (const text of prose) expect(text.trim(), locale).not.toBe('')
     }

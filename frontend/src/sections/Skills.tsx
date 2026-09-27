@@ -1,12 +1,18 @@
 import { useTranslation } from 'react-i18next'
+import { ExternalLink } from '../components/ExternalLink'
 import { RevealItem } from '../components/RevealItem'
 import { SectionShell } from '../components/SectionShell'
 import { TagList } from '../components/TagList'
 import { useResolvedContent } from '../content/contentContext'
 
 const LABEL = 'font-mono text-sm uppercase tracking-label text-muted'
+const CREDENTIAL_LINK =
+  'underline decoration-muted underline-offset-4 transition-colors duration-200 hover:text-fg hover:decoration-accent'
 
-/** Skill groups as chip lists, then the credentials block (education, certifications, languages). */
+/**
+ * Skill groups as chip lists, then the credentials block (education, certifications, languages).
+ * A school or certification with a web address (set in the admin panel) links its name to it.
+ */
 export function Skills() {
   const { t } = useTranslation()
   const { skills } = useResolvedContent()
@@ -33,7 +39,15 @@ export function Skills() {
               {skills.education.map((entry) => (
                 <li key={entry.id}>
                   <p className="text-pretty">{entry.degree}</p>
-                  <p className="mt-2 text-sm text-muted">{entry.school}</p>
+                  <p className="mt-2 text-sm text-muted">
+                    {entry.url ? (
+                      <ExternalLink href={entry.url} className={CREDENTIAL_LINK}>
+                        {entry.school}
+                      </ExternalLink>
+                    ) : (
+                      entry.school
+                    )}
+                  </p>
                   <p className="mt-1 font-mono text-sm text-muted">{entry.year}</p>
                 </li>
               ))}
@@ -45,7 +59,13 @@ export function Skills() {
             <ul role="list" className="mt-5 flex flex-col gap-3">
               {skills.certifications.map((certification) => (
                 <li key={certification.id} className="text-pretty">
-                  {certification.name}
+                  {certification.url ? (
+                    <ExternalLink href={certification.url} className={CREDENTIAL_LINK}>
+                      {certification.name}
+                    </ExternalLink>
+                  ) : (
+                    certification.name
+                  )}
                   {/* The locale owns its own punctuation and spacing: " (in progress)" in English,
                       full-width "（進行中）" with no leading space in Chinese. */}
                   {certification.inProgress ? (

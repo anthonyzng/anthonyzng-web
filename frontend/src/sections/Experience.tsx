@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { ExternalLink } from '../components/ExternalLink'
 import { RevealItem } from '../components/RevealItem'
 import { SectionShell } from '../components/SectionShell'
 import { TagList } from '../components/TagList'
@@ -47,15 +48,12 @@ export function Experience() {
                   <h3 className="text-title font-medium text-balance">{entry.role}</h3>
                   <p className="mt-2 font-mono text-sm text-accent">
                     {entry.companyUrl ? (
-                      <a
+                      <ExternalLink
                         href={entry.companyUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="inline-flex min-h-11 items-center underline decoration-muted underline-offset-4 transition-colors duration-200 hover:decoration-accent"
                       >
-                        {entry.company}{' '}
-                        <span className="sr-only">{t('common.newTab')}</span>
-                      </a>
+                        {entry.company}
+                      </ExternalLink>
                     ) : (
                       entry.company
                     )}

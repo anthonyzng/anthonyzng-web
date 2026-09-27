@@ -168,6 +168,7 @@
         "id": "uwe",
         "degree": "BSc (Hons) Information Technology — First Class Honours",
         "school": "University of the West of England, Bristol",
+        "url": null,
         "year": "2020"
       }
     ],
@@ -175,11 +176,13 @@
       {
         "id": "ccna",
         "name": "CCNA Routing & Switching",
+        "url": null,
         "inProgress": false
       },
       {
         "id": "pmp",
         "name": "PMP",
+        "url": null,
         "inProgress": true
       }
     ],
@@ -198,6 +201,7 @@
       }
     ]
   },
+  "tools": [],
   "contact": {
     "links": [
       {
@@ -221,5 +225,6 @@
     ],
     "location": "Ontario, Canada"
   },
+  "archive": [],
   "cv": null
 }

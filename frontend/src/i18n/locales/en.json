@@ -8,7 +8,9 @@
     "experience": "Experience",
     "projects": "Projects",
     "skills": "Skills",
+    "tools": "Tools",
     "contact": "Contact",
+    "cv": "CV",
     "primary": "Primary navigation",
     "skipToContent": "Skip to content",
     "menu": "Menu",
@@ -35,6 +37,10 @@
     },
     "intro": "I design and build end-to-end software — from scalable backends and AI-powered features to polished interfaces — and lead teams that ship them.",
     "scrollCue": "Scroll",
+    "cv": {
+      "download": "Download CV",
+      "meta": "PDF · {{size}}"
+    },
     "statement": {
       "label": "In brief"
     },
@@ -43,6 +49,10 @@
       "send": "Send a message",
       "close": "Close",
       "channels": "Contact channels"
+    },
+    "archive": {
+      "title": "Archive",
+      "tagline": "Earlier versions of this site, writing and other notes."
     }
   },
   "sections": {
@@ -58,6 +68,10 @@
     "skills": {
       "title": "Skills",
       "tagline": "Languages, frameworks and tools."
+    },
+    "tools": {
+      "title": "Tools",
+      "tagline": "Small tools I built and use. Each one opens in a click."
     }
   },
   "content": {
@@ -88,6 +102,10 @@
           "label": "Languages"
         }
       }
+    },
+    "tools": {
+      "empty": "New tools are on the way.",
+      "open": "Open tool"
     },
     "contact": {
       "labels": {

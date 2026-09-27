@@ -85,13 +85,42 @@ export const educationItemSchema = z.object({
   slug,
   sortOrder,
   school: z.string(),
+  url: z.nullable(z.string()),
   year: z.string(),
   translations: localized(z.object({ degree: z.string() })),
   updatedAt,
 })
 
-export const certificationItemSchema = z.object({ slug, sortOrder, name: z.string(), inProgress: z.boolean(), updatedAt })
+export const certificationItemSchema = z.object({
+  slug,
+  sortOrder,
+  name: z.string(),
+  url: z.nullable(z.string()),
+  inProgress: z.boolean(),
+  updatedAt,
+})
 export type CertificationItem = z.infer<typeof certificationItemSchema>
+
+export const toolItemSchema = z.object({
+  slug,
+  sortOrder,
+  name: z.string(),
+  url: z.string(),
+  tech: tags,
+  translations: localized(z.object({ kind: z.string(), summary: z.string() })),
+  updatedAt,
+})
+export type ToolItem = z.infer<typeof toolItemSchema>
+
+export const archiveItemSchema = z.object({
+  slug,
+  sortOrder,
+  month: z.string(),
+  url: z.string(),
+  translations: localized(z.object({ kind: z.string(), title: z.string(), summary: z.nullable(z.string()) })),
+  updatedAt,
+})
+export type ArchiveItem = z.infer<typeof archiveItemSchema>
 
 export const languageItemSchema = z.object({ slug, sortOrder, translations: localized(z.object({ name: z.string() })), updatedAt })
 
