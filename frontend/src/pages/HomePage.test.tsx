@@ -5,6 +5,7 @@ import { MemoryRouter, type InitialEntry } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../App'
 import i18n from '../i18n'
+import { CONTENT_FIXTURE } from '../test/contentFixture'
 import { navigation } from '../test/navigation'
 import { NavigationHandle } from '../test/NavigationHandle'
 import { MockIntersectionObserver } from '../test/observers'
@@ -53,7 +54,7 @@ describe('HomePage (static path: no motion)', () => {
   it('renders the hero, the statement and four section shells', async () => {
     renderAt('/en')
     expect(await screen.findByRole('heading', { level: 1, name: 'Anthony Ng' })).toBeInTheDocument()
-    for (const role of ['Full Stack Software Developer', 'AI Developer', 'Assistant Manager, Software Development']) {
+    for (const role of ['Software Builder', 'Team Mentor']) {
       expect(screen.getByText(role)).toBeInTheDocument()
     }
     expect(screen.getByRole('region', { name: 'In brief' })).toBeInTheDocument()
@@ -74,7 +75,7 @@ describe('HomePage (static path: no motion)', () => {
   it('renders the statement as a screen-reader copy plus an aria-hidden visual copy', async () => {
     renderAt('/en')
     await screen.findByRole('heading', { level: 1 })
-    const copies = screen.getAllByText(i18n.t('home.intro'))
+    const copies = screen.getAllByText(CONTENT_FIXTURE.en.statement.intro)
     expect(copies).toHaveLength(2)
     expect(copies.filter((copy) => copy.classList.contains('sr-only'))).toHaveLength(1)
     expect(copies.filter((copy) => copy.getAttribute('aria-hidden') === 'true')).toHaveLength(1)

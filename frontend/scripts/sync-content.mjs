@@ -46,6 +46,8 @@ function check(payload, locale) {
   for (const key of LISTS) if (!Array.isArray(payload[key])) fail(`"${key}" is not a list`)
   for (const key of SKILL_LISTS) if (!Array.isArray(payload.skills?.[key])) fail(`"skills.${key}" is not a list`)
   if (!Array.isArray(payload.contact?.links)) fail('"contact.links" is not a list')
+  if (!Array.isArray(payload.hero?.roles)) fail('"hero.roles" is not a list')
+  if (typeof payload.statement?.intro !== 'string') fail('"statement.intro" is missing')
   if (!('cv' in payload)) fail('"cv" is missing (is the API older than Phase 5?)')
 }
 
@@ -69,6 +71,7 @@ async function fetchPayload(base, locale) {
 function facts(payload) {
   const ids = (items) => items.map((item) => item.id)
   return JSON.stringify({
+    heroRoles: ids(payload.hero.roles),
     experience: payload.experience.map(({ id, company, companyUrl, start, end }) => [id, company, companyUrl, start, end]),
     projects: payload.projects.map(({ id, placeholder, url, image }) => [id, placeholder, url, image]),
     skills: Object.fromEntries(SKILL_LISTS.map((key) => [key, ids(payload.skills[key])])),

@@ -35,7 +35,7 @@ TEST_JWT_SECRET = "unit-test-secret-not-for-production"
 TEST_IP_HASH_SECRET = "unit-test-ip-hash-secret-0123456789"
 TEST_TOTP_ENCRYPTION_KEY = "unit-test-totp-encryption-key-0123456789"
 TEST_ORIGIN = "http://localhost:5173"
-HEAD_REVISION = "0005_tools_archive"
+HEAD_REVISION = "0006_hero_texts"
 
 TABLES = (
     "admin_users",
@@ -45,6 +45,7 @@ TABLES = (
     "education_entries",
     "certifications",
     "spoken_languages",
+    "hero_roles",
     "tools",
     "contact_links",
     "archive_entries",

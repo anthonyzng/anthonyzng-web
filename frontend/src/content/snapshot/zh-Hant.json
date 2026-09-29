@@ -1,5 +1,28 @@
 {
   "locale": "zh-Hant",
+  "hero": {
+    "eyebrow": "作品集",
+    "nameFirst": "Anthony",
+    "nameLast": "Ng",
+    "roles": [
+      {
+        "id": "fullStack",
+        "text": "全端軟件開發者"
+      },
+      {
+        "id": "ai",
+        "text": "AI 開發者"
+      },
+      {
+        "id": "manager",
+        "text": "軟件開發助理經理"
+      }
+    ]
+  },
+  "statement": {
+    "label": "簡介",
+    "intro": "我設計並開發端到端的軟件——由可擴展的後端、AI 驅動的功能，到精緻的使用者介面——並帶領團隊將產品推出。"
+  },
   "experience": [
     {
       "id": "sksys",

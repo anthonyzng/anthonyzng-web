@@ -89,6 +89,10 @@ class ArchiveText(StrictCamelModel):
     summary: Text1000 | None = None
 
 
+class HeroRoleText(StrictCamelModel):
+    text: Text200
+
+
 class SpokenLanguageText(StrictCamelModel):
     name: Text100
 
@@ -186,6 +190,12 @@ class ArchiveIn(StrictCamelModel):
     month: Month
     url: HttpUrl
     translations: Localized[ArchiveText]
+
+
+class HeroRoleIn(StrictCamelModel):
+    slug: Slug
+    sort_order: SortOrder | None = None
+    translations: Localized[HeroRoleText]
 
 
 class SpokenLanguageIn(StrictCamelModel):

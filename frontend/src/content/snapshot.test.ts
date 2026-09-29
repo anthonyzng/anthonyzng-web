@@ -34,6 +34,7 @@ describe('content snapshot', () => {
   it('carries the same items, in the same order, with the same untranslated facts in both locales', () => {
     const [a, b] = LOCALES.map(staticContent) as [ResolvedContent, ResolvedContent]
 
+    expect(ids(b.hero.roles)).toEqual(ids(a.hero.roles))
     expect(ids(b.experience)).toEqual(ids(a.experience))
     expect(b.experience.map((e) => [e.company, e.start, e.end, e.bullets.length, e.tech.length])).toEqual(
       a.experience.map((e) => [e.company, e.start, e.end, e.bullets.length, e.tech.length]),
@@ -62,6 +63,12 @@ describe('content snapshot', () => {
       expect(json, locale).not.toMatch(/"content\.[a-z]/)
       expect(json, locale).not.toContain('"zh-Hant":')
       const prose = [
+        content.hero.eyebrow,
+        content.hero.nameFirst,
+        content.hero.nameLast,
+        ...content.hero.roles.map((r) => r.text),
+        content.statement.label,
+        content.statement.intro,
         ...content.experience.flatMap((e) => [e.role, e.location, ...e.bullets, ...e.tech]),
         ...content.skills.groups.flatMap((g) => [g.label, ...g.items]),
         ...content.skills.education.map((e) => e.degree),

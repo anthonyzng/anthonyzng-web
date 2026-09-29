@@ -9,8 +9,6 @@ import { DownloadIcon } from '../components/DownloadIcon'
 import { useResolvedContent } from '../content/contentContext'
 import { formatFileSize } from '../i18n/formatFileSize'
 
-const ROLES = ['fullStack', 'ai', 'manager'] as const
-
 /**
  * The masthead. Type is the hero: the name in two huge lines over two static column rules, with the
  * roles as the deck. While it scrolls away its layers move slower than the page, at speeds that
@@ -19,10 +17,11 @@ const ROLES = ['fullStack', 'ai', 'manager'] as const
  * Over it all, the ink wash (`useInkWash`) washes the hero into the page as it leaves; its canvas is
  * decorative, lets every pointer event through and stays empty without motion or WebGL.
  * Once a CV is uploaded, its download sits in the cell left of the roles, above the scroll cue.
+ * The eyebrow, the name and the roles are content (the admin panel's site texts and hero roles).
  */
 export function Hero() {
   const { t, i18n } = useTranslation()
-  const { cv } = useResolvedContent()
+  const { hero, cv } = useResolvedContent()
   const scope = useRef<HTMLElement>(null)
   const ink = useRef<HTMLCanvasElement>(null)
   useHeroIntro(scope)
@@ -43,7 +42,7 @@ export function Hero() {
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-between px-5 pb-10 pt-10 sm:px-8 md:pb-12 md:pt-14">
         <p data-intro="eyebrow" className="font-mono text-sm uppercase tracking-label text-accent">
-          {t('home.eyebrow')}
+          {hero.eyebrow}
         </p>
 
         <div>
@@ -52,11 +51,11 @@ export function Hero() {
             <span data-speed={SPEED.heroName1} data-speed-x={DRIFT_X.heroName1} className="block">
               <span className="mask-line mask-pad-mega">
                 <span data-intro="name" className="block wrap-anywhere">
-                  {t('home.nameFirst')}
+                  {hero.nameFirst}
                 </span>
               </span>
             </span>
-            {/* The literal space between the block spans keeps the accessible name "Anthony Ng". */}{' '}
+            {/* The literal space between the block spans keeps the two lines apart in the accessible name. */}{' '}
             <span
               data-speed={SPEED.heroName2}
               data-speed-x={DRIFT_X.heroName2}
@@ -64,7 +63,7 @@ export function Hero() {
             >
               <span className="mask-line mask-pad-mega">
                 <span data-intro="name" className="block wrap-anywhere">
-                  {t('home.nameLast')}
+                  {hero.nameLast}
                 </span>
               </span>
             </span>
@@ -77,15 +76,15 @@ export function Hero() {
           <div className="mt-8 grid gap-8 md:grid-cols-12">
             <div data-speed={SPEED.heroDeck} className="md:col-span-7 md:col-start-6 md:row-start-1">
               <ul className="flex flex-col gap-2 text-title font-medium">
-                {ROLES.map((role) => (
-                  <li key={role}>
+                {hero.roles.map((role) => (
+                  <li key={role.id}>
                     <span className="mask-line">
                       <span data-intro="role" className="flex gap-3">
                         <span aria-hidden="true" className="font-mono text-accent">
                           /
                         </span>
                         {/* Own span, so the role text is a single text match. */}
-                        <span>{t(`home.roles.${role}`)}</span>
+                        <span>{role.text}</span>
                       </span>
                     </span>
                   </li>

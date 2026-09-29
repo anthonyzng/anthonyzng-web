@@ -3,8 +3,8 @@ import type { Locale, ResolvedContent } from '../content/resolved'
 /**
  * The site content every test renders (setup.ts mocks `staticContent` with it), so tests never
  * depend on the saved snapshot, which `npm run content:sync` rewrites whenever the owner edits
- * content in the admin panel. Invented data only. It covers every rendering path the snapshot can
- * produce: a current and a past role, a real project with a cover image next to a reserved slot, a
+ * content in the admin panel. Invented data only (the name aside, which the page shows anyway). It
+ * covers every rendering path the snapshot can produce: two hero roles, a current and a past role, a real project with a cover image next to a reserved slot, a
  * translated chip, an in-progress certification, linked and unlinked credentials, two tools, an
  * archive entry with and one without a summary, and no CV (the CV row is tested through an API
  * payload). `src/content/snapshot.test.ts` checks the real snapshot files instead.
@@ -13,6 +13,16 @@ const IMAGE = { url: '/api/v1/files/0b7e7c1e-6f3a-4d2b-9a57-1c1b2f0e9d44', width
 
 const en: ResolvedContent = {
   locale: 'en',
+  hero: {
+    eyebrow: 'Portfolio',
+    nameFirst: 'Anthony',
+    nameLast: 'Ng',
+    roles: [
+      { id: 'builder', text: 'Software Builder' },
+      { id: 'mentor', text: 'Team Mentor' },
+    ],
+  },
+  statement: { label: 'In brief', intro: 'I build calm, fast software and lead the teams that ship it.' },
   experience: [
     {
       id: 'acme',
@@ -100,6 +110,16 @@ const en: ResolvedContent = {
 
 const zhHant: ResolvedContent = {
   locale: 'zh-Hant',
+  hero: {
+    eyebrow: '作品集',
+    nameFirst: 'Anthony',
+    nameLast: 'Ng',
+    roles: [
+      { id: 'builder', text: '軟件建造者' },
+      { id: 'mentor', text: '團隊導師' },
+    ],
+  },
+  statement: { label: '簡介', intro: '我開發沉穩而快速的軟件，並帶領團隊將它推出。' },
   experience: [
     {
       ...en.experience[0],

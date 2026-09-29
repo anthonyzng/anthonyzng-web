@@ -43,6 +43,7 @@
     "zh-Hant": "Traditional Chinese"
   },
   "collections": {
+    "hero-roles": "Home page roles",
     "experience": "Experience",
     "projects": "Projects",
     "skill-groups": "Skill groups",
@@ -137,6 +138,7 @@
     "skillCount_other": "{{count}} skills",
     "inProgress": "In progress",
     "about": {
+      "hero-roles": "The roles under your name at the top of the home page, in this order.",
       "experience": "The timeline in the Experience section, in this order.",
       "projects": "The project cards. A placeholder reserves a card until its write-up is ready.",
       "skill-groups": "The groups of chips in the Skills section.",
@@ -146,10 +148,15 @@
       "tools": "The tool cards in the Tools section, after Skills, in this order. Each card opens its link.",
       "contact-links": "The direct channels at the top of the Contact section.",
       "archive": "The Archive after Get in touch: earlier portfolio versions, blog posts and other links. Hidden while empty.",
-      "site-texts": "Single lines of text used around the site. They can be edited, but not added or removed."
+      "site-texts": "Texts used around the site: the top of the home page, “In brief” and the contact location. They can be edited, but not added or removed."
     }
   },
   "siteTexts": {
+    "hero_eyebrow": "Top of the home page: label above the name",
+    "hero_name_first": "Top of the home page: name, first line",
+    "hero_name_last": "Top of the home page: name, second line",
+    "statement_label": "In brief: heading",
+    "statement_intro": "In brief: paragraph",
     "contact_location": "Contact section: location line"
   },
   "editor": {
@@ -211,6 +218,7 @@
     "year": "Year",
     "certificationName": "Certification",
     "inProgress": "In progress",
+    "roleText": "Role",
     "languageName": "Language",
     "linkLabel": "Label",
     "href": "Link",

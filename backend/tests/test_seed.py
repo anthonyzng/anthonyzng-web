@@ -13,6 +13,7 @@ from app.seed.__main__ import SeedRefusedError, run
 from app.services.files import EncodedImage, new_cover_image
 
 EXPECTED_COUNTS = {
+    "hero_roles": 3,
     "experience_entries": 3,
     "projects": 2,
     "skill_groups": 6,
@@ -22,7 +23,7 @@ EXPECTED_COUNTS = {
     "tools": 0,
     "contact_links": 3,
     "archive_entries": 0,
-    "site_texts": 1,
+    "site_texts": 6,
 }
 
 
@@ -40,7 +41,8 @@ def test_seed_file_validates_and_covers_both_locales(seed_data: SeedFile) -> Non
     for item in seed_data.skill_groups:
         assert item.translations.en.label
         assert item.translations.zh_hant.label
-    assert seed_data.site_texts[0].slug == "contact_location"
+    assert "contact_location" in {row.slug for row in seed_data.site_texts}
+    assert [row.slug for row in seed_data.hero_roles] == ["fullStack", "ai", "manager"]
 
 
 async def test_seed_is_idempotent(session: AsyncSession, seed_data: SeedFile) -> None:

@@ -9,6 +9,7 @@ import {
   contactLinkItemSchema,
   educationItemSchema,
   experienceItemSchema,
+  heroRoleItemSchema,
   languageItemSchema,
   projectItemSchema,
   siteTextItemSchema,
@@ -21,6 +22,7 @@ import {
 
 /** The content collections, in navigation order; each id is also its URL segment and API path. */
 export const COLLECTION_IDS = [
+  'hero-roles',
   'experience',
   'projects',
   'skill-groups',
@@ -361,6 +363,21 @@ const archive = define<ArchiveItem>({
   },
 })
 
+const heroRoles = define({
+  id: 'hero-roles',
+  sortable: true,
+  creatable: true,
+  itemSchema: heroRoleItemSchema,
+  fields: [
+    localizedText('text', 200, { label: 'roleText' }),
+    { kind: 'slug', label: 'slug', source: 'translations.en.text' },
+  ],
+  title: (item) => item.translations.en.text || item.slug,
+  detail: (item) => item.translations['zh-Hant'].text || null,
+  emptyDraft: () => ({ slug: '', translations: bothLocales(() => ({ text: '' })) }),
+  toDraft: (item) => ({ slug: item.slug, translations: bothLocales((locale) => ({ text: item.translations[locale].text })) }),
+})
+
 const languages = define({
   id: 'languages',
   sortable: true,
@@ -415,6 +432,7 @@ const siteTexts = define({
 })
 
 const COLLECTIONS: Readonly<Record<CollectionId, Collection>> = {
+  'hero-roles': heroRoles,
   experience,
   projects,
   'skill-groups': skillGroups,

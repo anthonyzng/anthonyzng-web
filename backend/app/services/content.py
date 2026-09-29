@@ -13,11 +13,17 @@ from sqlalchemy.orm import InstrumentedAttribute
 
 from app.models.content import (
     CONTACT_LOCATION_SLUG,
+    HERO_EYEBROW_SLUG,
+    HERO_NAME_FIRST_SLUG,
+    HERO_NAME_LAST_SLUG,
+    STATEMENT_INTRO_SLUG,
+    STATEMENT_LABEL_SLUG,
     ArchiveEntry,
     Certification,
     ContactLink,
     EducationEntry,
     ExperienceEntry,
+    HeroRole,
     Project,
     SiteText,
     SkillGroup,
@@ -34,10 +40,13 @@ from app.schemas.content import (
     ContentPayload,
     EducationItem,
     ExperienceItem,
+    HeroPayload,
+    HeroRoleItem,
     ProjectItem,
     SkillGroupItem,
     SkillsPayload,
     SpokenLanguageItem,
+    StatementPayload,
     ToolItem,
 )
 from app.schemas.content_write import (
@@ -45,6 +54,7 @@ from app.schemas.content_write import (
     ContactLinkText,
     EducationText,
     ExperienceText,
+    HeroRoleText,
     ProjectText,
     SiteTextText,
     SkillGroupText,
@@ -61,6 +71,36 @@ async def _rows[RowT](
 ) -> list[RowT]:
     result = await session.scalars(select(model).order_by(*order_by))
     return list(result.all())
+
+
+async def _site_texts(session: AsyncSession, locale: Locale) -> dict[str, str]:
+    """Every `site_texts` row, by slug, in `locale`. A missing row reads as ""."""
+    return {
+        row.slug: Localized[SiteTextText].model_validate(row.translations).get(locale).text
+        for row in await _rows(session, SiteText, SiteText.slug)
+    }
+
+
+async def _hero(session: AsyncSession, locale: Locale, texts: dict[str, str]) -> HeroPayload:
+    roles = [
+        HeroRoleItem(
+            id=row.slug,
+            text=Localized[HeroRoleText].model_validate(row.translations).get(locale).text,
+        )
+        for row in await _rows(session, HeroRole, HeroRole.sort_order, HeroRole.slug)
+    ]
+    return HeroPayload(
+        eyebrow=texts.get(HERO_EYEBROW_SLUG, ""),
+        name_first=texts.get(HERO_NAME_FIRST_SLUG, ""),
+        name_last=texts.get(HERO_NAME_LAST_SLUG, ""),
+        roles=roles,
+    )
+
+
+def _statement(texts: dict[str, str]) -> StatementPayload:
+    return StatementPayload(
+        label=texts.get(STATEMENT_LABEL_SLUG, ""), intro=texts.get(STATEMENT_INTRO_SLUG, "")
+    )
 
 
 async def _experience(session: AsyncSession, locale: Locale) -> list[ExperienceItem]:
@@ -182,7 +222,7 @@ async def _archive(session: AsyncSession, locale: Locale) -> list[ArchiveItem]:
     return items
 
 
-async def _contact(session: AsyncSession, locale: Locale) -> ContactPayload:
+async def _contact(session: AsyncSession, locale: Locale, texts: dict[str, str]) -> ContactPayload:
     links = [
         ContactLinkItem(
             id=row.slug,
@@ -192,23 +232,20 @@ async def _contact(session: AsyncSession, locale: Locale) -> ContactPayload:
         )
         for row in await _rows(session, ContactLink, ContactLink.sort_order, ContactLink.slug)
     ]
-    location_row = await session.get(SiteText, CONTACT_LOCATION_SLUG)
-    location = ""
-    if location_row is not None:
-        location = (
-            Localized[SiteTextText].model_validate(location_row.translations).get(locale).text
-        )
-    return ContactPayload(links=links, location=location)
+    return ContactPayload(links=links, location=texts.get(CONTACT_LOCATION_SLUG, ""))
 
 
 async def build_content_payload(session: AsyncSession, locale: Locale) -> ContentPayload:
+    texts = await _site_texts(session, locale)
     return ContentPayload(
         locale=locale,
+        hero=await _hero(session, locale, texts),
+        statement=_statement(texts),
         experience=await _experience(session, locale),
         projects=await _projects(session, locale),
         skills=await _skills(session, locale),
         tools=await _tools(session, locale),
-        contact=await _contact(session, locale),
+        contact=await _contact(session, locale, texts),
         archive=await _archive(session, locale),
         cv=await get_cv_ref(session),
     )
@@ -236,7 +273,7 @@ CONTENT_CACHE_TTL_SECONDS = 30.0
 class ContentCache:
     """The rendered `/content` document per locale, kept for a short while.
 
-    A public request would otherwise run about nine queries, validate every row and hash the
+    A public request would otherwise run about a dozen queries, validate every row and hash the
     result; a flood would exhaust the database pool. A miss for a locale is built once however many
     requests wait for it (a lock per locale). Any admin write clears the cache (`clear`), so edits
     show at once; the lifetime only bounds staleness from writes that bypass the API (the seed CLI).

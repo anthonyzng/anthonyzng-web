@@ -331,6 +331,25 @@ describe('section content', () => {
     })
   })
 
+  describe('the hero and "In brief"', () => {
+    it('show the texts and roles the admin panel sets', async () => {
+      queueJson({
+        ...editable(),
+        hero: { eyebrow: 'Showcase', nameFirst: 'Tony', nameLast: 'N.', roles: [{ id: 'lead', text: 'Team Lead' }] },
+        statement: { label: 'About me', intro: 'New words from the API.' },
+      })
+      renderAt('/en')
+      const hero = await screen.findByRole('region', { name: 'Tony N.' })
+      expect(within(hero).getByRole('heading', { level: 1, name: 'Tony N.' })).toBeInTheDocument()
+      expect(within(hero).getByText('Showcase')).toBeInTheDocument()
+      expect(within(hero).getByText('Team Lead')).toBeInTheDocument()
+      expect(within(hero).queryByText('Software Builder')).toBeNull()
+      const statement = region('About me')
+      // The screen-reader copy and the visual copy, both with the new words.
+      expect(within(statement).getAllByText('New words from the API.')).toHaveLength(2)
+    })
+  })
+
   describe('CV download in the hero and the dock', () => {
     it('offers nothing while no CV is uploaded', async () => {
       renderAt('/en')

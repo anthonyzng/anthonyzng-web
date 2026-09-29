@@ -102,7 +102,7 @@ describe('motion setup and cleanup', () => {
     expect(ScrollTrigger.getAll()).toHaveLength(0)
     // SplitText reverted before React removed the element: only the original text remains.
     expect(copy.querySelectorAll('div')).toHaveLength(0)
-    expect(copy.textContent).toBe(i18n.t('home.intro'))
+    expect(copy.textContent).toBe(CONTENT_FIXTURE.en.statement.intro)
     expect(liveLenis()).toHaveLength(0)
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('[animations]'), expect.anything())
     expect(error).not.toHaveBeenCalled()

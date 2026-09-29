@@ -512,6 +512,7 @@ async def test_summary(admin_client: httpx.AsyncClient) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "counts": {
+            "hero-roles": 3,
             "experience": 3,
             "projects": 2,
             "skill-groups": 6,
@@ -521,7 +522,7 @@ async def test_summary(admin_client: httpx.AsyncClient) -> None:
             "tools": 0,
             "contact-links": 3,
             "archive": 0,
-            "site-texts": 1,
+            "site-texts": 6,
         },
         "unreadMessages": 0,
         "cv": None,
@@ -661,3 +662,67 @@ async def test_credential_links_are_saved_published_and_cleared(
     )
     assert cleared.status_code == 200
     assert cleared.json()["url"] is None
+
+
+# --- the hero and "In brief" ------------------------------------------------------------------
+
+
+@pytest.mark.usefixtures("seeded")
+async def test_hero_and_statement_texts_are_edited_and_published(
+    admin_client: httpx.AsyncClient,
+) -> None:
+    for slug, en, zh in (
+        ("hero_name_first", "Tony", "東尼"),
+        ("statement_intro", "I build software.", "我開發軟件。"),
+    ):
+        body = {"slug": slug, "translations": {"en": {"text": en}, "zh-Hant": {"text": zh}}}
+        response = await admin_client.put(f"{ADMIN}/content/site-texts/{slug}", json=body)
+        assert response.status_code == 200, response.json()
+    english = (await admin_client.get("/api/v1/content", params={"locale": "en"})).json()
+    chinese = (await admin_client.get("/api/v1/content", params={"locale": "zh-Hant"})).json()
+    assert english["hero"]["nameFirst"] == "Tony"
+    assert english["hero"]["nameLast"] == "Ng"
+    assert chinese["hero"]["nameFirst"] == "東尼"
+    assert english["statement"] == {"label": "In brief", "intro": "I build software."}
+    assert chinese["statement"]["intro"] == "我開發軟件。"
+
+
+@pytest.mark.usefixtures("seeded")
+async def test_hero_roles_are_added_reordered_and_removed(
+    admin_client: httpx.AsyncClient,
+) -> None:
+    role = {
+        "slug": "lead",
+        "translations": {"en": {"text": "Team Lead"}, "zh-Hant": {"text": "團隊主管"}},
+    }
+    created = await admin_client.post(f"{ADMIN}/content/hero-roles", json=role)
+    assert created.status_code == 201, created.json()
+    assert created.json()["sortOrder"] == 3
+
+    async def public_roles(locale: str) -> list[dict[str, str]]:
+        response = await admin_client.get("/api/v1/content", params={"locale": locale})
+        roles: list[dict[str, str]] = response.json()["hero"]["roles"]
+        return roles
+
+    assert (await public_roles("zh-Hant"))[-1] == {"id": "lead", "text": "團隊主管"}
+    order = ["lead", "fullStack", "ai", "manager"]
+    reordered = await admin_client.post(
+        f"{ADMIN}/content/hero-roles/reorder", json={"slugs": order}
+    )
+    assert reordered.status_code == 200
+    assert [row["id"] for row in await public_roles("en")] == order
+    deleted = await admin_client.delete(f"{ADMIN}/content/hero-roles/ai")
+    assert deleted.status_code == 204
+    assert [row["id"] for row in await public_roles("en")] == ["lead", "fullStack", "manager"]
+
+
+async def test_a_hero_role_needs_text_in_both_locales(admin_client: httpx.AsyncClient) -> None:
+    response = await admin_client.post(
+        f"{ADMIN}/content/hero-roles",
+        json={"slug": "lead", "translations": {"en": {"text": "x" * 201}, "zh-Hant": {"text": ""}}},
+    )
+    assert response.status_code == 422
+    assert set(response.json()["error"]["fields"]) == {
+        "translations.en.text",
+        "translations.zh-Hant.text",
+    }

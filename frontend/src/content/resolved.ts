@@ -12,6 +12,29 @@ export type Locale = LanguageCode
 /** `YYYY-MM`; `formatMonth` turns it into the visible label. */
 export type Month = string
 
+/** One of the roles listed under the name at the top of the home page. */
+export interface ResolvedHeroRole {
+  readonly id: string
+  readonly text: string
+}
+
+/** The top of the home page. */
+export interface ResolvedHero {
+  /** The small label above the name. */
+  readonly eyebrow: string
+  /** The name, in its two lines. */
+  readonly nameFirst: string
+  readonly nameLast: string
+  /** In the order the admin panel sets. */
+  readonly roles: readonly ResolvedHeroRole[]
+}
+
+/** The "In brief" section. */
+export interface ResolvedStatement {
+  readonly label: string
+  readonly intro: string
+}
+
 export interface ResolvedExperience {
   readonly id: string
   /** Untranslated. */
@@ -131,6 +154,8 @@ export interface ResolvedCv {
 export interface ResolvedContent {
   /** Echoes the request; a payload for another locale than the active one is discarded. */
   readonly locale: Locale
+  readonly hero: ResolvedHero
+  readonly statement: ResolvedStatement
   /** In the order the admin panel sets (newest first by convention). */
   readonly experience: readonly ResolvedExperience[]
   readonly projects: readonly ResolvedProject[]
