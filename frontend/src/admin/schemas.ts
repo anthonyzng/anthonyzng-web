@@ -122,6 +122,8 @@ export const archiveItemSchema = z.object({
 })
 export type ArchiveItem = z.infer<typeof archiveItemSchema>
 
+export const heroRoleItemSchema = z.object({ slug, sortOrder, translations: localized(z.object({ text: z.string() })), updatedAt })
+
 export const languageItemSchema = z.object({ slug, sortOrder, translations: localized(z.object({ name: z.string() })), updatedAt })
 
 export const contactLinkItemSchema = z.object({

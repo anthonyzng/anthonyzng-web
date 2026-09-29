@@ -28,6 +28,7 @@ from app.schemas.content_write import (
     ContactLinkIn,
     EducationIn,
     ExperienceIn,
+    HeroRoleIn,
     ProjectIn,
     SiteTextIn,
     SkillGroupIn,
@@ -40,6 +41,7 @@ from app.services.collections import (
     CONTACT_LINKS,
     EDUCATION,
     EXPERIENCE,
+    HERO_ROLES,
     LANGUAGES,
     PROJECTS,
     SITE_TEXTS,
@@ -53,6 +55,7 @@ SEED_PATH = Path(__file__).with_name("content.json")
 
 class SeedFile(StrictCamelModel):
     comment: str | None = Field(default=None, alias="$comment")
+    hero_roles: list[HeroRoleIn] = []
     experience: list[ExperienceIn] = []
     projects: list[ProjectIn] = []
     skill_groups: list[SkillGroupIn] = []
@@ -66,6 +69,7 @@ class SeedFile(StrictCamelModel):
 
 
 SEED_SECTIONS: tuple[tuple[str, Collection], ...] = (
+    ("hero_roles", HERO_ROLES),
     ("experience", EXPERIENCE),
     ("projects", PROJECTS),
     ("skill_groups", SKILL_GROUPS),

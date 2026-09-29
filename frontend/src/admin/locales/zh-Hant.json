@@ -43,6 +43,7 @@
     "zh-Hant": "繁體中文"
   },
   "collections": {
+    "hero-roles": "首頁職稱",
     "experience": "工作經驗",
     "projects": "項目作品",
     "skill-groups": "技能組別",
@@ -137,6 +138,7 @@
     "skillCount_other": "{{count}} 項技能",
     "inProgress": "進行中",
     "about": {
+      "hero-roles": "首頁頂部名字下方的職稱，按此次序顯示。",
       "experience": "「工作經驗」部分的時間線，按此次序顯示。",
       "projects": "項目卡片。預留位置會保留一張卡片，直至項目介紹準備好為止。",
       "skill-groups": "「技能」部分的各組技能標籤。",
@@ -146,10 +148,15 @@
       "tools": "「工具」區（技能之後）的工具卡，按此次序顯示。每張卡會開啟其連結。",
       "contact-links": "「聯絡」部分頂部的直接聯絡方式。",
       "archive": "「保持聯絡」之後的「舊作與文章」：舊版作品集、網誌文章及其他連結。沒有項目時不會顯示。",
-      "site-texts": "網站各處使用的單行文字，只可編輯，不可新增或刪除。"
+      "site-texts": "網站各處使用的文字：首頁頂部、「簡介」及聯絡部分的所在地。只可編輯，不可新增或刪除。"
     }
   },
   "siteTexts": {
+    "hero_eyebrow": "首頁頂部：名字上方的小標題",
+    "hero_name_first": "首頁頂部：名字第一行",
+    "hero_name_last": "首頁頂部：名字第二行",
+    "statement_label": "簡介：標題",
+    "statement_intro": "簡介：段落",
     "contact_location": "聯絡部分：所在地"
   },
   "editor": {
@@ -211,6 +218,7 @@
     "year": "年份",
     "certificationName": "專業資格",
     "inProgress": "進行中",
+    "roleText": "職稱",
     "languageName": "語言",
     "linkLabel": "名稱",
     "href": "連結",

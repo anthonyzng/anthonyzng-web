@@ -48,6 +48,10 @@ describe('locales', () => {
     for (const keys of [enKeys, zhKeys]) {
       expect(keys.has('home.comingSoon')).toBe(false)
       expect(keys.has('home.name')).toBe(false)
+      // The top of the home page and "In brief" are content now (site texts and hero roles).
+      for (const key of ['home.eyebrow', 'home.nameFirst', 'home.nameLast', 'home.roles.ai', 'home.statement.label', 'home.intro']) {
+        expect(keys.has(key), key).toBe(false)
+      }
       // The sections carry real content now, so the shared "coming soon" line is gone.
       expect(keys.has('sections.comingSoon')).toBe(false)
       // The contact form shipped, so the "form is on the way" note is gone with it.

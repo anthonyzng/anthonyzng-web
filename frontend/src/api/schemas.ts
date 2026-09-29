@@ -72,8 +72,18 @@ const archiveItem = z.object({
   url: webLink,
 })
 
+const heroSchema = z.object({
+  eyebrow: z.string(),
+  nameFirst: z.string(),
+  nameLast: z.string(),
+  roles: z.array(z.object({ id, text: z.string() })),
+})
+const statementSchema = z.object({ label: z.string(), intro: z.string() })
+
 export const contentPayloadSchema = z.object({
   locale: localeSchema,
+  hero: heroSchema,
+  statement: statementSchema,
   experience: z.array(experienceItem),
   projects: z.array(projectItem),
   skills: z.object({

@@ -5,24 +5,28 @@ import { useParallax } from '../animations/useParallax'
 import { useStatementReveal } from '../animations/useStatementReveal'
 import cats720 from '../assets/statement-cats-720.webp'
 import cats1280 from '../assets/statement-cats-1280.webp'
+import { useResolvedContent } from '../content/contentContext'
 import type { LanguageCode } from '../i18n/languages'
 import { STATEMENT_ID } from './sectionIds'
 
 /**
  * "In brief": the intro sentence as a standfirst, pinned on desktop while its lines rise.
  * Twin text: screen readers get one clean sr-only <p>; the aria-hidden visual copy is the only
- * SplitText target (so no aria-label ever lands on a <p>). The copy is keyed by language because
- * SplitText's revert recreates text nodes React no longer references.
+ * SplitText target (so no aria-label ever lands on a <p>). The copy is keyed by language and text
+ * because SplitText's revert recreates text nodes React no longer references: new words (a language
+ * switch, or the API's newer text replacing the snapshot's) get a fresh element and a fresh split.
+ * The heading and the paragraph are content (the admin panel's site texts).
  * The id is a landing target for language switches only; no nav link points to it.
  * Behind the text, the owner's two cats: a monochrome photo (`.statement-photo` in index.css) that
  * surfaces from the right edge through soft masks, blended into the page in either theme and faint
  * where the text runs, drifting slowly with the scroll (a `[data-speed]` layer). Decorative.
  */
 export function Statement() {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
+  const { statement } = useResolvedContent()
   const language = i18n.language as LanguageCode
   const scope = useRef<HTMLElement>(null)
-  useStatementReveal(scope, language)
+  useStatementReveal(scope, language, statement.intro)
   useParallax(scope)
 
   return (
@@ -48,11 +52,11 @@ export function Statement() {
             data-reveal="label"
             className="mt-8 font-mono text-sm uppercase tracking-label text-accent"
           >
-            {t('home.statement.label')}
+            {statement.label}
           </h2>
-          <p className="sr-only">{t('home.intro')}</p>
-          <p key={language} data-split aria-hidden="true" className="mt-8 max-w-4xl text-statement font-medium text-pretty">
-            {t('home.intro')}
+          <p className="sr-only">{statement.intro}</p>
+          <p key={`${language}:${statement.intro}`} data-split aria-hidden="true" className="mt-8 max-w-4xl text-statement font-medium text-pretty">
+            {statement.intro}
           </p>
         </div>
       </div>

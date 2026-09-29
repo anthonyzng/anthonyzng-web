@@ -22,12 +22,12 @@ describe('App', () => {
   it('redirects "/" to the detected language', async () => {
     renderAt('/')
     expect(await screen.findByRole('heading', { level: 1, name: 'Anthony Ng' })).toBeInTheDocument()
-    expect(screen.getByText('Full Stack Software Developer')).toBeInTheDocument()
+    expect(screen.getByText('Software Builder')).toBeInTheDocument()
   })
 
   it('renders Traditional Chinese under /zh-hant', async () => {
     renderAt('/zh-hant')
-    expect(await screen.findByText('全端軟件開發者')).toBeInTheDocument()
+    expect(await screen.findByText('軟件建造者')).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('zh-Hant')
   })
 
@@ -35,13 +35,13 @@ describe('App', () => {
     await i18n.changeLanguage('zh-Hant')
     document.documentElement.lang = 'en'
     renderAt('/zh-hant')
-    await screen.findByText('全端軟件開發者')
+    await screen.findByText('軟件建造者')
     expect(document.documentElement.lang).toBe('zh-Hant')
   })
 
   it('redirects an unknown language prefix to English', async () => {
     renderAt('/fr')
-    expect(await screen.findByText('Full Stack Software Developer')).toBeInTheDocument()
+    expect(await screen.findByText('Software Builder')).toBeInTheDocument()
   })
 
   it('shows the 404 page for unknown paths', async () => {
@@ -52,7 +52,7 @@ describe('App', () => {
   it('switches language via the switcher', async () => {
     renderAt('/en')
     await userEvent.click(await screen.findByRole('link', { name: 'Switch language to 繁體中文' }))
-    expect(await screen.findByText('全端軟件開發者')).toBeInTheDocument()
+    expect(await screen.findByText('軟件建造者')).toBeInTheDocument()
   })
 
   it('toggles and persists the theme', async () => {

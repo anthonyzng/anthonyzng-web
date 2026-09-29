@@ -20,10 +20,13 @@ import { splitVarsFor } from './splitText'
  * refreshes in list order, so the pin carries refreshPriority: that makes every refresh sort the list,
  * the pin first, so its spacer is always in place before the triggers below it are measured.
  *
+ * `text` is the paragraph's words: a change (the API's newer text replacing the snapshot's) re-keys
+ * the copy in Statement, so everything is rebuilt for the new element, like a language switch.
+ *
  * No anticipatePin: the pin only exists where Lenis drives the scroll on the main thread (see MQ.pinnable),
  * so there is no threaded-scroll lag to hide, and anticipating would pin visibly early.
  */
-export function useStatementReveal(scope: RefObject<HTMLElement | null>, language: LanguageCode): void {
+export function useStatementReveal(scope: RefObject<HTMLElement | null>, language: LanguageCode, text: string): void {
   useGSAP(
     () => {
       const root = scope.current
@@ -108,6 +111,6 @@ export function useStatementReveal(scope: RefObject<HTMLElement | null>, languag
       )
       return () => mm.revert()
     },
-    { scope, dependencies: [language], revertOnUpdate: true },
+    { scope, dependencies: [language, text], revertOnUpdate: true },
   )
 }

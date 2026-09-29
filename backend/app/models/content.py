@@ -166,6 +166,17 @@ class ArchiveEntry(TimestampMixin, Base):
     translations: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
 
 
+class HeroRole(TimestampMixin, Base):
+    """One of the roles listed under the name at the top of the home page."""
+
+    __tablename__ = "hero_roles"
+    __table_args__ = (slug_check(), sort_order_check(), translations_check())
+
+    slug: Mapped[str] = mapped_column(Text, primary_key=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    translations: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+
+
 class SpokenLanguage(TimestampMixin, Base):
     __tablename__ = "spoken_languages"
     __table_args__ = (slug_check(), sort_order_check(), translations_check())
@@ -196,3 +207,13 @@ class SiteText(TimestampMixin, Base):
 
 CONTACT_LOCATION_SLUG = "contact_location"
 """`site_texts` row holding the "Based in" value."""
+HERO_EYEBROW_SLUG = "hero_eyebrow"
+"""`site_texts` row: the small label above the name at the top of the home page."""
+HERO_NAME_FIRST_SLUG = "hero_name_first"
+"""`site_texts` row: the first line of the name at the top of the home page."""
+HERO_NAME_LAST_SLUG = "hero_name_last"
+"""`site_texts` row: the second line of the name at the top of the home page."""
+STATEMENT_LABEL_SLUG = "statement_label"
+"""`site_texts` row: the heading of the "In brief" section."""
+STATEMENT_INTRO_SLUG = "statement_intro"
+"""`site_texts` row: the paragraph of the "In brief" section."""

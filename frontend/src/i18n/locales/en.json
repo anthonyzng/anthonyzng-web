@@ -27,22 +27,10 @@
     "switchTo": "Switch language to {{name}}"
   },
   "home": {
-    "eyebrow": "Portfolio",
-    "nameFirst": "Anthony",
-    "nameLast": "Ng",
-    "roles": {
-      "fullStack": "Full Stack Software Developer",
-      "ai": "AI Developer",
-      "manager": "Assistant Manager, Software Development"
-    },
-    "intro": "I design and build end-to-end software — from scalable backends and AI-powered features to polished interfaces — and lead teams that ship them.",
     "scrollCue": "Scroll",
     "cv": {
       "download": "Download CV",
       "meta": "PDF · {{size}}"
-    },
-    "statement": {
-      "label": "In brief"
     },
     "closing": {
       "title": "Get in touch",

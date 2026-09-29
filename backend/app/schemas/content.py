@@ -22,6 +22,27 @@ class CvRef(CamelModel):
     updated_at: datetime
 
 
+class HeroRoleItem(CamelModel):
+    id: str
+    text: str
+
+
+class HeroPayload(CamelModel):
+    """The top of the home page: the label above the name, the name in two lines, the roles."""
+
+    eyebrow: str
+    name_first: str
+    name_last: str
+    roles: list[HeroRoleItem]
+
+
+class StatementPayload(CamelModel):
+    """The "In brief" section: its heading and paragraph."""
+
+    label: str
+    intro: str
+
+
 class ExperienceItem(CamelModel):
     id: str
     company: str
@@ -109,6 +130,8 @@ class ContactPayload(CamelModel):
 
 class ContentPayload(CamelModel):
     locale: Locale
+    hero: HeroPayload
+    statement: StatementPayload
     experience: list[ExperienceItem]
     projects: list[ProjectItem]
     skills: SkillsPayload

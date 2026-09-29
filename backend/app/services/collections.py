@@ -16,6 +16,7 @@ from app.models.content import (
     ContactLink,
     EducationEntry,
     ExperienceEntry,
+    HeroRole,
     Project,
     SiteText,
     SkillGroup,
@@ -28,6 +29,7 @@ from app.schemas.admin import (
     ContactLinkOut,
     EducationOut,
     ExperienceOut,
+    HeroRoleOut,
     ProjectOut,
     SiteTextOut,
     SkillGroupOut,
@@ -41,6 +43,7 @@ from app.schemas.content_write import (
     ContactLinkIn,
     EducationIn,
     ExperienceIn,
+    HeroRoleIn,
     ProjectIn,
     SiteTextIn,
     SkillGroupIn,
@@ -223,6 +226,18 @@ def _archive_fields(row: ArchiveEntry) -> dict[str, Any]:
     }
 
 
+def _hero_role_row(item: HeroRoleIn) -> dict[str, Any]:
+    return {
+        "slug": item.slug,
+        "sort_order": item.sort_order,
+        "translations": translations_json(item.translations),
+    }
+
+
+def _hero_role_fields(row: HeroRole) -> dict[str, Any]:
+    return {"slug": row.slug, "sort_order": row.sort_order, "translations": row.translations}
+
+
 def _language_row(item: SpokenLanguageIn) -> dict[str, Any]:
     return {
         "slug": item.slug,
@@ -263,6 +278,9 @@ def _site_text_fields(row: SiteText) -> dict[str, Any]:
     return {"slug": row.slug, "translations": row.translations}
 
 
+HERO_ROLES = Collection(
+    "hero-roles", HeroRole, HeroRoleIn, HeroRoleOut, _hero_role_row, _hero_role_fields
+)
 EXPERIENCE = Collection(
     "experience", ExperienceEntry, ExperienceIn, ExperienceOut, _experience_row, _experience_fields
 )
@@ -312,6 +330,7 @@ SITE_TEXTS = Collection(
 COLLECTIONS: dict[str, Collection] = {
     collection.name: collection
     for collection in (
+        HERO_ROLES,
         EXPERIENCE,
         PROJECTS,
         SKILL_GROUPS,

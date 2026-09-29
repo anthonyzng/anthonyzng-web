@@ -19,6 +19,7 @@ from app.schemas.content_write import (
     ContactLinkIn,
     EducationIn,
     ExperienceIn,
+    HeroRoleIn,
     ProjectIn,
     SiteTextIn,
     SkillGroupIn,
@@ -60,6 +61,11 @@ class ToolOut(ToolIn):
 
 
 class ArchiveOut(ArchiveIn):
+    sort_order: SortOrder
+    updated_at: datetime
+
+
+class HeroRoleOut(HeroRoleIn):
     sort_order: SortOrder
     updated_at: datetime
 

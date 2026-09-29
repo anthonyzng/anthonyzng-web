@@ -40,6 +40,20 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
     body = response.json()
     assert body["locale"] == locale
 
+    texts = {row["slug"]: row["translations"][locale]["text"] for row in raw["siteTexts"]}
+    assert body["hero"] == {
+        "eyebrow": texts["hero_eyebrow"],
+        "nameFirst": texts["hero_name_first"],
+        "nameLast": texts["hero_name_last"],
+        "roles": [
+            {"id": row["slug"], "text": row["translations"][locale]["text"]}
+            for row in ordered(raw["heroRoles"])
+        ],
+    }
+    assert body["statement"] == {
+        "label": texts["statement_label"],
+        "intro": texts["statement_intro"],
+    }
     assert body["experience"] == [
         {
             "id": row["slug"],
@@ -106,8 +120,7 @@ async def test_payload_matches_the_seed_for_locale(client: httpx.AsyncClient, lo
         }
         for row in ordered(raw["contactLinks"])
     ]
-    location = next(row for row in raw["siteTexts"] if row["slug"] == "contact_location")
-    assert body["contact"]["location"] == location["translations"][locale]["text"]
+    assert body["contact"]["location"] == texts["contact_location"]
     # The seed has no tools or archive entries: the owner adds them in the admin panel.
     assert body["tools"] == []
     assert body["archive"] == []
@@ -195,6 +208,8 @@ async def test_empty_tables_give_empty_arrays(client: httpx.AsyncClient) -> None
     assert response.status_code == 200
     assert response.json() == {
         "locale": "zh-Hant",
+        "hero": {"eyebrow": "", "nameFirst": "", "nameLast": "", "roles": []},
+        "statement": {"label": "", "intro": ""},
         "experience": [],
         "projects": [],
         "skills": {"groups": [], "education": [], "certifications": [], "languages": []},
@@ -206,12 +221,20 @@ async def test_empty_tables_give_empty_arrays(client: httpx.AsyncClient) -> None
 
 
 @pytest.mark.usefixtures("seeded")
-async def test_missing_location_row_is_empty_string(
+async def test_missing_site_texts_are_empty_strings(
     client: httpx.AsyncClient, session: AsyncSession
 ) -> None:
     await session.execute(delete(SiteText))
     await session.commit()
     response = await client.get(CONTENT)
     assert response.status_code == 200
-    assert response.json()["contact"]["location"] == ""
-    assert len(response.json()["contact"]["links"]) == 3
+    body = response.json()
+    assert body["contact"]["location"] == ""
+    assert body["statement"] == {"label": "", "intro": ""}
+    assert (body["hero"]["eyebrow"], body["hero"]["nameFirst"], body["hero"]["nameLast"]) == (
+        "",
+        "",
+        "",
+    )
+    assert len(body["hero"]["roles"]) == 3
+    assert len(body["contact"]["links"]) == 3

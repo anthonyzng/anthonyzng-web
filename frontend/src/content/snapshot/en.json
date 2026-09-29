@@ -1,5 +1,28 @@
 {
   "locale": "en",
+  "hero": {
+    "eyebrow": "Portfolio",
+    "nameFirst": "Anthony",
+    "nameLast": "Ng",
+    "roles": [
+      {
+        "id": "fullStack",
+        "text": "Full Stack Software Developer"
+      },
+      {
+        "id": "ai",
+        "text": "AI Developer"
+      },
+      {
+        "id": "manager",
+        "text": "Assistant Manager, Software Development"
+      }
+    ]
+  },
+  "statement": {
+    "label": "In brief",
+    "intro": "I design and build end-to-end software — from scalable backends and AI-powered features to polished interfaces — and lead teams that ship them."
+  },
   "experience": [
     {
       "id": "sksys",
