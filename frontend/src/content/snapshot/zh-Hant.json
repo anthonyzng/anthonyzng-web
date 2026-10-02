@@ -6,28 +6,28 @@
     "nameLast": "Ng",
     "roles": [
       {
+        "id": "manager",
+        "text": "軟件開發助理經理"
+      },
+      {
         "id": "fullStack",
         "text": "全端軟件開發者"
       },
       {
         "id": "ai",
-        "text": "AI 開發者"
-      },
-      {
-        "id": "manager",
-        "text": "軟件開發助理經理"
+        "text": "AI 開發者 / 前線部署工程師"
       }
     ]
   },
   "statement": {
     "label": "簡介",
-    "intro": "我設計並開發端到端的軟件——由可擴展的後端、AI 驅動的功能，到精緻的使用者介面——並帶領團隊將產品推出。"
+    "intro": "我在軟件開發這條路上走了 8 年,參與過航空物流、旅遊及 SaaS 企業的網頁、流動及雲端項目。除了編寫前後端代碼,近年亦負責技術方向及帶領團隊。我喜歡解決實際問題,也享受和團隊一起把系統做好。"
   },
   "experience": [
     {
       "id": "sksys",
       "company": "BABYSOFT o/a SKSYS Corporation",
-      "companyUrl": null,
+      "companyUrl": "https://www.babysoft.ca/site.php",
       "role": "軟件開發員 / 助理經理",
       "location": "加拿大安大略省萬錦市",
       "start": "2023-11",
@@ -52,7 +52,7 @@
     {
       "id": "hactl",
       "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
-      "companyUrl": null,
+      "companyUrl": "https://www.hactl.com/en",
       "role": "高級資訊科技協調員",
       "location": "香港",
       "start": "2021-08",
@@ -72,7 +72,7 @@
     {
       "id": "ivc",
       "company": "IVC Consulting Group",
-      "companyUrl": null,
+      "companyUrl": "https://www.ivcsol.com/",
       "role": "ABAP 程式開發員",
       "location": "香港",
       "start": "2020-08",
@@ -85,26 +85,169 @@
         "ABAP",
         "SAP ERP"
       ]
+    },
+    {
+      "id": "microsoft-hong-kong",
+      "company": "Microsoft Hong Kong",
+      "companyUrl": null,
+      "role": "實習生",
+      "location": "香港",
+      "start": "2018-06",
+      "end": "2018-07",
+      "bullets": [
+        "使用 Microsoft Azure 平台建立基於電腦視覺技術的物件分類行動應用程式",
+        "團隊協作技能",
+        "電腦視覺模型訓練"
+      ],
+      "tech": []
     }
   ],
   "projects": [
     {
-      "id": "slotOne",
-      "placeholder": true,
-      "title": null,
-      "summary": null,
-      "tech": [],
+      "id": "ucruising-pwa-application",
+      "placeholder": false,
+      "title": "繽紛郵輪 PWA Application",
+      "summary": "由零開始設計、開發及上架 UCruising,以單一 PWA 代碼庫同時支援 iOS、Android、Windows 及微信平台。",
+      "tech": [
+        "Progressive Web App",
+        "Javascript",
+        "Multi-platform Deployment (IOS,Android,MS Store,WeChat)"
+      ],
+      "url": "https://app.ucruising.com/ucapp/index.html?",
+      "image": {
+        "url": "/api/v1/files/8c0f1d93-3b56-4801-aa88-326c49a279d8",
+        "width": 1344,
+        "height": 863
+      }
+    },
+    {
+      "id": "ucruising-cms-erp",
+      "placeholder": false,
+      "title": "UCruising - 內容管理系統 & 企業資源規劃",
+      "summary": "開發網頁後台營運系統,管理應用程式內容及用戶,實作 [預訂 / 定價 / 訂單] 等核心業務邏輯,並處理 [發票、付款對賬及財務報表] 等會計功能。",
+      "tech": [
+        "Javscript",
+        "Cross Department Communication",
+        "Project management"
+      ],
       "url": null,
-      "image": null
+      "image": {
+        "url": "/api/v1/files/8c68dfb9-a5da-4cc2-a706-fe34445ca5f1",
+        "width": 1600,
+        "height": 805
+      }
+    },
+    {
+      "id": "cosac-plus-air-cargo-management-system-hactl-solutions",
+      "placeholder": false,
+      "title": "COSAC-Plus 空運貨物管理系統 (HACTL Solutions)",
+      "summary": "將 HACTL 企業級空運貨物管理系統 COSAC-Plus 嘅前端由原生 JavaScript 遷移至 AngularJS,以 Java 及 SQL 開發及除錯核心功能(Docker、Kubernetes、Azure),並參與 24/7 輪值待命支援生產系統。",
+      "tech": [
+        "Docker",
+        "Kubernetes",
+        "Azure Cloud",
+        "Java",
+        "Typescript",
+        "Javascript"
+      ],
+      "url": "https://www.hactlsolutions.com/en/services-cosac.php.html",
+      "image": {
+        "url": "/api/v1/files/23f162f2-3378-4827-b94c-eff96f22e1f5",
+        "width": 1447,
+        "height": 1087
+      }
+    },
+    {
+      "id": "offisky-app",
+      "placeholder": false,
+      "title": "Offisky App",
+      "summary": "為服務加拿大中小企嘅雲端虛擬辦公室 SaaS 平台 Offisky 進行介面翻新、開發新功能,並為現有客戶提供技術支援。",
+      "tech": [
+        "PHP",
+        "Javascript",
+        "UI Revamped",
+        "Application & Network Technical Support"
+      ],
+      "url": "https://www.offisky.com/site.php",
+      "image": {
+        "url": "/api/v1/files/6d2c236c-d747-4bb1-aa0b-b07dbfa83b4e",
+        "width": 1600,
+        "height": 681
+      }
+    },
+    {
+      "id": "uob-art-central-2022-the-bloom-of-water-lilies-virtual-panorama",
+      "placeholder": false,
+      "title": "大華銀行 | 心墨相蓮 - Virtual Panorama Web Application",
+      "summary": "為大華銀行委託、於 Art Central 香港展出嘅互動藝術裝置,以 Node.js 及 AWS 無伺服器架構(Lambda、API Gateway、S3)開發相片處理流程,將多鏡頭相片合成全景圖供參觀者下載。",
+      "tech": [
+        "AWS Lambda",
+        "Node.js",
+        "AWS API Gateway",
+        "Node.js"
+      ],
+      "url": "https://www.aho.art/the-bloom-of-water-lilies",
+      "image": {
+        "url": "/api/v1/files/b2be2b10-5cc3-4594-8069-1592f70706f8",
+        "width": 300,
+        "height": 224
+      }
+    },
+    {
+      "id": "slotOne",
+      "placeholder": false,
+      "title": "學術專案 - 犬種影像分類：CNN 與 R-CNN 表現研究",
+      "summary": "在 TensorFlow 中建立並測試了 CNN 和 R-CNN 模型，用於犬種分類，比較了準確率和推理性能，並將選定的模型部署到 Android 應用中。\n\n- 一段用粵語簡要介紹和演示該應用程式的影片",
+      "tech": [
+        "Google Cloud Vision",
+        "TensorFlow",
+        "Python",
+        "android studio"
+      ],
+      "url": "https://drive.google.com/file/d/1gXKdiSSjUt9m6SMwhnqzV95KUGzHd3mp/view?usp=sharing",
+      "image": {
+        "url": "/api/v1/files/569badf2-ea26-452d-832e-df48c6ed69c6",
+        "width": 1152,
+        "height": 864
+      }
     },
     {
       "id": "slotTwo",
-      "placeholder": true,
-      "title": null,
-      "summary": null,
-      "tech": [],
-      "url": null,
-      "image": null
+      "placeholder": false,
+      "title": "學術專案 - 全端 Web 應用程式：多範式開發",
+      "summary": "建立了一個 PHP RESTful API，並行使用了 Angular 和 Elm 前端，以比較物件導向和函數式方法在可維護性、類型安全性和生產力方面的差異。\n\n- 一段用英語簡要介紹和演示該應用程式的影片",
+      "tech": [
+        "PHP",
+        "Restful API",
+        "Angular CLI",
+        "ELM functional programming",
+        "Project Management",
+        "mongo db",
+        "sql database"
+      ],
+      "url": "https://drive.google.com/file/d/1ZZyOJdGPsz08wsMyhBZlMuWr0ZQNkSYv/view",
+      "image": {
+        "url": "/api/v1/files/167717e2-3f13-4f71-8b51-1667b3545172",
+        "width": 1472,
+        "height": 704
+      }
+    },
+    {
+      "id": "test",
+      "placeholder": false,
+      "title": "學術專案 - 家居工作管理流動應用程式",
+      "summary": "開發家居工作管理流動應用程式,讓僱主向家傭分派工作,並設有完成追蹤及自動 SMS 通知功能,減少人為錯誤及遺漏。\n\n- 一段用粵語簡要介紹和演示該應用程式的影片",
+      "tech": [
+        "android studio",
+        "java",
+        "nodejs"
+      ],
+      "url": "https://drive.google.com/file/d/1K3Gis8FFDylVvMQryFOznIFraseatQqr/view",
+      "image": {
+        "url": "/api/v1/files/d05b79d3-1186-4def-84cd-95fb158f4674",
+        "width": 720,
+        "height": 1280
+      }
     }
   ],
   "skills": {
@@ -191,7 +334,7 @@
         "id": "uwe",
         "degree": "資訊科技（榮譽）理學士 — 一級榮譽",
         "school": "University of the West of England, Bristol",
-        "url": null,
+        "url": "https://www.uwe.ac.uk/",
         "year": "2020"
       }
     ],
@@ -224,7 +367,28 @@
       }
     ]
   },
-  "tools": [],
+  "tools": [
+    {
+      "id": "bmi-calculator",
+      "name": "BMI Calculator",
+      "kind": "BMI計算器",
+      "summary": "身體質量指數（BMI）是根據體重和身高計算出的身體脂肪含量指標。它通常用來判斷一個人是體重過輕、正常、超重還是肥胖。 BMI可以幫助人們評估自身的整體健康狀況以及與體重過重相關的潛在疾病風險。",
+      "tech": [
+        "Typescript"
+      ],
+      "url": "https://anthonyzng.github.io/BMI-Calculator/sample-bmi/"
+    },
+    {
+      "id": "snake-game",
+      "name": "snake game",
+      "kind": "貪食蛇",
+      "summary": "貪食蛇囉",
+      "tech": [
+        "Typescript"
+      ],
+      "url": "https://anthonyzng.github.io/my-snake-game/my-snake-game/"
+    }
+  ],
   "contact": {
     "links": [
       {
@@ -246,8 +410,46 @@
         "display": "github.com/anthonyzng"
       }
     ],
-    "location": "加拿大安大略省"
+    "location": "加拿大 / 香港"
   },
-  "archive": [],
-  "cv": null
+  "archive": [
+    {
+      "id": "portfolio-2025",
+      "kind": "Portfolio",
+      "title": "Portfolio - 2025",
+      "summary": null,
+      "month": "2025-12",
+      "url": "https://anthonyzngportfolio.lovable.app/"
+    },
+    {
+      "id": "blog",
+      "kind": "Blog",
+      "title": "Blog",
+      "summary": null,
+      "month": "2022-08",
+      "url": "https://tungzgg.wordpress.com/"
+    },
+    {
+      "id": "leetcode",
+      "kind": "Leetcode",
+      "title": "Leetcode",
+      "summary": null,
+      "month": "2022-08",
+      "url": "https://leetcode.com/u/anthonyzng075/"
+    },
+    {
+      "id": "portfolio-2023",
+      "kind": "Portfolio",
+      "title": "Portfolio - 2023",
+      "summary": null,
+      "month": "2023-02",
+      "url": "https://anthonyzng.github.io/anthonyzngweb/anthonyzngweb/anthonyzngweb"
+    }
+  ],
+  "cv": {
+    "url": "/api/v1/files/6d6e0606-1996-4d62-8497-8d7fc857a2d8",
+    "filename": "Anthony_Ng_Resume_v1.pdf",
+    "size": 6046,
+    "updatedAt": "2026-09-29T05:02:41.357494Z"
+  }
 }
