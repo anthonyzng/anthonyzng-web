@@ -418,7 +418,7 @@
     "disable": "Turn off",
     "disabling": "Turning off…",
     "disabled": "Two-factor sign-in is off. Other devices have been signed out.",
-    "lostDevice": "Lost the phone with the authenticator app? On the server, in /opt/anthonyzng-web, this command turns two-factor sign-in off; then sign in with the password and set it up again.",
+    "lostDevice": "Lost the phone with the authenticator app? On the server, in /opt/apps/anthonyzng-web, this command turns two-factor sign-in off; then sign in with the password and set it up again.",
     "errors": {
       "passwordRequired": "Please enter your password.",
       "wrongPassword": "The password is not correct.",
