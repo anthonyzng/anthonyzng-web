@@ -47,7 +47,7 @@ services:
     env_file:
       - path: ./backend/.env
         required: true
-    # Merged into migrate's environment too. Values with a $variable belong in `environment` only
+    # Merged into migrate's environment too. Values with a $variable belong in `environment` values (or `image`) only
     # (deploy-app refuses one in any other place, an x- extension included).
     environment: &backend-env
       # Production unless the local override says otherwise, so a backend/.env that lost its
