@@ -77,26 +77,38 @@ jobs:
       - run: uv run mypy .
       - run: uv run pytest -q
 
-  # The container configuration parses: Compose (both files) and the Caddyfile.
+  # The container configuration parses: Compose (the three files) and the Caddy snippet, validated
+  # inside a copy of the platform's global Caddyfile (deploy/ci/Caddyfile) with production's
+  # addresses and with the local ones. The platform validates it again, against the live config,
+  # before every install (scripts/install-site).
   containers:
     runs-on: ubuntu-latest
+    env:
+      # The platform's Caddy image (Owwsolution/platform docker-compose.yml): bump them together.
+      CADDY_IMAGE: caddy:2.11-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Compose files
         env:
+          # CI-only placeholders (never real secrets) so Compose can interpolate; the app role's
+          # password is still read by the pre-platform compose file until it is rewritten.
+          DATABASE_OWNER_URL: postgresql+asyncpg://ci:ci-placeholder@platform-postgres:5432/ci
+          DATABASE_APP_URL: postgresql+asyncpg://ci:ci-placeholder@platform-postgres:5432/ci
           POSTGRES_PASSWORD: ci-placeholder
           POSTGRES_APP_PASSWORD: ci-placeholder
         run: |
           touch backend/.env
           docker compose config --quiet
           docker compose -f docker-compose.yml -f docker-compose.local.yml config --quiet
-      - name: Caddyfile
+          docker compose -f docker-compose.dev.yml config --quiet
+      - name: Caddy snippet
         run: |
-          docker run --rm -v "$PWD/proxy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-            -e SITE_ADDRESS=owwsolution.com -e SITE_URL=https://owwsolution.com \
-            -e WWW_ADDRESS=www.owwsolution.com -e API_ADDRESS=api.owwsolution.com \
-            -e API_URL=https://api.owwsolution.com \
-            caddy:2.11-alpine sh -c 'caddy validate --config /etc/caddy/Caddyfile && caddy fmt /etc/caddy/Caddyfile | diff /etc/caddy/Caddyfile -'
+          validate() {
+            docker run --rm "$@"               -v "$PWD/deploy/ci/Caddyfile:/etc/caddy/Caddyfile:ro"               -v "$PWD/deploy/anthonyzng-web.caddy:/etc/caddy/sites/anthonyzng-web.caddy:ro"               "$CADDY_IMAGE" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          }
+          validate                                     # production's addresses
+          validate --env-file deploy/local-caddy.env   # the local ones
+          docker run --rm -v "$PWD/deploy:/deploy:ro" "$CADDY_IMAGE" sh -c             'caddy fmt /deploy/anthonyzng-web.caddy | diff /deploy/anthonyzng-web.caddy - && caddy fmt /deploy/ci/Caddyfile | diff /deploy/ci/Caddyfile -'
 
   images:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'

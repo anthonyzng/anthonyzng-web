@@ -1,0 +1,70 @@
+# The site's hosts on the Owwsolution platform's Caddy (Owwsolution/platform, proxy/Caddyfile):
+# installed into /opt/platform/proxy/sites/ by the platform's install-site on every deploy, which
+# validates it with the live config first. It may use the platform's snippets security_headers
+# and to_backend; every snippet it defines starts with anthonyzng_web_ (snippet names are global
+# on the platform).
+#
+# Addresses are production's unless the platform's caddy.env sets them (only on a local machine;
+# deploy/local-caddy.env has the local values):
+#   ANTHONYZNG_WEB_SITE_ADDRESS  owwsolution.com              locally http://localhost:8080
+#   ANTHONYZNG_WEB_SITE_URL      https://owwsolution.com      locally http://localhost:8080
+#   ANTHONYZNG_WEB_WWW_ADDRESS   www.owwsolution.com          locally http://www.localhost:8080
+#   ANTHONYZNG_WEB_API_ADDRESS   api.owwsolution.com          locally http://api.localhost:8080
+#   ANTHONYZNG_WEB_API_URL       https://api.owwsolution.com  (the API origin the CSP admits)
+#   ANTHONYZNG_WEB_SITE_EXTRA    none                         locally api (the API on the site's
+#                                                             own origin too; see below)
+# The upstreams are this app's aliases on its own platform network edge-anthonyzng-web
+# (docker-compose.yml).
+
+# No extra route on the site host (production).
+(anthonyzng_web_site_extra_none) {
+}
+
+# Local machines only: browsers take localhost and api.localhost for two different sites, so the
+# admin's SameSite=Lax session cookie would not travel to api.localhost; the local build calls the
+# API on the site's own origin. Production's apex and api subdomain are one site.
+(anthonyzng_web_site_extra_api) {
+	handle /api/* {
+		import to_backend anthonyzng-web-backend:8000
+	}
+}
+
+{$ANTHONYZNG_WEB_SITE_ADDRESS:owwsolution.com} {
+	import security_headers
+	header {
+		defer
+		# The admin panel lives on this host: it must never be framed (also frame-ancestors).
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# Scripts only from this origin, Cloudflare Turnstile and Cloudflare Web Analytics (no
+		# inline script: the theme runs from /theme-init.js); styles from this origin (React and
+		# GSAP set styles through the CSSOM, which style-src does not govern); images and API
+		# calls from this origin and the API (cover images are GET /files/{id} there); fonts may
+		# also be data: URLs (Vite inlines font subsets under 4 KB into the CSS).
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: {$ANTHONYZNG_WEB_API_URL:https://api.owwsolution.com}; font-src 'self' data:; connect-src 'self' {$ANTHONYZNG_WEB_API_URL:https://api.owwsolution.com} https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	}
+	import anthonyzng_web_site_extra_{$ANTHONYZNG_WEB_SITE_EXTRA:none}
+	reverse_proxy anthonyzng-web-frontend:8080
+}
+
+# One canonical origin for the site (SEO; the API allows only that origin).
+{$ANTHONYZNG_WEB_WWW_ADDRESS:www.owwsolution.com} {
+	redir {$ANTHONYZNG_WEB_SITE_URL:https://owwsolution.com}{uri} permanent
+}
+
+{$ANTHONYZNG_WEB_API_ADDRESS:api.owwsolution.com} {
+	import security_headers
+	header {
+		defer
+		# JSON and files only: nothing here may run a script or be framed.
+		Content-Security-Policy "default-src 'none'; img-src 'self'; frame-ancestors 'none'"
+	}
+	# In front of the app's own caps: the CV upload route's 11 MiB is the largest (MiB: Caddy's
+	# MB is decimal, 1000^2).
+	request_body {
+		max_size 11MiB
+	}
+	# No compression: it would rewrite the API's ETags.
+	import to_backend anthonyzng-web-backend:8000
+}

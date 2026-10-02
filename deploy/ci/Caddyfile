@@ -1,0 +1,49 @@
+# A copy of Owwsolution/platform's proxy/Caddyfile at commit 7a865db with this one comment line prepended, for CI's check of deploy/anthonyzng-web.caddy only (that repo is private, so CI cannot fetch it: keep it in step by hand, and CADDY_IMAGE in ci-cd.yml with the platform's Caddy image digest).
+# The platform's edge proxy: global options and the snippets every app may import. Each app's
+# site blocks live in its own repo (deploy/<app>.caddy) and are installed into sites/ by its deploy
+# (scripts/install-site), never by hand. Snippets an app defines are global too, so their names
+# start with the app's name (anthonyzng_web_...).
+#
+# No access log: it would record raw client IPs, which no app on the platform writes.
+{
+	servers {
+		# Cloudflare's edge (https://www.cloudflare.com/ips/, 2026-09): only a request that
+		# really arrives from these ranges may name the visitor in CF-Connecting-IP; for anything
+		# else {client_ip} is the peer address, so the header cannot be forged by going around
+		# Cloudflare. Refresh the list (and the GCP firewall rule allow-web-cloudflare) when
+		# Cloudflare announces new ranges.
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers CF-Connecting-IP
+		# A slow client cannot hold a connection open for ever (slowloris); a body may take up
+		# to two minutes (an 11 MiB upload on a slow link).
+		timeouts {
+			read_header 10s
+			read_body 2m
+			write 2m
+			idle 2m
+		}
+	}
+}
+
+# Headers every public host sends: HTTPS only for a year once seen over HTTPS (browsers ignore it
+# on plain HTTP), no MIME sniffing, no Server header. Deferred, so they replace what an upstream
+# sent instead of adding a second copy.
+(security_headers) {
+	header {
+		defer
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+}
+
+# A route to an app's backend: `import to_backend <alias>:<port>`. Backends that read the client
+# IP take the rightmost X-Forwarded-For entry: send exactly one, the visitor's address as resolved
+# above (Caddy's default would append Cloudflare's edge address).
+(to_backend) {
+	reverse_proxy {args[0]} {
+		header_up X-Forwarded-For {client_ip}
+	}
+}
+
+import sites/*.caddy
