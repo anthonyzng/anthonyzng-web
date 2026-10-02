@@ -13,6 +13,9 @@
 #   ANTHONYZNG_WEB_API_URL       https://api.owwsolution.com  (the API origin the CSP admits)
 #   ANTHONYZNG_WEB_SITE_EXTRA    none                         locally api (the API on the site's
 #                                                             own origin too; see below)
+# The {$ANTHONYZNG_WEB_*} values are trusted operator input from the platform's caddy.env: one token
+# each (no spaces, braces, quotes or newlines: Caddy expands them into the config text), and
+# ANTHONYZNG_WEB_SITE_EXTRA is only "none" or "api".
 # The upstreams are this app's aliases on its own platform network edge-anthonyzng-web
 # (docker-compose.yml).
 

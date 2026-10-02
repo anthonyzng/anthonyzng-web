@@ -104,11 +104,24 @@ jobs:
       - name: Caddy snippet
         run: |
           validate() {
-            docker run --rm "$@"               -v "$PWD/deploy/ci/Caddyfile:/etc/caddy/Caddyfile:ro"               -v "$PWD/deploy/anthonyzng-web.caddy:/etc/caddy/sites/anthonyzng-web.caddy:ro"               "$CADDY_IMAGE" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+            docker run --rm "$@" \
+              -v "$PWD/deploy/ci/Caddyfile:/etc/caddy/Caddyfile:ro" \
+              -v "$PWD/deploy/anthonyzng-web.caddy:/etc/caddy/sites/anthonyzng-web.caddy:ro" \
+              "$CADDY_IMAGE" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
           }
           validate                                     # production's addresses
           validate --env-file deploy/local-caddy.env   # the local ones
-          docker run --rm -v "$PWD/deploy:/deploy:ro" "$CADDY_IMAGE" sh -c             'caddy fmt /deploy/anthonyzng-web.caddy | diff /deploy/anthonyzng-web.caddy - && caddy fmt /deploy/ci/Caddyfile | diff /deploy/ci/Caddyfile -'
+          docker run --rm -v "$PWD/deploy:/deploy:ro" "$CADDY_IMAGE" sh -c \
+            'caddy fmt /deploy/anthonyzng-web.caddy | diff /deploy/anthonyzng-web.caddy - && caddy fmt /deploy/ci/Caddyfile | diff /deploy/ci/Caddyfile -'
+      # The Caddyfile the deploy job still copies to the VM and reloads, until the platform cutover:
+      # removed in Task 12 together with proxy/Caddyfile.
+      - name: Caddyfile (current production)
+        run: |
+          docker run --rm -v "$PWD/proxy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e SITE_ADDRESS=owwsolution.com -e SITE_URL=https://owwsolution.com \
+            -e WWW_ADDRESS=www.owwsolution.com -e API_ADDRESS=api.owwsolution.com \
+            -e API_URL=https://api.owwsolution.com \
+            "$CADDY_IMAGE" sh -c 'caddy validate --config /etc/caddy/Caddyfile && caddy fmt /etc/caddy/Caddyfile | diff /etc/caddy/Caddyfile -'
 
   images:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
