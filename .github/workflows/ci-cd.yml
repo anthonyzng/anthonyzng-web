@@ -1,5 +1,7 @@
 # CI on every pull request and push to main; on main it also builds the images, pushes them to
-# GHCR (private packages) and deploys them to the VM over SSH.
+# GHCR (private packages) and deploys them to the VM over SSH. The VM runs the Owwsolution platform
+# (the private Owwsolution/platform repo: Caddy, PostgreSQL, scripts/deploy-app); this public repo
+# cannot call that repo's reusable workflows, so it keeps its own and runs the same deploy-app.
 #
 # Repository settings used (Settings → Secrets and variables → Actions):
 #   variables  DEPLOY_ENABLED ("true" turns on images + deploy), DEPLOY_HOST, DEPLOY_USER,
@@ -7,7 +9,8 @@
 #   secrets    DEPLOY_SSH_KEY (private key of the deploy user), DEPLOY_KNOWN_HOSTS (the VM's host key):
 #              secrets of the `production` environment, which only `main` may deploy from, so a pull
 #              request (even one that edits this file) can never read them
-# The VM holds its own .env and backend/.env; no application secret passes through GitHub.
+# The VM holds the app's .env and backend/.env in /opt/apps/anthonyzng-web; no application secret
+# passes through GitHub.
 
 name: CI/CD
 
@@ -90,17 +93,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Compose files
         env:
-          # CI-only placeholders (never real secrets) so Compose can interpolate; the app role's
-          # password is still read by the pre-platform compose file until it is rewritten.
+          # CI-only placeholders (never real secrets) so Compose can interpolate: the two URLs for
+          # docker-compose.yml, the password for docker-compose.dev.yml.
           DATABASE_OWNER_URL: postgresql+asyncpg://ci:ci-placeholder@platform-postgres:5432/ci
           DATABASE_APP_URL: postgresql+asyncpg://ci:ci-placeholder@platform-postgres:5432/ci
           POSTGRES_PASSWORD: ci-placeholder
-          POSTGRES_APP_PASSWORD: ci-placeholder
         run: |
           touch backend/.env
           docker compose config --quiet
           docker compose -f docker-compose.yml -f docker-compose.local.yml config --quiet
           docker compose -f docker-compose.dev.yml config --quiet
+          # On the platform the app runs its own services only (Caddy and PostgreSQL are the
+          # platform's), and never a build or a published port (deploy-app refuses both).
+          services=$(docker compose config --services | sort | tr '\n' ' ')
+          if [ "$services" != "backend frontend migrate " ]; then
+            echo "docker-compose.yml defines: ${services}(expected: backend frontend migrate)" >&2
+            exit 1
+          fi
+          docker compose config --format json --no-interpolate \
+            | jq -e '[.services[] | has("build") or has("ports")] | any | not' >/dev/null \
+            || { echo "docker-compose.yml has a build or ports section" >&2; exit 1; }
       - name: Caddy snippet
         run: |
           validate() {
@@ -113,15 +125,6 @@ jobs:
           validate --env-file deploy/local-caddy.env   # the local ones
           docker run --rm -v "$PWD/deploy:/deploy:ro" "$CADDY_IMAGE" sh -c \
             'caddy fmt /deploy/anthonyzng-web.caddy | diff /deploy/anthonyzng-web.caddy - && caddy fmt /deploy/ci/Caddyfile | diff /deploy/ci/Caddyfile -'
-      # The Caddyfile the deploy job still copies to the VM and reloads, until the platform cutover:
-      # removed in Task 12 together with proxy/Caddyfile.
-      - name: Caddyfile (current production)
-        run: |
-          docker run --rm -v "$PWD/proxy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-            -e SITE_ADDRESS=owwsolution.com -e SITE_URL=https://owwsolution.com \
-            -e WWW_ADDRESS=www.owwsolution.com -e API_ADDRESS=api.owwsolution.com \
-            -e API_URL=https://api.owwsolution.com \
-            "$CADDY_IMAGE" sh -c 'caddy validate --config /etc/caddy/Caddyfile && caddy fmt /etc/caddy/Caddyfile | diff /etc/caddy/Caddyfile -'
 
   images:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
@@ -170,62 +173,67 @@ jobs:
       contents: read
       packages: read
     env:
-      DEPLOY_DIR: /opt/anthonyzng-web
+      APP: anthonyzng-web
+      APP_DIR: /opt/apps/anthonyzng-web
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: SSH key and pinned host key
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
           printf 'Host deploy-target\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' \
-            "${{ vars.DEPLOY_HOST }}" "${{ vars.DEPLOY_USER }}" > ~/.ssh/config
-      - name: Copy the stack definition
-        # DEPLOY_DIR is expanded here, on purpose (SC2029).
+            "$DEPLOY_HOST" "$DEPLOY_USER" > ~/.ssh/config
+      - name: Copy the app definition
+        # APP_DIR is expanded here, on purpose (SC2029).
         run: |
           # shellcheck disable=SC2029
-          ssh deploy-target "mkdir -p '$DEPLOY_DIR/proxy'"
-          scp docker-compose.yml "deploy-target:$DEPLOY_DIR/docker-compose.yml"
-          scp proxy/Caddyfile "deploy-target:$DEPLOY_DIR/proxy/Caddyfile"
-      - name: Pull this commit's images and restart
+          ssh deploy-target "mkdir -p '$APP_DIR/.incoming'"
+          scp docker-compose.yml "deploy-target:$APP_DIR/.incoming/docker-compose.yml"
+          scp "deploy/$APP.caddy" "deploy-target:$APP_DIR/.incoming/$APP.caddy"
+      - name: Pull this commit's images, restart, install the Caddy snippet
         env:
-          # Valid only while this job runs; the VM logs out again right after the pull.
+          # Valid only while this job runs; deploy-app logs the VM out right after the pull.
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGES: ghcr.io/${{ github.repository }}
           SHA: ${{ github.sha }}
-        # The remote script is expanded here (DEPLOY_DIR, the tag), on purpose (SC2029). The pulled
-        # images are also tagged `latest` on the VM, so every manual compose command there (seed,
-        # logs, up after editing .env) uses the deployed images without a registry login. Caddy is
-        # reloaded because a changed Caddyfile does not recreate its container.
+          ACTOR: ${{ github.actor }}
+        # The platform's deploy-app: GHCR login and logout, this commit's images tagged `latest`
+        # (so every manual compose command on the VM uses the deployed images), `up -d
+        # --remove-orphans` (migrate first), the snippet validated with the live Caddy config and
+        # installed with a reload, unused images pruned. The arguments are expanded here, on
+        # purpose (SC2029).
         run: |
           # shellcheck disable=SC2029
-          printf '%s' "$REGISTRY_TOKEN" | ssh deploy-target "set -eu
-            cd '$DEPLOY_DIR'
-            docker login ghcr.io -u '${{ github.actor }}' --password-stdin
-            trap 'docker logout ghcr.io >/dev/null' EXIT
-            IMAGE_TAG='$SHA' docker compose pull backend frontend
-            docker logout ghcr.io >/dev/null
-            for name in backend frontend; do
-              docker tag '$IMAGES'-\$name:'$SHA' '$IMAGES'-\$name:latest
-            done
-            docker compose up -d --remove-orphans
-            for attempt in 1 2 3 4 5; do
-              docker compose exec -T proxy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile && break
-              [ \$attempt -lt 5 ] || exit 1
-              sleep 3
-            done
-            docker image prune -af >/dev/null"
+          printf '%s' "$REGISTRY_TOKEN" | ssh deploy-target \
+            "/opt/platform/scripts/deploy-app --app '$APP' --sha '$SHA' --registry-user '$ACTOR' --image '$IMAGES-backend' --image '$IMAGES-frontend'"
       - name: Smoke test
         run: |
           for _ in $(seq 12); do
-            if curl -fsS https://api.owwsolution.com/api/v1/health && curl -fsS -o /dev/null https://owwsolution.com/; then
+            if curl -fsS https://api.owwsolution.com/api/v1/health && curl -fsS -o /dev/null https://owwsolution.com/ \
+              && curl -fsS -o /dev/null https://owwsolution.com/admin/login; then
               # Production mode: the API docs must not be served.
               docs=$(curl -s -o /dev/null -w '%{http_code}' https://api.owwsolution.com/api/v1/docs)
               if [ "$docs" != 404 ]; then echo "API docs answered $docs: not in production mode?" >&2; exit 1; fi
+              # The CV download, once one is uploaded (a root-relative path on the API origin; any
+              # other shape is refused, so the URL below never names another host).
+              cv=$(curl -fsS 'https://api.owwsolution.com/api/v1/content?locale=en' | jq -r '.cv.url // empty')
+              if [ -n "$cv" ]; then
+                if ! [[ $cv =~ ^/api/v1/files/[0-9a-f-]{36}$ ]]; then
+                  echo "unexpected CV URL in the content payload" >&2
+                  exit 1
+                fi
+                if ! curl -fsS -o /dev/null "https://api.owwsolution.com$cv"; then
+                  echo "the CV download failed" >&2
+                  exit 1
+                fi
+              fi
               exit 0
             fi
             sleep 10

@@ -1,19 +1,34 @@
-# The production stack: every service in its own container, only the proxy is published.
+# The site's stack on an Owwsolution platform VM (Owwsolution/platform): the edge proxy (Caddy) and
+# PostgreSQL belong to the platform and are shared by every app on the VM, so this file has
+# neither. Every service runs in its own container; nothing is published on the host.
 #
-#   docker compose pull backend frontend && docker compose up -d   # production (the VM; CI deploys)
-#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # locally
+#   deploy   CI copies this file and deploy/anthonyzng-web.caddy to /opt/apps/anthonyzng-web/.incoming
+#            and runs the platform's scripts/deploy-app (this commit's images, `up -d`, the snippet)
+#   locally  docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+#            on a local platform stack (CLAUDE.md section 6, "Full stack")
 #
 # Production runs the images CI pushed to GHCR (private packages): IMAGE_TAG is the commit SHA the
-# deploy job passes, `latest` otherwise (the last build of main). The `build` sections are for
-# local builds (the local override retags them `:local`).
+# deploy passes, `latest` otherwise (the last deployed build). This file has no `build` section:
+# deploy-app never builds and refuses one; the local override adds them (images tagged `:local`).
+#
+# Networks: this app's own two on the platform, both internal (no route to the internet) and
+# joined by no other app; this file may name no other (the platform's deploy-app checks it):
+#   edge  edge-anthonyzng-web (created by deploy-app): Caddy reaches the frontend and the backend
+#         under the aliases anthonyzng-web-frontend and anthonyzng-web-backend, the names
+#         deploy/anthonyzng-web.caddy uses
+#   db    db-anthonyzng-web (created by provision-app): the platform's PostgreSQL, as
+#         platform-postgres
+# The backend also keeps the project's default network, its only route out (Turnstile, Resend).
 #
 # Configuration:
-#   .env           Compose variables (Postgres credentials, public addresses, frontend build args);
+#   .env           DATABASE_OWNER_URL and DATABASE_APP_URL, written by the platform's
+#                  `scripts/provision-app anthonyzng-web --scheme postgresql+asyncpg --write-env`;
 #                  see .env.example.
 #   backend/.env   backend settings (secrets); see backend/.env.example. DATABASE_URL and
-#                  TRUSTED_PROXY are set here instead, for the container network.
+#                  TRUSTED_PROXY are set here instead.
 # Both files are git-ignored. Migrations run once per `up` in the `migrate` service, before the
 # backend starts; the app itself never migrates.
+name: anthonyzng-web
 
 x-hardening: &hardening
   restart: unless-stopped
@@ -21,43 +36,46 @@ x-hardening: &hardening
     - no-new-privileges:true
   pids_limit: 200
 
-# Memory caps sized for the 1 GiB e2-micro (plus 2 GiB swap): one runaway service is killed and
-# restarted instead of taking PostgreSQL down with it. The backend's peak is two Argon2 checks
-# (19 MiB each) plus one cover-image decode.
-
-x-backend-env: &backend-env
-  # Production unless the root .env (or the local override) says otherwise, so a backend/.env that
-  # lost its APP_ENV line can never start with development defaults (no Secure cookie, API docs).
-  APP_ENV: ${APP_ENV:-production}
-  # Inside the network the database is `db`. The backend connects as the least-privilege app role
-  # (rows only, set up by `migrate`), never as the schema owner. Passwords must be URL-safe
-  # (letters, digits, - _ . ~).
-  DATABASE_URL: postgresql+asyncpg://${POSTGRES_APP_USER:-anthonyzng_app}:${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env}@db:5432/${POSTGRES_DB:-anthonyzng_web} # ggignore (Compose variables, no value)
-  # Behind Caddy: the client IP is the rightmost X-Forwarded-For entry.
-  TRUSTED_PROXY: "true"
+# Memory caps (platform spec section 7): one runaway service is killed and restarted instead of
+# pressing on the rest of the VM. The backend's peak is two Argon2 checks (19 MiB each) plus one
+# cover-image decode.
 
 services:
-  db:
+  backend:
     <<: *hardening
-    image: postgres:17-alpine
-    mem_limit: 256m
-    # PostgreSQL's entrypoint needs its default capabilities (chown / setuid to the postgres user).
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-anthonyzng}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-anthonyzng_web}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-anthonyzng} -d ${POSTGRES_DB:-anthonyzng_web}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    image: ghcr.io/anthonyzng/anthonyzng-web-backend:${IMAGE_TAG:-latest}
+    env_file:
+      - path: ./backend/.env
+        required: true
+    # Merged into migrate's environment too. Values with a $variable belong in `environment` only
+    # (deploy-app refuses one in any other place, an x- extension included).
+    environment: &backend-env
+      # Production unless the local override says otherwise, so a backend/.env that lost its
+      # APP_ENV line can never start with development defaults (no Secure cookie, API docs).
+      APP_ENV: ${APP_ENV:-production}
+      # The least-privilege app role (rows only: the platform's default privileges grant them),
+      # never the schema owner.
+      DATABASE_URL: ${DATABASE_APP_URL:?set DATABASE_APP_URL in .env (the platform's provision-app)}
+      # Behind Caddy: the client IP is the rightmost X-Forwarded-For entry.
+      TRUSTED_PROXY: "true"
+    read_only: true
+    cap_drop: [ALL]
+    mem_limit: 384m
+    tmpfs:
+      - /tmp
+    networks:
+      # default: outbound HTTPS (Turnstile, Resend)
+      default:
+      edge:
+        aliases: [anthonyzng-web-backend]
+      db:
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
-  # One-off: brings the schema to head as the schema owner, then creates or updates the backend's
-  # app role and grants it row privileges on every table (`app.db_roles`), then exits; the backend
-  # waits for it to succeed. It runs the backend's image (pulled or built by the `backend`
-  # service, never on its own).
+  # One-off: brings the schema to head as the schema owner, then checks the app role's rights
+  # (`app.db_roles`), then exits; the backend waits for it to succeed. It runs the backend's image
+  # (pulled by deploy-app, or built by the local override's `backend`, never on its own).
   migrate:
     <<: *hardening
     image: ghcr.io/anthonyzng/anthonyzng-web-backend:${IMAGE_TAG:-latest}
@@ -68,82 +86,33 @@ services:
         required: true
     environment:
       <<: *backend-env
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-anthonyzng}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-anthonyzng_web} # ggignore
-      DATABASE_APP_USER: ${POSTGRES_APP_USER:-anthonyzng_app}
-      DATABASE_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?set POSTGRES_APP_PASSWORD in .env}
+      DATABASE_URL: ${DATABASE_OWNER_URL:?set DATABASE_OWNER_URL in .env (the platform's provision-app)}
+      DATABASE_APP_USER: ${DATABASE_APP_USER:-anthonyzng_web_app}
     command: ["sh", "-c", "alembic upgrade head && python -m app.db_roles"]
     healthcheck:
       disable: true
     read_only: true
     cap_drop: [ALL]
     mem_limit: 256m
-    depends_on:
-      db:
-        condition: service_healthy
-
-  backend:
-    <<: *hardening
-    image: ghcr.io/anthonyzng/anthonyzng-web-backend:${IMAGE_TAG:-latest}
-    build: ./backend
-    env_file:
-      - path: ./backend/.env
-        required: true
-    environment: *backend-env
-    read_only: true
-    cap_drop: [ALL]
-    mem_limit: 384m
-    tmpfs:
-      - /tmp
-    depends_on:
-      db:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
+    networks:
+      - db
 
   frontend:
     <<: *hardening
     image: ghcr.io/anthonyzng/anthonyzng-web-frontend:${IMAGE_TAG:-latest}
-    build:
-      context: ./frontend
-      args:
-        # Required: the build fails on an empty value (set them in .env; the local override does).
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
-        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
     read_only: true
     cap_drop: [ALL]
     mem_limit: 64m
     tmpfs:
       - /tmp
+    networks:
+      edge:
+        aliases: [anthonyzng-web-frontend]
 
-  proxy:
-    <<: *hardening
-    image: caddy:2.11-alpine
-    # Runs as root inside its container: only the right to bind ports 80 / 443 is kept.
-    cap_drop: [ALL]
-    cap_add: [NET_BIND_SERVICE]
-    mem_limit: 128m
-    environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:-owwsolution.com}
-      SITE_URL: ${SITE_URL:-https://owwsolution.com}
-      WWW_ADDRESS: ${WWW_ADDRESS:-www.owwsolution.com}
-      API_ADDRESS: ${API_ADDRESS:-api.owwsolution.com}
-      API_URL: ${API_URL:-https://api.owwsolution.com}
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
-      # /etc/caddy/site.d/ is empty here; the local override adds a route there.
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      frontend:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
-
-volumes:
-  pgdata:
-  caddy_data:
-  caddy_config:
+networks:
+  edge:
+    external: true
+    name: edge-anthonyzng-web
+  db:
+    external: true
+    name: db-anthonyzng-web
