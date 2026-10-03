@@ -2,7 +2,7 @@
 
 The way back in when the authenticator is lost (or `TOTP_ENCRYPTION_KEY` changed): on the VM,
 
-    cd /opt/anthonyzng-web && docker compose run --rm backend python -m app.admin_totp reset
+    cd /opt/apps/anthonyzng-web && docker compose run --rm backend python -m app.admin_totp reset
 
 turns two-factor sign-in off and revokes every session; sign in with the password and set it up
 again in the admin panel. `status` only reports whether it is on.

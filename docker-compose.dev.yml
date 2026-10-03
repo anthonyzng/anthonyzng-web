@@ -3,9 +3,12 @@
 #
 #   docker compose -f docker-compose.dev.yml up -d db
 #
-# Same project, service and volume as the full stack's `db`, so both see the same data. Also
-# creates the *_test database for pytest on first start. Credentials come from the git-ignored root
-# `.env` (see `.env.example`).
+# Its own project (anthonyzng-web-dev), so the site's stack (project anthonyzng-web, whose
+# `up --remove-orphans` removes containers it does not define) never removes this database; the
+# volume keeps its earlier name, so the data stays. Also creates the *_test database for pytest on
+# first start. Credentials come from the git-ignored root `.env` (see `.env.example`).
+name: anthonyzng-web-dev
+
 services:
   db:
     image: postgres:17-alpine
@@ -29,3 +32,4 @@ services:
 
 volumes:
   pgdata:
+    name: anthonyzng-web_pgdata
