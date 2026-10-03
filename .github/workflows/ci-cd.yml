@@ -192,7 +192,6 @@ jobs:
       packages: read
     env:
       APP: anthonyzng-web
-      APP_DIR: /opt/apps/anthonyzng-web
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -258,10 +257,13 @@ jobs:
               exit 1
             fi
           done
-          # shellcheck disable=SC2029 # APP_DIR is expanded here, on purpose (a constant of this job)
-          ssh deploy-target "mkdir -p '$APP_DIR/.incoming'"
-          scp -q -- docker-compose.yml "deploy-target:$APP_DIR/.incoming/docker-compose.yml"
-          scp -q -- "deploy/$APP.caddy" "deploy-target:$APP_DIR/.incoming/$APP.caddy"
+          # The platform's receive-incoming takes each file on stdin and puts it into
+          # /opt/apps/<app>/.incoming/: the only writes an app's gated deploy key may make on the VM
+          # (Owwsolution/platform scripts/ssh-gate); no scp, no shell.
+          # shellcheck disable=SC2029 # the arguments are expanded here, on purpose (constants of this job)
+          ssh deploy-target "/opt/platform/scripts/receive-incoming $(printf '%q ' --app "$APP" --file compose)" <docker-compose.yml
+          # shellcheck disable=SC2029
+          ssh deploy-target "/opt/platform/scripts/receive-incoming $(printf '%q ' --app "$APP" --file snippet)" <"deploy/$APP.caddy"
       - name: Pull this commit's images, restart, install the Caddy snippet
         env:
           # Valid only while this job runs; deploy-app logs the VM out right after the pull.
