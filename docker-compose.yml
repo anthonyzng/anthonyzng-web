@@ -2,8 +2,9 @@
 # PostgreSQL belong to the platform and are shared by every app on the VM, so this file has
 # neither. Every service runs in its own container; nothing is published on the host.
 #
-#   deploy   CI copies this file and deploy/anthonyzng-web.caddy to /opt/apps/anthonyzng-web/.incoming
-#            and runs the platform's scripts/deploy-app (this commit's images, `up -d`, the snippet)
+#   deploy   CI sends this file and deploy/anthonyzng-web.caddy to /opt/apps/anthonyzng-web/.incoming
+#            (the platform's scripts/receive-incoming, each on stdin) and runs the platform's
+#            scripts/deploy-app (this commit's images, `up -d`, the snippet)
 #   locally  docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 #            on a local platform stack (CLAUDE.md section 6, "Full stack")
 #
