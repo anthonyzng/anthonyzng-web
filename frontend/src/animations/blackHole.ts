@@ -157,8 +157,8 @@ export function createBlackHole(canvas: HTMLCanvasElement): BlackHoleRenderer | 
       ctx.deleteProgram(program)
       ctx.deleteShader(vs)
       ctx.deleteShader(fs)
-      // Hand the GPU context back at once (a theme switch remounts the canvas) instead of waiting for GC.
-      ctx.getExtension('WEBGL_lose_context')?.loseContext()
+      // The context itself is left to the canvas: losing it here would also break a later renderer on
+      // the same canvas (React runs effects twice in development, and re-runs them on a change).
     },
   }
 }
