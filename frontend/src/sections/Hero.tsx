@@ -1,35 +1,40 @@
-import { useRef } from 'react'
+import { useCallback, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DRIFT_X, SPEED } from '../animations/motion'
+import { useBlackHole } from '../animations/useBlackHole'
 import { HERO_PARALLAX, useParallax } from '../animations/useParallax'
 import { useHeroIntro } from '../animations/useHeroIntro'
-import { useInkWash } from '../animations/useInkWash'
+import { useInkStream } from '../animations/useInkStream'
+import { useMotionAllowed } from '../animations/useMotionAllowed'
 import { fileUrl } from '../api/files'
 import { DownloadIcon } from '../components/DownloadIcon'
 import { useResolvedContent } from '../content/contentContext'
 import { formatFileSize } from '../i18n/formatFileSize'
+import { useDocumentTheme } from '../theme/useDocumentTheme'
 
 /**
  * The masthead. Type is the hero: the name in two huge lines over two static column rules, with the
  * roles as the deck. While it scrolls away its layers move slower than the page, at speeds that
  * decrease from top to bottom, so the clipped bottom edge swallows the deck first and the name last.
  * Outer `[data-speed]` wrappers belong to the parallax; inner `[data-intro]` elements to the intro.
- * Over it all, the ink wash (`useInkWash`) washes the hero into the page as it leaves; its canvas is
- * decorative, lets every pointer event through and stays empty without motion or WebGL.
+ * Behind the text, a scene per theme, decorative and below every pointer target: in dark mode a
+ * black hole that swallows the meteors the pointer throws (`useBlackHole`, WebGL, on the hero's own
+ * night); in light mode an ink-wash stream among hills that catches the bamboo leaves the pointer
+ * shakes loose (`useInkStream`), the hero see-through to the page's paper and bamboo grove.
  * Once a CV is uploaded, its download sits in the cell left of the roles, above the scroll cue.
  * The eyebrow, the name and the roles are content (the admin panel's site texts and hero roles).
  */
 export function Hero() {
   const { t, i18n } = useTranslation()
   const { hero, cv } = useResolvedContent()
+  const theme = useDocumentTheme()
   const scope = useRef<HTMLElement>(null)
-  const ink = useRef<HTMLCanvasElement>(null)
   useHeroIntro(scope)
   useParallax(scope, HERO_PARALLAX)
-  useInkWash(scope, ink)
 
   return (
-    <section ref={scope} aria-labelledby="hero-title" className="relative flex min-h-hero flex-col overflow-hidden">
+    <section ref={scope} data-hero aria-labelledby="hero-title" className="relative isolate flex min-h-hero flex-col overflow-hidden dark:bg-bg">
+      {theme === 'dark' ? <BlackHole scope={scope} /> : <InkStream scope={scope} />}
       {/* Column rules: md+ only, a static reference frame drawn in by the intro. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden md:block">
         <div className="mx-auto h-full max-w-6xl px-5 sm:px-8">
@@ -124,7 +129,38 @@ export function Hero() {
         </div>
       </div>
 
-      <canvas ref={ink} aria-hidden="true" className="pointer-events-none absolute inset-0 size-full" />
     </section>
+  )
+}
+
+interface SceneProps {
+  scope: RefObject<HTMLElement | null>
+}
+
+/** Dark: the black hole. Without WebGL, a still radial glow in its place. */
+function BlackHole({ scope }: SceneProps) {
+  const motion = useMotionAllowed()
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const [plain, setPlain] = useState(false)
+  const unsupported = useCallback(() => setPlain(true), [])
+  useBlackHole(scope, canvas, motion, unsupported)
+  return (
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-0 -z-10 ${plain ? 'hero-void-fallback' : ''}`}>
+      <canvas ref={canvas} className="size-full" />
+    </div>
+  )
+}
+
+/** Light: the stream, painted once (hills, banks, rocks) and live (water, leaves); both fade out at the hero's foot. */
+function InkStream({ scope }: SceneProps) {
+  const motion = useMotionAllowed()
+  const still = useRef<HTMLCanvasElement>(null)
+  const live = useRef<HTMLCanvasElement>(null)
+  useInkStream(scope, still, live, motion)
+  return (
+    <div aria-hidden="true" className="hero-stream pointer-events-none absolute inset-0 -z-10">
+      <canvas ref={still} className="absolute inset-0 size-full" />
+      <canvas ref={live} className="absolute inset-0 size-full" />
+    </div>
   )
 }

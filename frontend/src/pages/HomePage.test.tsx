@@ -8,6 +8,7 @@ import i18n from '../i18n'
 import { CONTENT_FIXTURE } from '../test/contentFixture'
 import { navigation } from '../test/navigation'
 import { NavigationHandle } from '../test/NavigationHandle'
+import { ACTIVE_ROOT_MARGIN } from '../animations/motion'
 import { MockIntersectionObserver } from '../test/observers'
 
 function renderAt(entry: InitialEntry, after?: ReactNode) {
@@ -67,9 +68,9 @@ describe('HomePage (static path: no motion)', () => {
     }
     expect(screen.getByText('04 / 04')).toBeInTheDocument()
     // Contact is the closing screen: a landing target with a focusable heading, not a numbered chapter.
-    const contact = screen.getByRole('region', { name: 'Get in touch' })
+    const contact = screen.getByRole('region', { name: 'Contact me' })
     expect(contact).toHaveAttribute('id', 'contact')
-    expect(within(contact).getByRole('heading', { level: 2, name: 'Get in touch' })).toHaveAttribute('tabindex', '-1')
+    expect(within(contact).getByRole('heading', { level: 2, name: 'Contact me' })).toHaveAttribute('tabindex', '-1')
   })
 
   it('renders the statement as a screen-reader copy plus an aria-hidden visual copy', async () => {
@@ -110,7 +111,7 @@ describe('HomePage (static path: no motion)', () => {
 
   it('renders the sections in Traditional Chinese under /zh-hant', async () => {
     renderAt('/zh-hant')
-    for (const title of ['工作經驗', '項目作品', '技能', '保持聯絡']) {
+    for (const title of ['工作經驗', '項目作品', '技能', '聯絡我']) {
       expect(await screen.findByRole('heading', { level: 2, name: title })).toBeInTheDocument()
     }
     expect(screen.getByRole('heading', { level: 2, name: '簡介' })).toBeInTheDocument()
@@ -148,7 +149,7 @@ describe('HomePage (static path: no motion)', () => {
     await waitFor(() => expect(navigation.location?.hash).toBe('#contact'))
 
     const contact = byId('contact')!
-    const observer = MockIntersectionObserver.instances.find((instance) => instance.targets.has(contact))
+    const observer = MockIntersectionObserver.instances.find((instance) => instance.rootMargin === ACTIVE_ROOT_MARGIN && instance.targets.has(contact))
     act(() => observer?.trigger([{ target: contact, isIntersecting: true }]))
     expect(switcher()).toHaveAttribute('href', '/zh-hant#contact')
 
@@ -163,7 +164,7 @@ describe('HomePage (static path: no motion)', () => {
     renderAt('/en')
     const { banner, nav } = await headerNav()
     const statement = byId('statement')!
-    const observer = MockIntersectionObserver.instances.find((instance) => instance.targets.has(statement))
+    const observer = MockIntersectionObserver.instances.find((instance) => instance.rootMargin === ACTIVE_ROOT_MARGIN && instance.targets.has(statement))
     act(() => observer?.trigger([{ target: statement, isIntersecting: true }]))
     // The statement has no nav link, so nothing in the nav is current.
     for (const link of within(nav).getAllByRole('link')) expect(link).not.toHaveAttribute('aria-current')
@@ -193,7 +194,7 @@ describe('HomePage (static path: no motion)', () => {
       renderAt('/en')
       const { banner } = await headerNav()
       before = byId('statement')!
-      const observer = MockIntersectionObserver.instances.find((instance) => instance.targets.has(before!))
+      const observer = MockIntersectionObserver.instances.find((instance) => instance.rootMargin === ACTIVE_ROOT_MARGIN && instance.targets.has(before!))
       act(() => observer?.trigger([{ target: before!, isIntersecting: true }]))
 
       vi.mocked(window.scrollTo).mockClear()
@@ -389,7 +390,7 @@ describe('HomePage (static path: no motion)', () => {
     renderAt('/en')
     const { banner, nav } = await headerNav()
     const projects = byId('projects')!
-    const observer = MockIntersectionObserver.instances.find((instance) => instance.targets.has(projects))
+    const observer = MockIntersectionObserver.instances.find((instance) => instance.rootMargin === ACTIVE_ROOT_MARGIN && instance.targets.has(projects))
     expect(observer).toBeDefined()
     expect(observer?.rootMargin).toBe('-45% 0px -50% 0px')
 

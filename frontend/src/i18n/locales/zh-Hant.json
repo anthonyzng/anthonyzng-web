@@ -33,7 +33,8 @@
       "meta": "PDF · {{size}}"
     },
     "closing": {
-      "title": "保持聯絡",
+      "title": "聯絡我",
+      "titleLink": "聯絡我：{{channel}}",
       "send": "發送訊息",
       "close": "關閉",
       "channels": "聯絡方式"

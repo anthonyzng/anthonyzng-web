@@ -203,15 +203,16 @@ describe('section content', () => {
   })
 
   describe('Contact', () => {
-    const contactSection = () => region('Get in touch')
+    const contactSection = () => region('Contact me')
 
     it('links every channel in order, says where the owner is and offers the form', async () => {
       renderAt('/en')
       await screen.findByRole('heading', { level: 1 })
       const contact = contactSection()
       expect(contact).toHaveAttribute('id', 'contact')
-      expect(within(contact).getByRole('heading', { level: 2, name: 'Get in touch' })).toHaveAttribute('tabindex', '-1')
+      expect(within(contact).getByRole('heading', { level: 2, name: 'Contact me' })).toHaveAttribute('tabindex', '-1')
 
+      // Light theme: the channels are brush icons on the sheet, named by channel and address.
       const channels = within(contact).getByRole('list', { name: 'Contact channels' })
       // The email channel opens the contact form (a mailto link does nothing without a mail app).
       expect(within(channels).getByRole('button', { name: 'Email hello@example.com' })).toHaveAttribute(
@@ -219,12 +220,27 @@ describe('section content', () => {
         'dialog',
       )
       const links = within(channels).getAllByRole('link')
-      expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      expect(links.map((link) => [link.getAttribute('aria-label'), link.getAttribute('href')])).toEqual([
         ['GitHub github.com/example', 'https://github.com/example'],
       ])
-      expect(within(channels).getByText('Toronto, Canada')).toBeInTheDocument()
-      // Without motion there is no moving copy of the channels.
-      expect(contact.querySelector('[data-zipper-row]')).toBeNull()
+      // The paper plane, last in the row, opens the form.
+      expect(within(channels).getByRole('button', { name: 'Send a message' })).toHaveAttribute('aria-haspopup', 'dialog')
+      expect(within(contact).getByText('Toronto, Canada')).toBeInTheDocument()
+    })
+
+    it('in dark mode, lists the channels as links in the bar under the meteors', async () => {
+      document.documentElement.dataset.theme = 'dark'
+      renderAt('/en')
+      await screen.findByRole('heading', { level: 1 })
+      const contact = contactSection()
+      expect(within(contact).getByRole('heading', { level: 2, name: 'Contact me' })).toHaveAttribute('tabindex', '-1')
+      const channels = within(contact).getByRole('list', { name: 'Contact channels' })
+      expect(within(channels).getByRole('button', { name: 'Email hello@example.com' })).toHaveAttribute('aria-haspopup', 'dialog')
+      expect(within(channels).getByRole('link', { name: 'GitHub github.com/example' })).toHaveAttribute('href', 'https://github.com/example')
+      expect(within(contact).getByRole('button', { name: 'Send a message' })).toBeInTheDocument()
+      // No meteor is beside the title without motion, so the title is no link.
+      expect(within(contact).queryByRole('link', { name: /^Contact me:/ })).toBeNull()
+      document.documentElement.dataset.theme = 'light'
     })
 
     it('opens the form from the email channel', async () => {
@@ -268,7 +284,7 @@ describe('section content', () => {
       renderAt('/zh-hant')
       const download = await screen.findByRole('link', { name: '履歷 下載履歷（PDF，180 KB）' })
       expect(download).toHaveAttribute('href', `http://localhost:8000${CV.url}`)
-      expect(within(region('保持聯絡')).getByRole('button', { name: '發送訊息' })).toBeInTheDocument()
+      expect(within(region('聯絡我')).getByRole('button', { name: '發送訊息' })).toBeInTheDocument()
     })
   })
 
@@ -311,7 +327,7 @@ describe('section content', () => {
       const archive = region('Archive')
       expect(archive).toHaveAttribute('id', 'archive')
       // After the closing screen in the page, and no numbered chapter.
-      expect(region('Get in touch').compareDocumentPosition(archive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(region('Contact me').compareDocumentPosition(archive) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(within(archive).getByRole('heading', { level: 2, name: 'Archive' })).toHaveAttribute('tabindex', '-1')
 
       const rows = within(archive).getAllByRole('link')
@@ -403,7 +419,7 @@ describe('section content', () => {
       expect(within(skills).getByText(wholeText('PMP（進行中）'))).toBeInTheDocument()
 
       expect(within(region('項目作品')).getAllByText('預留位置')).toHaveLength(1)
-      expect(within(region('保持聯絡')).getByText('加拿大多倫多')).toBeInTheDocument()
+      expect(within(region('聯絡我')).getByText('加拿大多倫多')).toBeInTheDocument()
     })
   })
 
@@ -411,7 +427,7 @@ describe('section content', () => {
     renderAt('/en')
     await screen.findByRole('heading', { level: 1 })
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument()
-    for (const name of ['Experience', 'Skills', 'Get in touch']) {
+    for (const name of ['Experience', 'Skills', 'Contact me']) {
       const section = region(name)
       expect(within(section).queryByText(/placeholder/i)).not.toBeInTheDocument()
       // An image plane only belongs to a project card.

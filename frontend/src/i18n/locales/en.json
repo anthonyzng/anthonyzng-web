@@ -33,7 +33,8 @@
       "meta": "PDF · {{size}}"
     },
     "closing": {
-      "title": "Get in touch",
+      "title": "Contact me",
+      "titleLink": "Contact me: {{channel}}",
       "send": "Send a message",
       "close": "Close",
       "channels": "Contact channels"

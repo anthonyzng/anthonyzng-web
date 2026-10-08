@@ -61,19 +61,47 @@ export const TRIGGER = {
 } as const
 
 /**
- * Hero ink wash (`useInkWash`): the scroll progress over the hero's travel at which ink starts and at
- * which it covers the hero; how much darker its wet edge pools per theme; the canvas resolution
- * relative to device pixels; how often its slow drift is redrawn while the scroll rests (the ink is soft, so a reduced resolution costs nothing visible and
- * keeps the shader cheap on phones).
+ * The page backdrop (`PageBackdrop`): stars in the dark sky (desktop, phone budget); the angle, in
+ * degrees below the horizontal (negative climbs), of the shooting star each arriving section sends
+ * across, in page order after the hero; the bamboo sway's length (s); how often a leaf drifts down
+ * from the grove (s, a random wait between the two).
  */
-export const INK = { start: 0.02, full: 0.7, poolLight: 0.55, poolDark: 0.6, scale: 0.6, scaleMobile: 0.5, driftFps: 30 } as const
+export const BACKDROP = {
+  stars: 140,
+  starsPhone: 60,
+  shootAngles: [-21, 13, -7, 26, -31, 4, -14],
+  sway: 3.2,
+  leafEvery: [5, 10],
+} as const
 
 /**
- * Closing loop (`useZipperLoop`): how far the rows travel over the section's scroll (in loop
- * lengths), their drift in px per second, the row gap and the margin (px) kept around the title
- * when a row parts, and the width of the parting bell in row pitches.
+ * Hero scenes. Dark (`useBlackHole`): the most meteors at once, how long one may live (s), and how
+ * far the shader's resolution may drop when frames run long (never below `minScale`, so a phone
+ * capped at 30 fps stays sharp). Light (`useInkStream`): the most leaves at once, water strokes
+ * (desktop, phone budget). Phones without a hover pointer get an idle meteor or leaf every `idle` s.
  */
-export const ZIPPER = { scroll: 0.6, drift: 18, driftMobile: 12, baseGap: 24, margin: 32, spread: 0.55 } as const
+export const HERO_SCENE = { meteors: 9, meteorLife: 6, minScale: 0.7, leaves: 6, flows: 46, flowsPhone: 22, idle: 3.4 } as const
+
+/**
+ * Contact screen. Dark: drifting meteor speed (px/s, desktop and phone), the spacing kept between
+ * them (px), how often one swings in beside the title (s) and how long it rests there. Light: the
+ * ink drop's phases (s) and how long the written word stays.
+ */
+export const CONTACT_SCENE = {
+  drift: 32,
+  driftPhone: 25,
+  spacing: 110,
+  spacingPhone: 72,
+  every: 8,
+  rest: 2.6,
+  splash: 0.5,
+  write: 1.2,
+  hold: 3,
+  fade: 0.9,
+} as const
+
+/** Section fade: the share of the viewport over which a section fades in (entering) and out (leaving). */
+export const SECTION_FADE = { band: 0.6 } as const
 
 /** Statement pin length, as a multiple of window.innerHeight. */
 export const PIN_LENGTH = 1
