@@ -90,7 +90,7 @@ export function Closing() {
       id="contact"
       data-closing
       aria-labelledby="contact-title"
-      className="relative isolate flex min-h-[calc(100svh-var(--header-h))] flex-col overflow-hidden"
+      className="relative isolate flex min-h-[max(calc(100svh-var(--header-h)),36rem)] flex-col overflow-hidden"
     >
       {theme === 'dark' ? (
         <NightContact scope={scope} channels={channels} dialog={dialog} openForm={openForm} activate={activate} />
@@ -164,24 +164,28 @@ function NightContact({ scope, channels, dialog, openForm, activate }: ScreenPro
       {/* The meteors take the pointer (each is clickable); everything that reads sits above them. */}
       <canvas ref={canvas} aria-hidden="true" className="absolute inset-0 size-full" />
       {/* Bottom padding: the bar stays clear of the section dock floating at the foot of the page. */}
-      <div className="pointer-events-none relative z-10 flex flex-1 flex-col justify-between pt-10 pb-24 md:pb-28">
+      <div className="pointer-events-none relative z-10 flex flex-1 flex-col pt-10 pb-24 md:pb-28">
         <TopRow />
-        <h2 ref={title} id="contact-title" tabIndex={-1} className={`absolute inset-x-0 top-[42%] text-center font-semibold tracking-[-0.045em] outline-none ${TITLE}`}>
-          {t('home.closing.title')}
-        </h2>
-        {/* While a meteor is level with the title, the title is that channel's link. */}
-        {alignedChannel ? (
-          <div className="absolute inset-x-0 top-[42%] flex justify-center">
-            <ChannelControl
-              channel={alignedChannel}
-              openForm={openForm}
-              label={t('home.closing.titleLink', { channel: alignedChannel.label })}
-              className={`pointer-events-auto rounded-xl font-semibold tracking-[-0.045em] text-transparent ${TITLE}`}
-            >
-              {t('home.closing.title')}
-            </ChannelControl>
-          </div>
-        ) : null}
+        {/* The title has the space between the labels and the bar to itself, centred in it, with room
+            above and below for the meteors that line up beside it. */}
+        <div className="relative flex flex-1 items-center justify-center py-16">
+          <h2 ref={title} id="contact-title" tabIndex={-1} className={`text-center font-semibold tracking-[-0.045em] outline-none ${TITLE}`}>
+            {t('home.closing.title')}
+          </h2>
+          {/* While a meteor is level with the title, the title is that channel's link. */}
+          {alignedChannel ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <ChannelControl
+                channel={alignedChannel}
+                openForm={openForm}
+                label={t('home.closing.titleLink', { channel: alignedChannel.label })}
+                className={`pointer-events-auto rounded-xl font-semibold tracking-[-0.045em] text-transparent ${TITLE}`}
+              >
+                {t('home.closing.title')}
+              </ChannelControl>
+            </div>
+          ) : null}
+        </div>
         <div className="pointer-events-auto mx-auto flex w-full max-w-6xl flex-col gap-4 border-t border-line px-5 pt-5 sm:px-8 md:flex-row md:items-center md:justify-between">
           <ul role="list" aria-label={t('home.closing.channels')} className="flex flex-wrap gap-x-5 gap-y-0 md:gap-x-8">
             {channels.map((channel, index) => (
@@ -253,9 +257,12 @@ function InkContact({ scope, channels, dialog, openForm }: ScreenProps) {
             />
           </li>
         </ul>
-        <h2 id="contact-title" tabIndex={-1} className={`pointer-events-none absolute inset-x-0 top-[42%] text-center outline-none ${TITLE} ${brushFace}`}>
-          {t('home.closing.title')}
-        </h2>
+        {/* The title sits in the space below the icons, raised so the written word has room under it. */}
+        <div className="flex flex-1 items-center justify-center pt-12 pb-[clamp(8rem,22vh,13rem)]">
+          <h2 id="contact-title" tabIndex={-1} className={`pointer-events-none text-center outline-none ${TITLE} ${brushFace}`}>
+            {t('home.closing.title')}
+          </h2>
+        </div>
       </div>
       {/* The written word is its channel's link; the scene places it over the ink. */}
       {/* Pointing at it, or focusing it, dampens the paper round the word and keeps it there. */}
