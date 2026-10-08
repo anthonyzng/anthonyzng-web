@@ -2,7 +2,7 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SplitText } from 'gsap/SplitText'
-import { BELOW_MD, MD_UP, MOTION_QUERY } from './media'
+import { BELOW_MD, FINE_POINTER, MD_UP, MOTION_QUERY } from './media'
 
 // The only place plugins are registered. Every hook imports gsap from this module,
 // so registration always runs first.
@@ -22,7 +22,7 @@ export { gsap, ScrollTrigger, SplitText, useGSAP }
 export const MQ = {
   desktop: `${MD_UP} and ${MOTION_QUERY}`,
   mobile: `${BELOW_MD} and ${MOTION_QUERY}`,
-  pinnable: `${MD_UP} and (min-height: 600px) and (hover: hover) and (pointer: fine) and ${MOTION_QUERY}`,
+  pinnable: `${MD_UP} and (min-height: 600px) and ${FINE_POINTER} and ${MOTION_QUERY}`,
 } as const
 
 /**

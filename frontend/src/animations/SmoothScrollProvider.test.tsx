@@ -5,8 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { navigation } from '../test/navigation'
 import { NavigationHandle } from '../test/NavigationHandle'
 import { FakeLenis } from '../test/fakeLenis'
-import { motionMatcher, setMatchMedia } from '../test/matchMedia'
+import { fireMediaChange, motionMatcher, setMatchMedia } from '../test/matchMedia'
 import { gsap, ScrollTrigger } from './gsap'
+import { FINE_POINTER, MOTION_QUERY } from './media'
 import { SmoothScrollProvider } from './SmoothScrollProvider'
 import { useLenis } from './useSmoothScroll'
 
@@ -66,6 +67,19 @@ describe('SmoothScrollProvider', () => {
     renderProvider()
     expect(screen.getByText('no lenis')).toBeInTheDocument()
     expect(FakeLenis.instances).toHaveLength(0)
+  })
+
+  it('leaves scrolling native on a touch-first device, and creates Lenis once a mouse takes over', async () => {
+    // Motion allowed, but no hovering fine pointer (a phone or tablet).
+    setMatchMedia((query) => motionMatcher(query) && !query.includes(FINE_POINTER))
+    renderProvider()
+    expect(screen.getByText('no lenis')).toBeInTheDocument()
+    expect(FakeLenis.instances).toHaveLength(0)
+
+    setMatchMedia(motionMatcher)
+    act(() => fireMediaChange(`${MOTION_QUERY} and ${FINE_POINTER}`, true))
+    expect(await screen.findByText('lenis')).toBeInTheDocument()
+    expect(FakeLenis.instances).toHaveLength(1)
   })
 
   it('falls back to native scrolling when the Lenis constructor throws', () => {
