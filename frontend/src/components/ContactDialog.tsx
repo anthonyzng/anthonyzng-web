@@ -1,5 +1,5 @@
 import type Lenis from 'lenis'
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLenis } from '../animations/useSmoothScroll'
 import { ContactForm } from './ContactForm'
@@ -13,6 +13,9 @@ export interface ContactDialogHandle {
 interface ContactDialogProps {
   /** Classes of the button that opens the form. */
   buttonClassName: string
+  /** In place of the "Send a message" text (an icon); the text becomes the button's accessible name. */
+  buttonContent?: ReactNode
+  buttonLabel?: string
   ref?: Ref<ContactDialogHandle>
 }
 
@@ -24,7 +27,7 @@ interface ContactDialogProps {
  * `html:has(dialog.contact-dialog[open])`); the panel scrolls on its own (`data-lenis-prevent`).
  * `ref.open()` opens it from another control (the Email channel writes through the form too).
  */
-export function ContactDialog({ buttonClassName, ref }: ContactDialogProps) {
+export function ContactDialog({ buttonClassName, buttonContent, buttonLabel, ref }: ContactDialogProps) {
   const { t } = useTranslation()
   const lenis = useLenis()
   const lenisRef = useRef<Lenis | null>(null)
@@ -63,9 +66,10 @@ export function ContactDialog({ buttonClassName, ref }: ContactDialogProps) {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="contact-dialog"
+        aria-label={buttonContent ? (buttonLabel ?? t('home.closing.send')) : undefined}
         className={buttonClassName}
       >
-        {t('home.closing.send')}
+        {buttonContent ?? t('home.closing.send')}
       </button>
       <dialog
         ref={dialogRef}
@@ -76,7 +80,7 @@ export function ContactDialog({ buttonClassName, ref }: ContactDialogProps) {
           lenisRef.current?.start()
           setOpen(false)
         }}
-        className="contact-dialog m-auto max-h-[90dvh] w-[min(40rem,calc(100%-2rem))] overflow-y-auto overscroll-contain border border-line bg-surface p-0 text-fg backdrop:bg-ink/70"
+        className="contact-dialog m-auto max-h-[90dvh] w-[min(40rem,calc(100%-2rem))] overflow-y-auto overscroll-contain border border-line bg-surface p-0 text-fg backdrop:bg-black/60"
       >
         <div className="flex justify-end p-2">
           <button

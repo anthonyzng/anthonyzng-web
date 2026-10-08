@@ -32,7 +32,7 @@ export function Statement() {
   return (
     <section ref={scope} id={STATEMENT_ID} aria-labelledby="statement-title" className="relative">
       {/* The pin targets this child, never the section itself. */}
-      <div data-pin className="relative isolate flex items-center overflow-hidden bg-bg md:min-h-hero">
+      <div data-pin className="relative isolate flex items-center overflow-hidden md:min-h-hero">
         <div aria-hidden="true" data-speed={SPEED.statementPhoto} className="statement-photo">
           <img
             src={cats1280}

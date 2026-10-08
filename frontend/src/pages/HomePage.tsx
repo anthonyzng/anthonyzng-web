@@ -1,7 +1,10 @@
 import { useActiveSection } from '../animations/useActiveSection'
 import { useHashScroll } from '../animations/useHashScroll'
+import { useSectionFades } from '../animations/useSectionFades'
+import { PageBackdrop } from '../components/PageBackdrop'
 import { SectionDock } from '../components/SectionDock'
 import { ContentProvider } from '../content/ContentProvider'
+import { useResolvedContent } from '../content/contentContext'
 import { Archive } from '../sections/Archive'
 import { Closing } from '../sections/Closing'
 import { Experience } from '../sections/Experience'
@@ -28,7 +31,20 @@ export function HomePage() {
       <Tools />
       <Closing />
       <Archive />
+      <PageMotion />
       <SectionDock />
     </ContentProvider>
   )
+}
+
+/**
+ * What spans the whole page, mounted after the sections so they exist when it starts: the backdrop
+ * behind them all, and the fade of each section in and out as it scrolls past (rebuilt when the
+ * archive comes or goes with the API's content).
+ */
+function PageMotion() {
+  const { archive } = useResolvedContent()
+  const sections = archive.length > 0 ? 'archive' : ''
+  useSectionFades(sections)
+  return <PageBackdrop sectionsKey={sections} />
 }
