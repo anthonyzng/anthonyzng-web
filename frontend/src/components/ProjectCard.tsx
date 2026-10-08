@@ -13,19 +13,31 @@ interface ProjectCardProps {
 /** The band around the middle of the viewport in which a card counts as the one being read. */
 const READING_BAND = '-35% 0px -35% 0px'
 
-/** True while `element` crosses the middle of the viewport (never without IntersectionObserver). */
-function useInReadingBand(element: RefObject<HTMLElement | null>): boolean {
-  const [inBand, setInBand] = useState(false)
+interface ReadingBand {
+  /** The card crosses the middle of the viewport (never without IntersectionObserver). */
+  inBand: boolean
+  /** How many times it has entered the band. */
+  entries: number
+}
+
+function useInReadingBand(element: RefObject<HTMLElement | null>): ReadingBand {
+  const [band, setBand] = useState<ReadingBand>({ inBand: false, entries: 0 })
   useEffect(() => {
     const node = element.current
     if (!node || typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(([entry]) => setInBand(entry?.isIntersecting ?? false), {
-      rootMargin: READING_BAND,
-    })
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const inBand = entry?.isIntersecting ?? false
+        setBand((previous) =>
+          previous.inBand === inBand ? previous : { inBand, entries: previous.entries + (inBand ? 1 : 0) },
+        )
+      },
+      { rootMargin: READING_BAND },
+    )
     observer.observe(node)
     return () => observer.disconnect()
   }, [element])
-  return inBand
+  return band
 }
 
 /**
@@ -55,7 +67,7 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
   const image = project.placeholder ? null : project.image
   const real = !project.placeholder
   const link = real ? project.url : null
-  const inBand = useInReadingBand(card)
+  const { inBand, entries } = useInReadingBand(card)
 
   return (
     <article
@@ -124,7 +136,9 @@ export function ProjectCard({ project, index }: ProjectCardProps) {
           </span>
         ) : null}
       </div>
-      <span aria-hidden="true" className="card-light">
+      {/* A fresh light each time the card enters the band: iOS Safari froze the comet when the same
+          element's animations restarted (display none, then block) on a second pass. */}
+      <span key={entries} aria-hidden="true" className="card-light">
         <span className="card-light-glow">
           <span className="card-light-halo" />
           <span className="card-light-ring" />
