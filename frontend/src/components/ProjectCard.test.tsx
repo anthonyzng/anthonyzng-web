@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { ResolvedProject } from '../content/resolved'
 import i18n from '../i18n'
+import { MockIntersectionObserver } from '../test/observers'
 import { ProjectCard } from './ProjectCard'
 
 /**
@@ -56,6 +57,26 @@ describe('ProjectCard (real project)', () => {
       expect(card?.querySelector(':scope > .edge-cat-track')).toBeNull()
       unmount()
     }
+  })
+
+  it('lights the card in the reading band, with a fresh light element on every entry', () => {
+    const { container } = render(<ProjectCard project={REAL} index={1} />)
+    const card = container.querySelector('article')!
+    const observer = MockIntersectionObserver.instances.find((instance) => instance.targets.has(card))!
+    const light = () => card.querySelector(':scope > .card-light')
+    expect(card).not.toHaveAttribute('data-light-active')
+
+    act(() => observer.trigger([{ target: card, isIntersecting: true }]))
+    expect(card).toHaveAttribute('data-light-active')
+    const first = light()
+
+    act(() => observer.trigger([{ target: card, isIntersecting: false }]))
+    expect(card).not.toHaveAttribute('data-light-active')
+    expect(light()).toBe(first)
+
+    act(() => observer.trigger([{ target: card, isIntersecting: true }]))
+    expect(card).toHaveAttribute('data-light-active')
+    expect(light()).not.toBe(first)
   })
 
   it('carries no placeholder badge', () => {

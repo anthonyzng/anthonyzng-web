@@ -79,6 +79,11 @@ export function Closing() {
       const link = document.createElement('a')
       link.href = channel.href
       if (channel.download) link.download = ''
+      else {
+        // Like every link to another site, a channel opens in a new tab.
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+      }
       link.click()
     },
     [openForm],
@@ -136,14 +141,27 @@ function ChannelControl({ channel, openForm, className, label, children, onPrevi
   /** Marks a brush icon, which the ink scene finds (in channel order) to drip from. */
   brush?: boolean
 }) {
+  const { t } = useTranslation()
   const handlers = { ...(onPreview ? { onPointerEnter: onPreview, onFocus: onPreview } : {}), ...(brush ? { 'data-brush': '' } : {}) }
+  // A download stays on the page; any other channel opens in a new tab, and its name says so.
+  const newTab = !channel.download
   return channel.mail ? (
     <button type="button" aria-haspopup="dialog" aria-label={label} onClick={openForm} className={className} {...handlers}>
       {children}
     </button>
   ) : (
-    <a href={channel.href} download={channel.download || undefined} type={channel.download ? 'application/pdf' : undefined} aria-label={label} className={className} {...handlers}>
+    <a
+      href={channel.href}
+      download={channel.download || undefined}
+      type={channel.download ? 'application/pdf' : undefined}
+      target={newTab ? '_blank' : undefined}
+      rel={newTab ? 'noopener noreferrer' : undefined}
+      aria-label={label && newTab ? `${label} ${t('common.newTab')}` : label}
+      className={className}
+      {...handlers}
+    >
       {children}
+      {newTab && !label ? <span className="sr-only"> {t('common.newTab')}</span> : null}
     </a>
   )
 }

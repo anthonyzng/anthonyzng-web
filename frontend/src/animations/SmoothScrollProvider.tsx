@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useMatch } from 'react-router'
 import { isLandingId, type LandingId } from '../sections/sectionIds'
 import { gsap, ScrollTrigger } from './gsap'
+import { FINE_POINTER, MOTION_QUERY } from './media'
 import { ActiveSectionContext, SmoothScrollContext, type SmoothScrollApi } from './smoothScrollContext'
-import { useMotionAllowed } from './useMotionAllowed'
+import { useMediaMatch } from './useMotionAllowed'
 import { useScrollAnchor } from './useScrollAnchor'
 import { useScrollTriggerRefresh } from './useScrollTriggerRefresh'
 
@@ -13,12 +14,21 @@ const LAG_THRESHOLD_MS = 500
 const LAG_ADJUSTED_MS = 33
 
 /**
+ * Where Lenis runs: motion allowed and a wheel device. Lenis only smooths the wheel (touch scrolling
+ * stays native, `syncTouch: false`), so on a touch-first phone or tablet it would add nothing but its
+ * programmatic scrolling, one `window.scrollTo` per frame, which iOS Safari drops: a section link did
+ * nothing there, and the next swipe jumped to wherever the dropped scrolls had left the page.
+ */
+const SMOOTH_WHEEL_QUERY = `${MOTION_QUERY} and ${FINE_POINTER}`
+
+/**
  * Owns the single Lenis instance and bridges it to ScrollTrigger: gsap.ticker drives Lenis, so one
  * requestAnimationFrame loop serves both. Mounted once above the language routes, so it survives
- * /en <-> /zh-hant switches. Under reduced motion no Lenis is created and scrolling stays native.
+ * /en <-> /zh-hant switches. Under reduced motion, and on touch-first devices, no Lenis is created and
+ * scrolling stays native (section links then scroll with the browser's own smooth scrolling).
  */
 export function SmoothScrollProvider({ children }: { children: ReactNode }) {
-  const motionAllowed = useMotionAllowed()
+  const smoothWheel = useMediaMatch(SMOOTH_WHEEL_QUERY)
   const [lenis, setLenis] = useState<Lenis | null>(null)
   const [activeSection, setActiveSection] = useState<LandingId | null>(null)
   const { pathname, hash } = useLocation()
@@ -26,7 +36,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
   const previousPathname = useRef(pathname)
 
   useEffect(() => {
-    if (!motionAllowed) return
+    if (!smoothWheel) return
     let instance: Lenis
     try {
       instance = new Lenis({
@@ -56,7 +66,7 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
       instance.destroy()
       setLenis(null)
     }
-  }, [motionAllowed])
+  }, [smoothWheel])
 
   // Reload starts at the top; a hash is landed by useHashScroll instead of the browser. Set through
   // ScrollTrigger: it writes its own stored value back to history.scrollRestoration after every refresh.

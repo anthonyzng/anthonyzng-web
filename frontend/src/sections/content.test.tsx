@@ -219,10 +219,11 @@ describe('section content', () => {
         'aria-haspopup',
         'dialog',
       )
+      // Like every link to another site, a channel opens in a new tab, and its name says so.
       const links = within(channels).getAllByRole('link')
-      expect(links.map((link) => [link.getAttribute('aria-label'), link.getAttribute('href')])).toEqual([
-        ['GitHub github.com/example', 'https://github.com/example'],
-      ])
+      expect(
+        links.map((link) => [link.getAttribute('aria-label'), link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]),
+      ).toEqual([['GitHub github.com/example (opens in a new tab)', 'https://github.com/example', '_blank', 'noopener noreferrer']])
       // The paper plane, last in the row, opens the form.
       expect(within(channels).getByRole('button', { name: 'Send a message' })).toHaveAttribute('aria-haspopup', 'dialog')
       expect(within(contact).getByText('Toronto, Canada')).toBeInTheDocument()
@@ -236,7 +237,10 @@ describe('section content', () => {
       expect(within(contact).getByRole('heading', { level: 2, name: 'Contact me' })).toHaveAttribute('tabindex', '-1')
       const channels = within(contact).getByRole('list', { name: 'Contact channels' })
       expect(within(channels).getByRole('button', { name: 'Email hello@example.com' })).toHaveAttribute('aria-haspopup', 'dialog')
-      expect(within(channels).getByRole('link', { name: 'GitHub github.com/example' })).toHaveAttribute('href', 'https://github.com/example')
+      const github = within(channels).getByRole('link', { name: 'GitHub github.com/example (opens in a new tab)' })
+      expect(github).toHaveAttribute('href', 'https://github.com/example')
+      expect(github).toHaveAttribute('target', '_blank')
+      expect(github).toHaveAttribute('rel', 'noopener noreferrer')
       expect(within(contact).getByRole('button', { name: 'Send a message' })).toBeInTheDocument()
       // No meteor is beside the title without motion, so the title is no link.
       expect(within(contact).queryByRole('link', { name: /^Contact me:/ })).toBeNull()

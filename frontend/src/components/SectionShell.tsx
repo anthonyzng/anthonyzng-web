@@ -52,11 +52,12 @@ export function SectionShell({ id, motionKey = '', children }: SectionShellProps
             </p>
           </div>
           <div className="md:col-span-9">
-            {/* tabIndex -1: the focus target after anchor navigation. */}
+            {/* tabIndex -1: the focus target after anchor navigation. Not a control, so no focus ring
+                (iOS Safari draws one for a scripted focus after a tap), like the contact and archive titles. */}
             <h2
               id={`${id}-title`}
               tabIndex={-1}
-              className="text-headline font-semibold text-balance"
+              className="text-headline font-semibold text-balance outline-none"
             >
               <span className="mask-line">
                 <span data-reveal="heading" className="block">

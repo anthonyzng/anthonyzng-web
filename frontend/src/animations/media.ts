@@ -10,6 +10,9 @@ export const MOTION_QUERY = '(prefers-reduced-motion: no-preference)'
 export const MD_UP = '(width >= 48rem)'
 export const BELOW_MD = '(width < 48rem)'
 
+/** A hovering, precise primary pointer (a mouse or trackpad): the devices that scroll with a wheel. */
+export const FINE_POINTER = '(hover: hover) and (pointer: fine)'
+
 function mediaList(query: string): MediaQueryList | null {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return null
   return window.matchMedia(query)
