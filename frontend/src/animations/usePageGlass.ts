@@ -7,10 +7,13 @@ const EDGE = 12
 /** How far the glass reaches past a content box: sideways, and above and below it (px; desktop, phone). */
 const PAD_X = 4
 const PAD_Y = { desktop: 40, phone: 28 }
-/** No scroll event for this long (ms): the page rests, and the glass thickens. */
+/** No scroll event for this long (ms): the page rests, and the glass comes back. */
 const REST_MS = 220
 /** How quickly the glass catches up with where it should be (per second). */
 const FOLLOW_RATE = 12
+/** How quickly it fades out as the page starts to move, and back in once it rests (per second). */
+const FADE_OUT_RATE = 16
+const FADE_IN_RATE = 7
 
 interface Box {
   element: HTMLElement
@@ -31,8 +34,9 @@ interface Rect {
  * `[data-glass-box]` (the text of In brief, the chapters and the archive) is a place it may stand. It
  * wraps the box nearest the middle of the screen, clipped to the screen, and glides and resizes to the
  * next box as the reader moves on; the hero and the contact screen have no box, so it fades out over
- * them. While the page moves it gets `data-moving` (its tint thins and the backdrop shows through);
- * once the scroll rests the tint thickens and the text reads off a calm surface. Positioned
+ * them. While the page moves the glass fades out, so the backdrop shows whole; once the scroll rests it
+ * fades back in where the reader stopped and the text reads off a calm surface (with reduced motion it
+ * simply stays). Positioned
  * with a transform, sized in px, only while something changes (gsap's ticker); hidden when no box is in
  * view. Reduced motion: it jumps to its place instead of gliding. `key` changes when the set of
  * sections does (the archive, with the API's content).
@@ -56,6 +60,7 @@ export function usePageGlass(glassRef: RefObject<HTMLElement | null>, motion: bo
     let last = 0
     let restTimer: ReturnType<typeof setTimeout> | undefined
     let restedAt = performance.now()
+    let scrolling = false
 
     const target = (): { rect: Rect | null; presence: number } => {
       const vh = window.innerHeight
@@ -90,9 +95,10 @@ export function usePageGlass(glassRef: RefObject<HTMLElement | null>, motion: bo
       glass.style.visibility = presence < 0.005 ? 'hidden' : 'visible'
     }
 
-    const step = (dt: number): boolean => {
+    /** One frame; `jump` places the glass at once (the first frame, and without motion). */
+    const step = (dt: number, jump = !motion): boolean => {
       const goal = target()
-      const k = motion ? 1 - Math.exp(-dt * FOLLOW_RATE) : 1
+      const k = jump ? 1 : 1 - Math.exp(-dt * FOLLOW_RATE)
       let moving = false
       if (goal.rect) {
         if (!current || presence < 0.01) current = { ...goal.rect }
@@ -104,10 +110,11 @@ export function usePageGlass(glassRef: RefObject<HTMLElement | null>, motion: bo
           }
         }
       }
-      const dp = goal.presence - presence
-      presence += dp * k
+      const want = scrolling && motion ? 0 : goal.presence
+      const dp = want - presence
+      presence += jump ? dp : dp * (1 - Math.exp(-dt * (dp < 0 ? FADE_OUT_RATE : FADE_IN_RATE)))
       if (Math.abs(dp) > 0.004) moving = true
-      else presence = goal.presence
+      else presence = want
       draw()
       return moving
     }
@@ -133,11 +140,12 @@ export function usePageGlass(glassRef: RefObject<HTMLElement | null>, motion: bo
     }
 
     const onScroll = () => {
-      glass.dataset.moving = ''
+      scrolling = true
       clearTimeout(restTimer)
       restTimer = setTimeout(() => {
-        delete glass.dataset.moving
+        scrolling = false
         restedAt = performance.now()
+        start()
       }, REST_MS)
       restedAt = Number.POSITIVE_INFINITY
       start()
@@ -153,7 +161,7 @@ export function usePageGlass(glassRef: RefObject<HTMLElement | null>, motion: bo
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onResize)
     for (const { element } of boxes) resize?.observe(element)
 
-    step(1)
+    step(0, true)
     restedAt = performance.now()
 
     return () => {
@@ -162,7 +170,6 @@ export function usePageGlass(glassRef: RefObject<HTMLElement | null>, motion: bo
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onResize)
       resize?.disconnect()
-      delete glass.dataset.moving
     }
   }, [glassRef, motion, key])
 }

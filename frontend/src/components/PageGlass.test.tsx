@@ -1,5 +1,7 @@
 import { act, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { gsap } from '../animations/gsap'
+import { motionMatcher, setMatchMedia } from '../test/matchMedia'
 import { PageGlass } from './PageGlass'
 
 const rect = (top: number, height: number, left = 40, width = 1000) =>
@@ -57,28 +59,49 @@ describe('PageGlass', () => {
     expect(glass().style.visibility).toBe('hidden')
   })
 
-  it('thins while the page moves and thickens once the scroll rests', () => {
-    vi.useFakeTimers()
+  it('fades out while the page moves and back in once the scroll rests', () => {
+    setMatchMedia(motionMatcher)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const frames = (n: number) => {
+      for (let i = 0; i < n; i++) {
+        now += 50
+        gsap.ticker.tick()
+      }
+    }
     boxTops.one = 100
     boxTops.two = 900
     mockBoxes()
     const { unmount } = render(<Page />)
+    expect(parseFloat(glass().style.opacity)).toBe(1)
+
     act(() => {
       window.dispatchEvent(new Event('scroll'))
+      frames(10)
     })
-    expect(glass()).toHaveAttribute('data-moving')
+    expect(parseFloat(glass().style.opacity)).toBeLessThan(0.01)
+    expect(glass().style.visibility).toBe('hidden')
+
     act(() => {
-      vi.advanceTimersByTime(150)
-      window.dispatchEvent(new Event('scroll'))
-      vi.advanceTimersByTime(150)
+      vi.advanceTimersByTime(220)
+      frames(30)
     })
-    // Still moving: every scroll event starts the rest timer again.
-    expect(glass()).toHaveAttribute('data-moving')
-    act(() => {
-      vi.advanceTimersByTime(100)
-    })
-    expect(glass()).not.toHaveAttribute('data-moving')
+    expect(parseFloat(glass().style.opacity)).toBe(1)
+    expect(glass().style.visibility).toBe('visible')
     unmount()
     expect(document.body.querySelector('.page-glass')).toBeNull()
+  })
+
+  it('stays in place while the page moves under reduced motion', () => {
+    boxTops.one = 100
+    boxTops.two = 900
+    mockBoxes()
+    render(<Page />)
+    act(() => {
+      window.dispatchEvent(new Event('scroll'))
+      gsap.ticker.tick()
+    })
+    expect(parseFloat(glass().style.opacity)).toBe(1)
   })
 })

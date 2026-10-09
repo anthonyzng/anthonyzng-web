@@ -27,3 +27,16 @@ export function isLandingId(value: string): value is LandingId {
 export function formatIndex(index: number): string {
   return String(index + 1).padStart(2, '0')
 }
+
+const HAN_NUMERALS = ['壹', '貳', '參', '肆', '伍', '陸', '柒', '捌', '玖', '拾']
+const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+
+/**
+ * The section's ghost numeral in each theme's world, one-based (0 -> "壹" / "I"): the formal Chinese
+ * numerals of an ink painting in light mode, Roman numerals in the dark sky. Ten at most; beyond that,
+ * the plain number. (The light brush face, Yuji Mai, has every one but 柒, which would fall back to the
+ * page's face.)
+ */
+export function formatGhostNumeral(index: number, theme: 'light' | 'dark'): string {
+  return (theme === 'light' ? HAN_NUMERALS : ROMAN_NUMERALS)[index] ?? String(index + 1)
+}

@@ -325,7 +325,7 @@ export function useInkWriting(
       if (Math.abs(wet - before) > 0.002) dirty = true
       switch (phase) {
         case 'wait':
-          if (t > 0.6) drop((idx + 1) % channels.length)
+          if (t > CONTACT_SCENE.gap) drop((idx + 1) % channels.length)
           return
         case 'fall':
           vy += 1500 * dt

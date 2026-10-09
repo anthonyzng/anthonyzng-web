@@ -85,7 +85,8 @@ export const HERO_SCENE = { meteors: 9, meteorLife: 6, minScale: 0.7, leaves: 6,
 /**
  * Contact screen. Dark: drifting meteor speed (px/s, desktop and phone), the spacing kept between
  * them (px), how often one swings in beside the title (s) and how long it rests there. Light: the
- * ink drop's phases (s) and how long the written word stays.
+ * ink drop's phases (s), how long the written word stays and the pause before the next drop (a cycle
+ * one second shorter than at first, at the owner's request).
  */
 export const CONTACT_SCENE = {
   drift: 32,
@@ -95,9 +96,10 @@ export const CONTACT_SCENE = {
   every: 8,
   rest: 2.6,
   splash: 0.5,
-  write: 1.2,
-  hold: 3,
+  write: 0.9,
+  hold: 2.5,
   fade: 0.9,
+  gap: 0.4,
 } as const
 
 /** Section fade: the share of the viewport over which a section fades in (entering) and out (leaving). */
