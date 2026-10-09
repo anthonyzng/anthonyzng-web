@@ -146,7 +146,8 @@ describe('admin panel', () => {
     expect(await findPageHeading('概覽')).toBeInTheDocument()
     expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
     expect(document.documentElement.lang).toBe('zh-Hant')
-    expect(document.title).toBe('概覽 · 管理介面 · anthonyzng')
+    // The title is set by an effect after the heading renders: wait for it (a slow CI runner lags).
+    await waitFor(() => expect(document.title).toBe('概覽 · 管理介面 · anthonyzng'))
 
     unmount()
     expect(document.head.querySelector('meta[name="robots"]')).toBeNull()

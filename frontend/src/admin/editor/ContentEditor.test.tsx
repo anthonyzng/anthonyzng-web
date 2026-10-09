@@ -156,11 +156,14 @@ describe('content editor', () => {
     // The version the edit started from, exactly as the API returned it, quoted.
     expect(ifMatch(put)).toBe(`"${pm.updatedAt}"`)
     expect(new Headers(put.init?.headers).get('Content-Type')).toBe('application/json')
-    expect(api.calls.filter((call) => call.path.startsWith('/admin/content')).map((call) => call.method)).toEqual([
-      'GET',
-      'PUT',
-      'GET',
-    ])
+    // The list's reload is fetched by an effect once it mounts: wait for it (a slow CI runner lags).
+    await waitFor(() =>
+      expect(api.calls.filter((call) => call.path.startsWith('/admin/content')).map((call) => call.method)).toEqual([
+        'GET',
+        'PUT',
+        'GET',
+      ]),
+    )
   })
 
   it('checks the form before sending: required fields, slug rules, focus on the first fault', async () => {
