@@ -212,7 +212,7 @@ describe('section content', () => {
       expect(contact).toHaveAttribute('id', 'contact')
       expect(within(contact).getByRole('heading', { level: 2, name: 'Contact me' })).toHaveAttribute('tabindex', '-1')
 
-      // Light theme: the channels are brush icons on the sheet, named by channel and address.
+      // Light theme: the channels are brush icons, named by channel and address.
       const channels = within(contact).getByRole('list', { name: 'Contact channels' })
       // The email channel opens the contact form (a mailto link does nothing without a mail app).
       expect(within(channels).getByRole('button', { name: 'Email hello@example.com' })).toHaveAttribute(

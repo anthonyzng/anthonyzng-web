@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { SPEED } from '../animations/motion'
 import { useParallax } from '../animations/useParallax'
 import { useSectionReveal } from '../animations/useSectionReveal'
-import { formatIndex, NUMBERED_SECTION_IDS, type NumberedSectionId } from '../sections/sectionIds'
+import { formatGhostNumeral, formatIndex, NUMBERED_SECTION_IDS, type NumberedSectionId } from '../sections/sectionIds'
 
 interface SectionShellProps {
   id: NumberedSectionId
@@ -27,20 +27,25 @@ export function SectionShell({ id, motionKey = '', children }: SectionShellProps
   useSectionReveal(scope, motionKey)
   useParallax(scope, undefined, motionKey)
 
-  const number = formatIndex(NUMBERED_SECTION_IDS.indexOf(id))
+  const index = NUMBERED_SECTION_IDS.indexOf(id)
+  const number = formatIndex(index)
   const total = formatIndex(NUMBERED_SECTION_IDS.length - 1)
 
   return (
     <section ref={scope} id={id} aria-labelledby={`${id}-title`} className="relative isolate overflow-clip py-24 md:py-40">
       {/* Decorative: drawn as generated content (::before), so it is no text node that contrast
-          checks or the accessibility tree would weigh; the section title says which section this is. */}
+          checks or the accessibility tree would weigh; the section title says which section this is.
+          Each theme draws its own numeral (index.css): 壹 貳 參 in light mode, I II III in dark; the
+          counter beside the title keeps "01 / 04". */}
       <span
         aria-hidden="true"
         data-speed={SPEED.ghost}
         data-numeral={number}
+        data-numeral-light={formatGhostNumeral(index, 'light')}
+        data-numeral-dark={formatGhostNumeral(index, 'dark')}
         className="ghost-numeral pointer-events-none absolute right-5 top-12 -z-10 select-none font-mono text-ghost tabular-nums text-line sm:right-8 md:top-20"
       />
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <div data-glass-box className="mx-auto max-w-6xl px-5 sm:px-8">
         <div data-reveal="rule" aria-hidden="true" className="h-px w-full origin-left bg-line" />
         <div className="mt-10 grid gap-y-8 md:grid-cols-12 md:gap-x-8">
           <div className="md:col-span-3">

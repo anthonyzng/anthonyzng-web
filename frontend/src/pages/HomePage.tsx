@@ -2,6 +2,7 @@ import { useActiveSection } from '../animations/useActiveSection'
 import { useHashScroll } from '../animations/useHashScroll'
 import { useSectionFades } from '../animations/useSectionFades'
 import { PageBackdrop } from '../components/PageBackdrop'
+import { PageGlass } from '../components/PageGlass'
 import { SectionDock } from '../components/SectionDock'
 import { ContentProvider } from '../content/ContentProvider'
 import { useResolvedContent } from '../content/contentContext'
@@ -39,12 +40,17 @@ export function HomePage() {
 
 /**
  * What spans the whole page, mounted after the sections so they exist when it starts: the backdrop
- * behind them all, and the fade of each section in and out as it scrolls past (rebuilt when the
- * archive comes or goes with the API's content).
+ * behind them all, the fade of each section in and out as it scrolls past, and the glass behind the
+ * text (rebuilt when the archive comes or goes with the API's content).
  */
 function PageMotion() {
   const { archive } = useResolvedContent()
   const sections = archive.length > 0 ? 'archive' : ''
   useSectionFades(sections)
-  return <PageBackdrop sectionsKey={sections} />
+  return (
+    <>
+      <PageBackdrop sectionsKey={sections} />
+      <PageGlass sectionsKey={sections} />
+    </>
+  )
 }

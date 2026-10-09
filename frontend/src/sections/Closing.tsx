@@ -39,10 +39,11 @@ const TITLE = 'text-[clamp(2.6rem,11vw,8.5rem)] leading-none'
  * The contact section, as the page's closing screen, in each theme's world. Dark: the channels are
  * meteors of their own colours drifting through the night sky (`useMeteorContact`); in turn one swings
  * in beside "Contact me", which takes its colour and, while it does, is that channel's link; a bar of
- * real links, the location and "Send a message" (`ContactDialog`) sits at the foot. Light: a sheet of
- * cracked paper with the channels as brush icons on its top edge, the paper plane (the form) ringed
- * with splashed ink beside them; ink drops from an icon and writes the channel's name below the title
- * (`useInkWriting`), and that word is its link. In both, the email channel opens the contact form (a
+ * real links, the location and "Send a message" (`ContactDialog`) sits at the foot. Light: ink on the
+ * page's own paper (the bamboo of the backdrop runs on behind it), the channels as brush icons, the
+ * paper plane (the form) ringed with splashed ink beside them; ink drops from an icon and writes the
+ * channel's name below the title (`useInkWriting`), and that word is its link, as is the title, for the
+ * latest drop. In both, the email channel opens the contact form (a
  * mailto link does nothing without a mail app, and the form delivers to the same inbox). The moving
  * pictures are decorative; the bar (dark) and the icons (light) are the accessible way in.
  */
@@ -230,19 +231,20 @@ function NightContact({ scope, channels, dialog, openForm, activate }: ScreenPro
 function InkContact({ scope, channels, dialog, openForm }: ScreenProps) {
   const { t, i18n } = useTranslation()
   const motion = useMotionAllowed()
-  const sheet = useRef<HTMLCanvasElement>(null)
   const ink = useRef<HTMLCanvasElement>(null)
   const brushes = useRef<HTMLUListElement>(null)
   const word = useRef<HTMLDivElement>(null)
   const [written, setWritten] = useState<number | null>(null)
-  const controls = useInkWriting(scope, sheet, ink, brushes, word, channels, motion, setWritten)
+  const [latest, setLatest] = useState<number | null>(null)
+  const controls = useInkWriting(scope, ink, brushes, word, channels, motion, setWritten, setLatest)
   const writtenChannel = written === null ? undefined : channels[written]
+  // The title is the link of the latest drop's channel: falling, writing, written, or the last one between drops.
+  const latestChannel = latest === null ? undefined : channels[latest]
   // The brush hand is Latin only; Chinese titles stay in the page's face.
   const brushFace = i18n.language === 'en' ? 'font-brush font-normal' : 'font-semibold tracking-[-0.02em]'
 
   return (
     <>
-      <canvas ref={sheet} aria-hidden="true" className="pointer-events-none absolute inset-0 size-full" />
       <canvas ref={ink} aria-hidden="true" className="pointer-events-none absolute inset-0 size-full" />
       <div className="relative z-10 flex flex-1 flex-col pt-5 pb-10">
         <TopRow />
@@ -277,9 +279,23 @@ function InkContact({ scope, channels, dialog, openForm }: ScreenProps) {
         </ul>
         {/* The title sits in the space below the icons, raised so the written word has room under it. */}
         <div className="flex flex-1 items-center justify-center pt-12 pb-[clamp(8rem,22vh,13rem)]">
-          <h2 id="contact-title" tabIndex={-1} className={`pointer-events-none text-center outline-none ${TITLE} ${brushFace}`}>
-            {t('home.closing.title')}
-          </h2>
+          <div className="relative">
+            <h2 id="contact-title" tabIndex={-1} className={`pointer-events-none text-center outline-none ${TITLE} ${brushFace}`}>
+              {t('home.closing.title')}
+            </h2>
+            {latestChannel ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ChannelControl
+                  channel={latestChannel}
+                  openForm={openForm}
+                  label={t('home.closing.titleLink', { channel: latestChannel.label })}
+                  className={`cursor-pointer rounded-xl text-center text-transparent ${TITLE} ${brushFace}`}
+                >
+                  {t('home.closing.title')}
+                </ChannelControl>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
       {/* The written word is its channel's link; the scene places it over the ink. */}

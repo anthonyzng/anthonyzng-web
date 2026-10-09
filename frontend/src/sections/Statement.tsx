@@ -45,7 +45,7 @@ export function Statement() {
             decoding="async"
           />
         </div>
-        <div className="mx-auto w-full max-w-6xl px-5 py-24 sm:px-8 md:py-16">
+        <div data-glass-box className="mx-auto w-full max-w-6xl px-5 py-24 sm:px-8 md:py-16">
           <div data-reveal="rule" aria-hidden="true" className="h-px w-full origin-left bg-line" />
           <h2
             id="statement-title"

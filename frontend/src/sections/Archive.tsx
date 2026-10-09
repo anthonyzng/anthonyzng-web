@@ -16,7 +16,7 @@ export function Archive() {
 
   return (
     <section id={ARCHIVE_ID} aria-labelledby="archive-title" className="text-fg">
-      <div className="mx-auto max-w-6xl px-5 pb-24 pt-8 sm:px-8 md:pb-32">
+      <div data-glass-box className="mx-auto max-w-6xl px-5 pb-24 pt-8 sm:px-8 md:pb-32">
         <div className="grid gap-y-3 md:grid-cols-12 md:gap-x-8">
           {/* tabIndex -1: the focus target after anchor navigation, like every section heading. */}
           <h2 id="archive-title" tabIndex={-1} className="text-title font-medium outline-none md:col-span-4">

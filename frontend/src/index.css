@@ -21,6 +21,13 @@
   --error: #b91c1c;
   color-scheme: light;
 
+  /* Page glass (components/PageGlass.tsx): its body, the tint it gains at rest, edge, shine, shadow. */
+  --glass-base: color-mix(in srgb, var(--bg) 20%, transparent);
+  --glass-tint: color-mix(in srgb, var(--bg) 46%, transparent);
+  --glass-edge: color-mix(in srgb, var(--fg) 9%, transparent);
+  --glass-shine: rgb(255 255 255 / 0.65);
+  --glass-shadow: rgb(70 58 34 / 0.16);
+
   /* Header height: the header, html scroll-padding-top and the hero min-height all read this. */
   --header-h: 4rem;
 }
@@ -35,6 +42,12 @@
   --accent-fg: #0b1120;
   --error: #f87171;
   color-scheme: dark;
+
+  --glass-base: color-mix(in srgb, var(--surface) 20%, transparent);
+  --glass-tint: color-mix(in srgb, var(--surface) 50%, transparent);
+  --glass-edge: rgb(255 255 255 / 0.09);
+  --glass-shine: rgb(255 255 255 / 0.07);
+  --glass-shadow: rgb(0 0 0 / 0.55);
 }
 
 @theme inline {
@@ -51,7 +64,7 @@
 @theme {
   --font-sans: 'Inter Variable', 'Noto Sans TC Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'Noto Sans TC Variable', monospace;
-  --font-brush: 'Ma Shan Zheng', 'Noto Sans TC Variable', ui-serif, serif;
+  --font-brush: 'Kaushan Script', 'Noto Sans TC Variable', ui-serif, serif;
 
   /* Fluid display sizes for editorial headings */
   --text-display: clamp(2.75rem, 1.5rem + 5vw, 6rem);
@@ -159,6 +172,21 @@
 
   .ghost-numeral::before {
     content: attr(data-numeral);
+  }
+
+  /* Each world its own numerals: formal Chinese ones in a brush hand with bleeding ink for the ink
+     painting, Roman ones in inscriptional capitals for the night sky. */
+  [data-theme='light'] .ghost-numeral::before {
+    content: attr(data-numeral-light);
+    font-family: 'Yuji Mai', var(--font-brush);
+  }
+
+  /* The capitals run wide: tighter, and held in from the edge the scroll drift carries them towards. */
+  [data-theme='dark'] .ghost-numeral::before {
+    content: attr(data-numeral-dark);
+    font-family: 'Cinzel Decorative', ui-serif, serif;
+    letter-spacing: -0.04em;
+    padding-right: 0.15em;
   }
 
   @media (forced-colors: active) {
@@ -734,7 +762,7 @@
 }
 
 /*
- * Light contact screen (sections/Closing.tsx): the channels as brush icons on the sheet's top edge,
+ * Light contact screen (sections/Closing.tsx): the channels as brush icons above the title,
  * ink-ringed; the paper plane (the form) ringed with splashed ink instead; a dip as an icon drips.
  */
 @layer components {
@@ -777,5 +805,51 @@
 @keyframes ink-drip {
   40% {
     transform: translateY(3px) scale(0.94);
+  }
+}
+
+/*
+ * Page glass (components/PageGlass.tsx, placed by animations/usePageGlass.ts): one pane of frosted
+ * glass behind the text of the content sections, fixed above the backdrop (blur, a tint per theme from
+ * the `--glass-*` tokens, a hairline edge and shine, rounded). It fades out while the page moves and
+ * back in once it rests (the hook sets its opacity). Without backdrop-filter the tint alone still lifts
+ * the text.
+ */
+@layer components {
+  .page-glass {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -5;
+    width: 0;
+    height: 0;
+    visibility: hidden;
+    pointer-events: none;
+    border-radius: 1.75rem;
+    border: 1px solid var(--glass-edge);
+    background: var(--glass-base);
+    box-shadow:
+      inset 0 1px 0 var(--glass-shine),
+      0 30px 70px -40px var(--glass-shadow);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    backdrop-filter: blur(14px) saturate(1.3);
+    will-change: transform;
+  }
+
+  .page-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--glass-tint);
+  }
+
+  /* Phones: a lighter blur, a tighter corner. */
+  @media (width < 48rem) {
+    .page-glass {
+      border-radius: 1.25rem;
+      -webkit-backdrop-filter: blur(10px) saturate(1.25);
+      backdrop-filter: blur(10px) saturate(1.25);
+    }
   }
 }

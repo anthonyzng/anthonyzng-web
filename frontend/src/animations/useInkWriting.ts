@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { isPhoneBudget } from './budget'
 import { gsap } from './gsap'
-import { clamp, easeOut, paperTile, rng, smooth } from './inkPainting'
+import { clamp, easeOut, smooth } from './inkPainting'
 import { CONTACT_SCENE } from './motion'
 
 export interface InkChannel {
@@ -58,47 +58,48 @@ function blotPath(g: CanvasRenderingContext2D, cx: number, cy: number, radii: nu
 }
 
 /**
- * The light contact screen: a sheet of slightly cracked paper (painted once on `sheetRef`, inset
- * from the section's sides so the page's bamboo shows), and, on `inkRef`, ink: in turn, a drop
+ * The light contact screen: ink on the page's own paper (the backdrop's grain and bamboo show through,
+ * so the screen is one with the sections above it). On `inkRef`, in turn, a drop
  * falls from a channel's icon (the `[data-brush]` elements inside `brushesRef`, in channel order),
  * lands below the title with a crown of streaks and flung droplets, soaks out through the fibres,
  * and runs along thin tendrils into the channel's name, written in a brush hand; the word stays a
  * few seconds (longer while pointed at, when the paper round it looks damp) and fades. Pointing at
  * an icon drips its channel at once (`drop`). The word's link (`wordRef`) is placed over it and
- * reported through `onWritten`. Black ink only. Canvas 2D; runs only while the section is on
+ * reported through `onWritten`; `onDrop` names the channel of the latest drop (the title's link).
+ * Black ink only. Canvas 2D; runs only while the section is on
  * screen. Without motion the word is written at once, no drop and no fading.
  */
 export function useInkWriting(
   scope: RefObject<HTMLElement | null>,
-  sheetRef: RefObject<HTMLCanvasElement | null>,
   inkRef: RefObject<HTMLCanvasElement | null>,
   brushesRef: RefObject<HTMLElement | null>,
   wordRef: RefObject<HTMLElement | null>,
   channels: readonly InkChannel[],
   motion: boolean,
   onWritten: (index: number | null) => void,
+  onDrop: (index: number | null) => void,
 ): RefObject<InkWritingControls> {
   const controls = useRef<InkWritingControls>({ drop: () => {}, setHover: () => {} })
   const report = useRef(onWritten)
+  const reportDrop = useRef(onDrop)
   useEffect(() => {
     report.current = onWritten
+    reportDrop.current = onDrop
   })
   const labels = channels.map((c) => c.label).join('|')
 
   useEffect(() => {
     const root = scope.current
-    const sheet = sheetRef.current
     const ink = inkRef.current
     const brushes = brushesRef.current
-    const sg = sheet?.getContext('2d')
     const g = ink?.getContext('2d')
-    if (!root || !sheet || !ink || !brushes || !sg || !g || channels.length === 0) return
-    const paper = paperTile('#faf8f3')
+    if (!root || !ink || !brushes || !g || channels.length === 0) return
     const brushFont = getComputedStyle(root).getPropertyValue('--font-brush').trim() || 'serif'
     let width = 0
     let height = 0
     let k = 1
-    let sheetBox = { left: 0, right: 0, top: 0, bottom: 0 }
+    // How far the written word keeps from the screen's sides.
+    let side = 16
     let idx = channels.length - 1
     let phase: Phase = 'wait'
     let t = 0
@@ -108,6 +109,7 @@ export function useInkWriting(
     let landY = 0
     let blot: Blot | null = null
     let hover = false
+    let disposed = false
     let wet = 0
     let dirty = true
     let visible = false
@@ -121,92 +123,13 @@ export function useInkWriting(
       return title ? title.getBoundingClientRect().bottom - rect.top : height * 0.5
     }
 
-    const paintSheet = () => {
-      const r = rng(23)
-      sg.setTransform(k, 0, 0, k, 0, 0)
-      sg.clearRect(0, 0, width, height)
-      const { left: x0, right: x1, top: y0, bottom: y1 } = sheetBox
-      // A hand-made sheet: its edges waver a little (deckle); it lifts off the page by a soft shadow.
-      const edge: [number, number][] = []
-      const jitter = () => (r() - 0.5) * 2.4
-      for (let ex = x0; ex < x1; ex += 9) edge.push([ex, y0 + jitter()])
-      for (let ey = y0; ey < y1; ey += 9) edge.push([x1 + jitter(), ey])
-      for (let ex = x1; ex > x0; ex -= 9) edge.push([ex, y1 + jitter()])
-      for (let ey = y1; ey > y0; ey -= 9) edge.push([x0 + jitter(), ey])
-      const outline = () => {
-        sg.beginPath()
-        edge.forEach(([ex, ey], i) => (i ? sg.lineTo(ex, ey) : sg.moveTo(ex, ey)))
-        sg.closePath()
-      }
-      sg.save()
-      sg.shadowColor = 'rgba(70,60,40,.14)'
-      sg.shadowBlur = 24
-      sg.shadowOffsetY = 8
-      sg.fillStyle = '#faf8f3'
-      outline()
-      sg.fill()
-      sg.restore()
-      sg.save()
-      outline()
-      sg.clip()
-      const pattern = paper ? sg.createPattern(paper, 'repeat') : null
-      if (pattern) {
-        sg.fillStyle = pattern
-        sg.fillRect(x0 - 4, y0 - 4, x1 - x0 + 8, y1 - y0 + 8)
-      }
-      for (const [cx, cy] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) {
-        const age = sg.createRadialGradient(cx, cy, 0, cx, cy, 160)
-        age.addColorStop(0, 'rgba(150,130,90,.08)')
-        age.addColorStop(1, 'rgba(150,130,90,0)')
-        sg.fillStyle = age
-        sg.fillRect(cx - 160, cy - 160, 320, 320)
-      }
-      // Hairline cracks: they start at the edges, wander inwards and branch, each with a pale lip.
-      const crack = (cx: number, cy: number, a: number, len: number, w: number, depth: number): void => {
-        const points: [number, number][] = [[cx, cy]]
-        for (let i = 0; i < len; i++) {
-          a += (r() - 0.5) * 0.9
-          cx += Math.cos(a) * (8 + r() * 14)
-          cy += Math.sin(a) * (8 + r() * 14)
-          points.push([cx, cy])
-          if (depth < 2 && r() < 0.22) crack(cx, cy, a + (r() < 0.5 ? -1 : 1) * (0.5 + r() * 0.6), Math.floor(len * 0.5), w * 0.7, depth + 1)
-        }
-        for (const [dx, dy, style, lw] of [
-          [0.7, 0.7, 'rgba(255,255,255,.55)', w + 0.4],
-          [0, 0, `rgba(80,70,52,${(0.16 + 0.1 * (1 - depth / 2)).toFixed(3)})`, w],
-        ] as const) {
-          sg.strokeStyle = style
-          sg.lineWidth = lw
-          sg.lineJoin = 'round'
-          sg.lineCap = 'round'
-          sg.beginPath()
-          points.forEach(([px, py], i) => (i ? sg.lineTo(px + dx, py + dy) : sg.moveTo(px + dx, py + dy)))
-          sg.stroke()
-        }
-      }
-      const cracks = width < 600 ? 4 : 7
-      for (let i = 0; i < cracks; i++) {
-        const side = i % 4
-        const f = 0.15 + r() * 0.7
-        const [sx, sy, a] =
-          side === 0 ? [x0 + (x1 - x0) * f, y0, Math.PI / 2] : side === 1 ? [x1, y0 + (y1 - y0) * f, Math.PI] : side === 2 ? [x0 + (x1 - x0) * f, y1, -Math.PI / 2] : [x0, y0 + (y1 - y0) * f, 0]
-        crack(sx, sy, a + (r() - 0.5) * 0.8, 6 + Math.floor(r() * 9), 0.7 + r() * 0.4, 0)
-      }
-      sg.restore()
-    }
-
     const size = () => {
       width = root.clientWidth
       height = root.clientHeight
       k = Math.min(window.devicePixelRatio || 1, isPhoneBudget() ? 1.5 : 2)
-      for (const c of [sheet, ink]) {
-        c.width = Math.max(1, Math.round(width * k))
-        c.height = Math.max(1, Math.round(height * k))
-      }
-      const side = Math.max(16, width * (width < 600 ? 0.05 : 0.09))
-      const top = brushes.offsetTop - 20
-      sheetBox = { left: side, right: width - side, top: Math.max(0, top), bottom: height - clamp(height * 0.04, 18, 36) }
-      paintSheet()
+      ink.width = Math.max(1, Math.round(width * k))
+      ink.height = Math.max(1, Math.round(height * k))
+      side = Math.max(16, width * (width < 600 ? 0.05 : 0.09))
       dirty = true
     }
 
@@ -214,7 +137,7 @@ export function useInkWriting(
       const fs = clamp(width * 0.06, 34, 70)
       g.font = `${fs}px ${brushFont}`
       const tw = g.measureText(channels[idx].label).width
-      return { fs, tw, cx: clamp(x, sheetBox.left + tw / 2 + 24, sheetBox.right - tw / 2 - 24) }
+      return { fs, tw, cx: clamp(x, side + tw / 2 + 24, width - side - tw / 2 - 24) }
     }
     const placeWord = (show: boolean) => {
       const word = wordRef.current
@@ -228,6 +151,7 @@ export function useInkWriting(
 
     const drop = (i: number) => {
       idx = i
+      reportDrop.current(i)
       hover = false
       wet = 0
       placeWord(false)
@@ -401,7 +325,7 @@ export function useInkWriting(
       if (Math.abs(wet - before) > 0.002) dirty = true
       switch (phase) {
         case 'wait':
-          if (t > 0.6) drop((idx + 1) % channels.length)
+          if (t > CONTACT_SCENE.gap) drop((idx + 1) % channels.length)
           return
         case 'fall':
           vy += 1500 * dt
@@ -481,6 +405,18 @@ export function useInkWriting(
 
     size()
     if (!motion) drop(0)
+    // The brush hand may not be loaded yet (the Chinese page shows it nowhere else): redraw once it is.
+    void document.fonts
+      ?.load(`48px ${brushFont}`)
+      .then(() => {
+        if (disposed) return
+        dirty = true
+        if (phase === 'hold' || !motion) {
+          render()
+          placeWord(true)
+        }
+      })
+      .catch(() => {})
     const resize = new ResizeObserver(() => {
       size()
       if (phase === 'hold' || !motion) {
@@ -504,15 +440,17 @@ export function useInkWriting(
     start()
 
     return () => {
+      disposed = true
       stop()
       resize.disconnect()
       watch?.disconnect()
       document.removeEventListener('visibilitychange', onVisibility)
       controls.current = { drop: () => {}, setHover: () => {} }
       report.current(null)
+      reportDrop.current(null)
     }
     // `labels` stands for `channels` (a new array every render, the same words).
-  }, [scope, sheetRef, inkRef, brushesRef, wordRef, labels, motion]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scope, inkRef, brushesRef, wordRef, labels, motion]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return controls
 }

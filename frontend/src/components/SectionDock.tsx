@@ -16,7 +16,7 @@ const DOCK_THRESHOLD = 80
 
 const DOCK_LINK =
   'inline-flex min-h-10 items-center rounded-full px-2.5 text-xs text-muted transition-colors duration-200 hover:text-fg sm:px-3.5 sm:text-sm ' +
-  'aria-[current=true]:bg-bg aria-[current=true]:text-fg forced-colors:aria-[current=true]:underline'
+  'aria-[current=true]:bg-fg/16 aria-[current=true]:text-fg dark:aria-[current=true]:bg-bg forced-colors:aria-[current=true]:underline'
 
 /**
  * A floating pill at the foot of the home page with the way back to the top and to every section,
@@ -51,7 +51,7 @@ export function SectionDock() {
     <nav
       aria-label={t('nav.dock')}
       inert={!shown}
-      className={`pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 transition duration-300 ease-out-expo motion-reduce:transition-none ${
+      className={`pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex justify-center px-3 transition duration-300 ease-out-expo motion-reduce:transition-none ${
         shown ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
       }`}
     >
