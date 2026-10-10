@@ -2,7 +2,8 @@ import { useEffect, type RefObject } from 'react'
 import { isPhoneBudget } from './budget'
 import { gsap } from './gsap'
 import { clamp, drawSpriteLeaf, easeOut, inkRgba, leafSprite, makePath, mountains, pathAt, pathAtY, rand, rock, type PathPoint } from './inkPainting'
-import { HERO_SCENE } from './motion'
+import { CANVAS_BUDGET, HERO_SCENE } from './motion'
+import { canvasScale } from './resolution'
 
 interface Flow {
   s: number
@@ -147,7 +148,7 @@ export function useInkStream(
     const size = () => {
       width = root.clientWidth
       height = root.clientHeight
-      k = Math.min(window.devicePixelRatio || 1, phone ? 1.5 : 2)
+      k = canvasScale(width, height, 1.5, CANVAS_BUDGET.scene)
       for (const c of [paper, water]) {
         c.width = Math.max(1, Math.round(width * k))
         c.height = Math.max(1, Math.round(height * k))

@@ -1,8 +1,9 @@
 import { useEffect, type RefObject } from 'react'
 import { gsap } from './gsap'
-import { BACKDROP } from './motion'
+import { BACKDROP, CANVAS_BUDGET, SKY_IDLE_FPS } from './motion'
 import { isPhoneBudget } from './budget'
 import { onSectionArrival } from './sectionArrival'
+import { canvasScale } from './resolution'
 
 interface Star {
   x: number
@@ -23,8 +24,10 @@ interface ShootingStar {
  * The dark theme's sky behind every section but the hero: stars streaming slowly along a current
  * that turns over time, and a shooting star crossing left to right whenever a section arrives, each
  * section at its own angle (`BACKDROP.shootAngles`). Canvas 2D, fixed to the viewport, at most 1.5
- * device pixels per CSS pixel. It runs only while some of it shows (the hero, opaque in dark mode,
- * covers it at the top of the page) and the tab is visible. Without motion: one still frame.
+ * device pixels per CSS pixel and within the backdrop's pixel budget (`canvasScale`); the stars alone
+ * redraw at `SKY_IDLE_FPS`, a shooting star at the full frame rate. It runs only while some of it
+ * shows (the hero, opaque in dark mode, covers it at the top of the page) and the tab is visible.
+ * Without motion: one still frame.
  */
 export function useNightSky(canvasRef: RefObject<HTMLCanvasElement | null>, motion: boolean): void {
   useEffect(() => {
@@ -44,7 +47,7 @@ export function useNightSky(canvasRef: RefObject<HTMLCanvasElement | null>, moti
       const phone = isPhoneBudget()
       width = window.innerWidth
       height = window.innerHeight
-      scale = Math.min(window.devicePixelRatio || 1, 1.5)
+      scale = canvasScale(width, height, 1.5, CANVAS_BUDGET.backdrop)
       canvas.width = Math.round(width * scale)
       canvas.height = Math.round(height * scale)
       stars = Array.from({ length: phone ? BACKDROP.starsPhone : BACKDROP.stars }, () => ({
@@ -107,6 +110,9 @@ export function useNightSky(canvasRef: RefObject<HTMLCanvasElement | null>, moti
 
     const tick = () => {
       const now = performance.now()
+      // The stars drift slowly: SKY_IDLE_FPS is plenty, and every frame skipped is one the glass and the
+      // header need not blur again. A shooting star gets every frame.
+      if (shooters.length === 0 && now - last < 1000 / SKY_IDLE_FPS - 2) return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
       draw(dt, now / 1000)

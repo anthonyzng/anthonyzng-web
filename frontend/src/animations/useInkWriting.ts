@@ -1,8 +1,8 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { isPhoneBudget } from './budget'
 import { gsap } from './gsap'
 import { clamp, easeOut, smooth } from './inkPainting'
-import { CONTACT_SCENE } from './motion'
+import { CANVAS_BUDGET, CONTACT_SCENE } from './motion'
+import { canvasScale } from './resolution'
 
 export interface InkChannel {
   /** What the drop writes: the channel's name. */
@@ -126,7 +126,7 @@ export function useInkWriting(
     const size = () => {
       width = root.clientWidth
       height = root.clientHeight
-      k = Math.min(window.devicePixelRatio || 1, isPhoneBudget() ? 1.5 : 2)
+      k = canvasScale(width, height, 1.5, CANVAS_BUDGET.contact)
       ink.width = Math.max(1, Math.round(width * k))
       ink.height = Math.max(1, Math.round(height * k))
       side = Math.max(16, width * (width < 600 ? 0.05 : 0.09))

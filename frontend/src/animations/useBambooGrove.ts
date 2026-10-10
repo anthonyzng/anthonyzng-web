@@ -2,8 +2,9 @@ import { useEffect, type RefObject } from 'react'
 import { isPhoneBudget } from './budget'
 import { gsap } from './gsap'
 import { bamboo, drawSpriteLeaf, leafSprite, makeCanvas, rng, stalkSpecs } from './inkPainting'
-import { BACKDROP } from './motion'
+import { BACKDROP, CANVAS_BUDGET } from './motion'
 import { onSectionArrival } from './sectionArrival'
+import { canvasScale } from './resolution'
 
 interface Stalk {
   canvas: HTMLCanvasElement
@@ -58,7 +59,7 @@ export function useBambooGrove(groveRef: RefObject<HTMLCanvasElement | null>, le
       // The page's width without the scrollbar: the hero's painting is laid out on the same width.
       width = document.documentElement.clientWidth
       height = window.innerHeight
-      scale = Math.min(window.devicePixelRatio || 1, 1.25)
+      scale = canvasScale(width, height, 1.25, CANVAS_BUDGET.backdrop)
       for (const c of [grove, leaves]) {
         c.width = Math.round(width * scale)
         c.height = Math.round(height * scale)
