@@ -1,7 +1,8 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { isPhoneBudget } from './budget'
 import { gsap } from './gsap'
-import { CONTACT_SCENE } from './motion'
+import { CANVAS_BUDGET, CONTACT_SCENE } from './motion'
+import { canvasScale } from './resolution'
 
 export type Rgb = readonly [number, number, number]
 
@@ -47,7 +48,8 @@ const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x
  * kept apart from the others. In turn one swings in beside the title, sides alternating, and is at
  * its largest exactly on the title's line; meanwhile the title takes on its colour, and is its link
  * (`onAlign` reports the channel, or null). Clicking a meteor activates its channel (`onActivate`).
- * Canvas 2D at up to 1.5 device pixels; runs only while the section is on screen. Without motion:
+ * Canvas 2D at up to 1.5 device pixels, within the contact pixel budget (`canvasScale`); runs only
+ * while the section is on screen. Without motion:
  * the meteors rest beside the title, two on each side, and nothing moves.
  */
 export function useMeteorContact(
@@ -133,7 +135,7 @@ export function useMeteorContact(
       const oldH = height
       width = root.clientWidth
       height = root.clientHeight
-      k = Math.min(window.devicePixelRatio || 1, 1.5)
+      k = canvasScale(width, height, 1.5, CANVAS_BUDGET.contact)
       canvas.width = Math.max(1, Math.round(width * k))
       canvas.height = Math.max(1, Math.round(height * k))
       measure()

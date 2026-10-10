@@ -2,7 +2,8 @@ import { useEffect, type RefObject } from 'react'
 import { createBlackHole, type MeteorSegment } from './blackHole'
 import { isPhoneBudget } from './budget'
 import { gsap } from './gsap'
-import { HERO_SCENE } from './motion'
+import { CANVAS_BUDGET, HERO_SCENE } from './motion'
+import { canvasScale } from './resolution'
 
 interface Meteor {
   x: number
@@ -22,7 +23,8 @@ const SLOW_FRAME_MS = 26
  * it curves in under gravity; one that crosses the horizon flashes the photon ring. At most
  * `HERO_SCENE.meteors` at once. Phones without a hover pointer also get one now and then on their own.
  * Drawn at the device's resolution (capped at 1.5, or 1.25 on the phone budget, which also takes one
- * noise octave less); if frames run long the resolution steps down, never below `minScale`. Runs only
+ * noise octave less, and within the shader's pixel budget, `canvasScale`, so a 4K screen shades about
+ * 2 MP a frame, not 8); if frames run long the resolution steps down, never below `minScale`. Runs only
  * while the hero is on screen and the tab visible; without motion it draws one still frame and takes
  * no meteors. Without WebGL the canvas stays empty and `onUnsupported` lets the hero show a fallback.
  */
@@ -62,7 +64,7 @@ export function useBlackHole(
     const size = () => {
       width = root.clientWidth
       height = root.clientHeight
-      const dpr = Math.min(window.devicePixelRatio || 1, phone ? 1.25 : 1.5)
+      const dpr = canvasScale(width, height, phone ? 1.25 : 1.5, CANVAS_BUDGET.shader)
       canvas.width = Math.max(1, Math.round(width * dpr * quality))
       canvas.height = Math.max(1, Math.round(height * dpr * quality))
       k = canvas.width / Math.max(1, width)

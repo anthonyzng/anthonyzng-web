@@ -102,6 +102,23 @@ export const CONTACT_SCENE = {
   gap: 0.4,
 } as const
 
+/**
+ * Canvas budgets (`canvasScale`, resolution.ts): the most device pixels each kind of canvas may hold,
+ * and the density it never drops below. The black hole's shader runs on every pixel every frame, so it
+ * gets the least; the backdrop (stars, bamboo) and the hero's ink are soft and scale up well; the
+ * contact screens keep at least one device pixel per CSS pixel, since the ink writes words.
+ * About 2 MP each, just over a 1080p screen at density 1 (untouched); a 4K one no longer fills 8 MP per canvas.
+ */
+export const CANVAS_BUDGET = {
+  shader: { pixels: 2_100_000, floor: 0.5 },
+  backdrop: { pixels: 2_100_000, floor: 0.75 },
+  scene: { pixels: 2_400_000, floor: 0.75 },
+  contact: { pixels: 3_000_000, floor: 1 },
+} as const
+
+/** The night sky redraws at most this often (fps) while no shooting star crosses it: the stars drift slowly. */
+export const SKY_IDLE_FPS = 30
+
 /** Section fade: the share of the viewport over which a section fades in (entering) and out (leaving). */
 export const SECTION_FADE = { band: 0.6 } as const
 

@@ -844,6 +844,15 @@
     background: var(--glass-tint);
   }
 
+  /* Very wide screens: the pane is huge, and a blur costs its area times its radius on every frame
+     the backdrop moves under it, so a smaller radius. */
+  @media (width >= 100rem) {
+    .page-glass {
+      -webkit-backdrop-filter: blur(10px) saturate(1.3);
+      backdrop-filter: blur(10px) saturate(1.3);
+    }
+  }
+
   /* Phones: a lighter blur, a tighter corner. */
   @media (width < 48rem) {
     .page-glass {
