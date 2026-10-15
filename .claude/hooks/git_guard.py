@@ -1,7 +1,9 @@
 """PreToolUse hook: guards `git commit` and `git push` (Bash, PowerShell) and the GitHub MCP tools that
 write commits straight to a remote branch (push_files, create_or_update_file, delete_file).
 
-- No commit on `main`, and no push from or to `main` (CLAUDE.md section 4.2).
+- No commit on `main`, and no push from or to `main` (CLAUDE.md section 4.2), except a new repository's
+  initial push: `main` may be pushed while the remote has no `main` yet (checked with `git ls-remote`; a failed
+  check blocks). The push's repository is `git -C <dir>`, a leading `cd <dir> &&`, or the session's cwd.
 - No commit that adds a secret: key-shaped strings in the added lines and untracked files, or a file
   such as `.env` or `*.pem`. A line that is a deliberate example can carry `secret-scan: allow`.
 - No commit until the checks of every changed area pass (checks.py; skipped when they already
@@ -99,9 +101,49 @@ def guard_commit() -> None:
         block("Blocked: the pre-commit checks failed (CLAUDE.md section 6). Fix them, then commit again.")
 
 
-def guard_push(args: str) -> None:
-    if current_branch() == "main" or re.search(r"(^|[\s:+])(refs/heads/)?main(\s|$)", args):
-        block("Blocked: never push to main; merges into main go through a pull request (/do_pr).")
+def push_target_dir(command: str, cwd: str) -> Path:
+    """The repository a `git push` acts on: `git -C <dir> push`, else a leading `cd <dir> &&`, else cwd."""
+    match = re.search(r"\bgit\s+-C\s+(\"[^\"]+\"|'[^']+'|\S+)\s+(?:-\S+\s+)*push\b", command)
+    if not match:
+        match = re.search(r"\bcd\s+(\"[^\"]+\"|'[^']+'|[^\s;&|]+)\s*&&[^;|]*\bgit\b[^;|]*\bpush\b", command)
+    raw = match.group(1).strip("\"'") if match else ""
+    # Git Bash paths (/c/Users/...) as Windows paths.
+    raw = re.sub(r"^/([a-zA-Z])/", r"\1:/", raw)
+    base = Path(cwd) if cwd else checks.ROOT
+    return (base / raw).resolve() if raw else base
+
+
+def push_remote(args: str) -> str:
+    """The remote named in `git push [options] <remote> ...`, or origin."""
+    for token in args.split():
+        if not token.startswith("-") and not token[0].isdigit():
+            return token
+    return "origin"
+
+
+def remote_has_main(target: Path, remote: str) -> bool:
+    """True when the remote has a main branch; a failed lookup counts as True (fail closed)."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(target), "ls-remote", "--exit-code", "--heads", remote, "main"],
+            capture_output=True, timeout=20, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return True
+    return proc.returncode != 2  # 2: the remote answered and has no main
+
+
+def guard_push(args: str, command: str, cwd: str) -> None:
+    target = push_target_dir(command, cwd)
+    branch = subprocess.run(
+        ["git", "-C", str(target), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, check=False
+    ).stdout.strip()
+    if branch != "main" and not re.search(r"(^|[\s:+])(refs/heads/)?main(\s|$)", args):
+        return
+    # The one exception (CLAUDE.md 4.2): a new repository's initial push, while its remote has no main yet.
+    if not remote_has_main(target, push_remote(args)):
+        return
+    block("Blocked: never push to main; merges into main go through a pull request (/do_pr).")
 
 
 def guard_github_write(tool: str, tool_input: dict) -> None:
@@ -146,7 +188,7 @@ def main() -> None:
             if verb == "commit":
                 guard_commit()
             else:
-                guard_push(args)
+                guard_push(args, command, str(payload.get("cwd") or ""))
     except subprocess.CalledProcessError:
         return  # not inside the repo or git failed: let git report it
 
