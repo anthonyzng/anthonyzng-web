@@ -23,7 +23,7 @@ python -m uv run pytest -q                     # tests against TEST_DATABASE_URL
 API docs: `http://localhost:8000/api/v1/docs` (development only: switched off with
 `APP_ENV=production`). The base path is `/api/v1`; every error response has the shape
 `{"error": {"code", "message", "fields"?}}`. With `APP_ENV=production` the app refuses to start on
-placeholder or development settings; see `.env.example` and CLAUDE.md section 6.2.
+placeholder or development settings; see `.env.example` and `backend/CLAUDE.md` (Settings).
 
 Layout: `app/core` (settings, db, security, rate limiting, errors, middleware), `app/models`
 (SQLAlchemy), `app/schemas` (Pydantic), `app/services` (content, content_admin, collections, files,
