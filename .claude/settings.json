@@ -4,5 +4,52 @@
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
     "code-review@claude-plugins-official": true,
     "example-skills@anthropic-agent-skills": true
+  },
+  "skillOverrides": {
+    "figma:figma-code-connect": "user-invocable-only",
+    "figma:figma-code-workflows": "user-invocable-only",
+    "figma:figma-create-new-file": "user-invocable-only",
+    "figma:figma-design-to-code": "user-invocable-only",
+    "figma:figma-generate-design": "user-invocable-only",
+    "figma:figma-generate-diagram": "user-invocable-only",
+    "figma:figma-generate-library": "user-invocable-only",
+    "figma:figma-generative-plugins": "user-invocable-only",
+    "figma:figma-implement-motion": "user-invocable-only",
+    "figma:figma-shaders": "user-invocable-only",
+    "figma:figma-spec": "user-invocable-only",
+    "figma:figma-swiftui": "user-invocable-only",
+    "figma:figma-use": "user-invocable-only",
+    "figma:figma-use-figjam": "user-invocable-only",
+    "figma:figma-use-motion": "user-invocable-only",
+    "figma:figma-use-slides": "user-invocable-only"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|mcp__github__push_files|mcp__github__create_or_update_file|mcp__github__delete_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/git_guard.py\"",
+            "shell": "bash",
+            "timeout": 1500,
+            "statusMessage": "Guarding git commit/push"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_python.py\"",
+            "shell": "bash",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }
