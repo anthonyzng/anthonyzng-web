@@ -4,5 +4,34 @@
     "ui-ux-pro-max@ui-ux-pro-max-skill": true,
     "code-review@claude-plugins-official": true,
     "example-skills@anthropic-agent-skills": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/git_guard.py\"",
+            "shell": "bash",
+            "timeout": 1500,
+            "statusMessage": "Guarding git commit/push"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/format_python.py\"",
+            "shell": "bash",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }

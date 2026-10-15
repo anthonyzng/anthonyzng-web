@@ -1,0 +1,122 @@
+"""PreToolUse hook (Bash, PowerShell): guards `git commit` and `git push`.
+
+- No commit on `main`, and no push from or to `main` (CLAUDE.md section 4.2).
+- No commit that adds a secret: key-shaped strings in the added lines and untracked files, or a file
+  such as `.env` or `*.pem`. A line that is a deliberate example can carry `secret-scan: allow`.
+- No commit until the checks of every changed area pass (checks.py; skipped when they already
+  passed for exactly these changes, e.g. through the ship skill).
+
+Exit 2 blocks the tool call and shows stderr to Claude; any other problem lets the call through.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import checks  # noqa: E402
+
+GIT_CMD = re.compile(r"\bgit\b(?:\s+-[cC]\s+\S+)*\s+(commit|push)\b([^;&|\n]*)")
+SECRET_PATTERNS = {
+    "private key": re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    "GitHub token": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{40,})"),
+    "Anthropic API key": re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}"),
+    "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"),
+    "Resend API key": re.compile(r"\bre_[A-Za-z0-9]{8,}_[A-Za-z0-9]{16,}"),
+    "Turnstile key (real, not a test key)": re.compile(r"\b0x4AAAAAAA[A-Za-z0-9_-]{10,}"),
+}
+FORBIDDEN_FILE = re.compile(r"(^|/)(\.env(\.[^/]*)?|[^/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519|ecdsa)[^/]*)$")
+ALLOWED_FILE = re.compile(r"(^|/)\.env\.example$")
+ALLOW_MARK = "secret-scan: allow"
+MAX_FILE_BYTES = 2_000_000
+
+
+def block(message: str) -> None:
+    print(message, file=sys.stderr)
+    sys.exit(2)
+
+
+def current_branch() -> str:
+    return checks.git("rev-parse", "--abbrev-ref", "HEAD").decode().strip()
+
+
+def scan_line(where: str, line: str, findings: list[str]) -> None:
+    if ALLOW_MARK in line:
+        return
+    for name, pattern in SECRET_PATTERNS.items():
+        if pattern.search(line):
+            findings.append(f"{where}: looks like a {name}")
+
+
+def scan_for_secrets() -> list[str]:
+    findings: list[str] = []
+    paths = checks.git("diff", "HEAD", "--name-only", "-z").decode("utf-8").split("\0")
+    new_files = checks.untracked(".")
+    for path in [p for p in paths if p] + new_files:
+        if FORBIDDEN_FILE.search(path) and not ALLOWED_FILE.search(path) and (checks.ROOT / path).exists():
+            findings.append(f"{path}: this kind of file must never be committed")
+    current = "?"
+    for raw in checks.git("diff", "HEAD", "-U0", "--no-color").decode("utf-8", "replace").splitlines():
+        if raw.startswith("+++ "):
+            current = raw[6:] if raw.startswith("+++ b/") else raw[4:]
+        elif raw.startswith("+"):
+            scan_line(current, raw[1:], findings)
+    for path in new_files:
+        file = checks.ROOT / path
+        try:
+            if file.stat().st_size > MAX_FILE_BYTES:
+                continue
+            data = file.read_bytes()
+        except OSError:
+            continue
+        if b"\0" in data:
+            continue
+        for number, line in enumerate(data.decode("utf-8", "replace").splitlines(), 1):
+            scan_line(f"{path}:{number}", line, findings)
+    return findings
+
+
+def guard_commit() -> None:
+    if current_branch() == "main":
+        block("Blocked: never commit directly to main (CLAUDE.md 4.2). Create a branch first:\n"
+              '  git checkout -b "$(date +%d%m%Y_%H%M%S)_by_claude_anthony"')
+    findings = scan_for_secrets()
+    if findings:
+        block("Blocked: the commit may contain secrets. Remove them (or mark a deliberate example line "
+              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]))
+    areas = checks.changed_areas()
+    if areas and not checks.run(areas):
+        block("Blocked: the pre-commit checks failed (CLAUDE.md section 6). Fix them, then commit again.")
+
+
+def guard_push(args: str) -> None:
+    if current_branch() == "main" or re.search(r"(^|[\s:+])(refs/heads/)?main(\s|$)", args):
+        block("Blocked: never push to main; merges into main go through a pull request (/do_pr).")
+
+
+def main() -> None:
+    try:
+        payload = json.load(sys.stdin)
+    except ValueError:
+        return
+    command = (payload.get("tool_input") or {}).get("command") or ""
+    matches = GIT_CMD.findall(command)
+    if not matches:
+        return
+    try:
+        for verb, args in matches:
+            if verb == "commit":
+                guard_commit()
+            else:
+                guard_push(args)
+    except subprocess.CalledProcessError:
+        return  # not inside the repo or git failed: let git report it
+
+
+if __name__ == "__main__":
+    main()

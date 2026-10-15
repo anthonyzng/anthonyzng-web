@@ -101,7 +101,9 @@ anthonyzng-web/
 ├── .env.example                # root Compose variables (the platform's database URLs, the dev database), placeholders only
 ├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
-│   ├── settings.json           # project plugins
+│   ├── settings.json           # project plugins and hooks (hooks/git_guard.py before git commit/push, hooks/format_python.py after edits)
+│   ├── hooks/                  # git_guard.py (no commit/push on main, secret scan, checks), checks.py (section 6 checks), format_python.py
+│   ├── skills/                 # ship, verify-ui, add-ui-string, schema-change, local-stack
 │   └── commands/do_pr.md       # /do_pr command
 ├── db/
 │   └── init/                   # Postgres init scripts (creates the `*_test` database on first start)
@@ -169,6 +171,7 @@ Owner assigns a task
         • on main      → create a new branch: ddmmyyyy_hhmmss_by_claude_anthony
         • not on main  → keep working on the current branch
    → implement
+   → run the section 6 checks (python .claude/hooks/checks.py)
    → code review the diff (code-review skill); fix every finding and re-review until clean
    → commit
    → push to the current branch
@@ -178,6 +181,8 @@ Owner assigns a task
   PowerShell: `git checkout -b "$(Get-Date -Format 'ddMMyyyy_HHmmss')_by_claude_anthony"`
 - **Never commit directly to `main`** (the one exception is the initial repository commit).
 - The same branch keeps receiving commits and pushes across tasks until the owner runs **`/do_pr`**.
+- The `ship` skill (`.claude/skills/ship/SKILL.md`) walks these steps from the checks to the push. Other project skills: `verify-ui` (the browser matrix: widths, themes, languages), `add-ui-string` (both locales), `schema-change` (model to docs, end to end), `local-stack` (the containerised stack on a local platform).
+- Hooks (`.claude/settings.json`) enforce the rules, they do not replace them: `git_guard.py` refuses a `git commit` on `main`, a push from or to `main`, a commit that adds a key-shaped string or a file such as `.env` / `*.pem` (a deliberate example line can carry `secret-scan: allow`), and a commit whose changed areas fail the section 6 checks (run by `checks.py`, which remembers a pass per area in `.git/claude-checks/`, so checks already run for the same changes are not repeated); `format_python.py` runs the backend's `ruff format` on every edited `backend/**/*.py`. When a hook blocks, fix the cause; never bypass it.
 - `/do_pr` (see `.claude/commands/do_pr.md`): opens a PR from the current branch into `main` via the GitHub MCP server, squash-merges it, and syncs local `main`. The next task then starts a new branch.
 - Merges into `main` trigger automatic deployment to the GCP VM.
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `style:`, `test:`).
@@ -266,6 +271,7 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml down           
 # Production: CI deploys (docs/deployment.md); on the VM: cd /opt/apps/anthonyzng-web && docker compose ps
 ```
 
+`python .claude/hooks/checks.py` runs these for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
 Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
 Before every commit that touches `backend/`: `ruff check`, `ruff format --check`, `mypy` and `pytest` must all pass (pytest needs the dev database container and `backend/.env`).
 ---
