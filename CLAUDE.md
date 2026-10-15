@@ -308,6 +308,8 @@ When a change alters a documented behaviour, update the file that documents it i
 - `code-review`: pre-commit review
 - `example-skills` (Anthropic): includes `webapp-testing` and `mcp-builder`
 
+The figma skills (synced from claude.ai) are `user-invocable-only` here (`skillOverrides` in `.claude/settings.json`): they are not offered to the model; when a task needs one, ask the owner, who runs it as a slash command.
+
 ---
 
 ## 9. Roadmap
