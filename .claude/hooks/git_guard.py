@@ -1,10 +1,13 @@
-"""PreToolUse hook (Bash, PowerShell): guards `git commit` and `git push`.
+"""PreToolUse hook: guards `git commit` and `git push` (Bash, PowerShell) and the GitHub MCP tools that
+write commits straight to a remote branch (push_files, create_or_update_file, delete_file).
 
 - No commit on `main`, and no push from or to `main` (CLAUDE.md section 4.2).
 - No commit that adds a secret: key-shaped strings in the added lines and untracked files, or a file
   such as `.env` or `*.pem`. A line that is a deliberate example can carry `secret-scan: allow`.
 - No commit until the checks of every changed area pass (checks.py; skipped when they already
   passed for exactly these changes, e.g. through the ship skill).
+- No GitHub MCP write to `main` (or with no branch named), to such a file, or with a secret in its content.
+  Pull requests and their merge (/do_pr) are not affected.
 
 Exit 2 blocks the tool call and shows stderr to Claude; any other problem lets the call through.
 """
@@ -33,6 +36,8 @@ SECRET_PATTERNS = {
 FORBIDDEN_FILE = re.compile(r"(^|/)(\.env(\.[^/]*)?|[^/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519|ecdsa)[^/]*)$")
 ALLOWED_FILE = re.compile(r"(^|/)\.env\.example$")
 ALLOW_MARK = "secret-scan: allow"
+# Keep in step with the hook's matcher in .claude/settings.json.
+GITHUB_WRITE_TOOLS = {"mcp__github__push_files", "mcp__github__create_or_update_file", "mcp__github__delete_file"}
 MAX_FILE_BYTES = 2_000_000
 
 
@@ -99,10 +104,38 @@ def guard_push(args: str) -> None:
         block("Blocked: never push to main; merges into main go through a pull request (/do_pr).")
 
 
+def guard_github_write(tool: str, tool_input: dict) -> None:
+    branch = str(tool_input.get("branch") or "").removeprefix("refs/heads/")
+    if branch in ("", "main"):
+        block(f"Blocked: {tool} would commit to {branch or 'the default branch'} of "
+              f"{tool_input.get('owner')}/{tool_input.get('repo')}. Never write to main; "
+              "work on a branch and merge through a pull request (/do_pr).")
+    if "files" in tool_input:
+        files = [(str(f.get("path", "?")), str(f.get("content", ""))) for f in tool_input.get("files") or []]
+    else:
+        files = [(str(tool_input.get("path", "?")), str(tool_input.get("content", "")))]
+    findings: list[str] = []
+    for path, content in files:
+        if tool.endswith("delete_file"):
+            continue
+        if FORBIDDEN_FILE.search(path) and not ALLOWED_FILE.search(path):
+            findings.append(f"{path}: this kind of file must never be committed")
+        for number, line in enumerate(content.splitlines(), 1):
+            scan_line(f"{path}:{number}", line, findings)
+    if findings:
+        block(f"Blocked: {tool} may commit secrets. Remove them (or mark a deliberate example line "
+              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]))
+
+
 def main() -> None:
     try:
         payload = json.load(sys.stdin)
     except ValueError:
+        return
+    tool = str(payload.get("tool_name") or "")
+    if tool.startswith("mcp__github__"):
+        if tool in GITHUB_WRITE_TOOLS:
+            guard_github_write(tool, payload.get("tool_input") or {})
         return
     command = (payload.get("tool_input") or {}).get("command") or ""
     matches = GIT_CMD.findall(command)

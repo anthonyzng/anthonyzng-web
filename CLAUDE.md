@@ -101,7 +101,7 @@ anthonyzng-web/
 ├── .env.example                # root Compose variables (the platform's database URLs, the dev database), placeholders only
 ├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
-│   ├── settings.json           # project plugins and hooks (hooks/git_guard.py before git commit/push, hooks/format_python.py after edits)
+│   ├── settings.json           # project plugins and hooks (hooks/git_guard.py before git commit/push and GitHub MCP file writes, hooks/format_python.py after edits)
 │   ├── hooks/                  # git_guard.py (no commit/push on main, secret scan, checks), checks.py (section 6 checks), format_python.py
 │   ├── skills/                 # ship, verify-ui, add-ui-string, schema-change, local-stack
 │   └── commands/do_pr.md       # /do_pr command
@@ -182,7 +182,7 @@ Owner assigns a task
 - **Never commit directly to `main`** (the one exception is the initial repository commit).
 - The same branch keeps receiving commits and pushes across tasks until the owner runs **`/do_pr`**.
 - The `ship` skill (`.claude/skills/ship/SKILL.md`) walks these steps from the checks to the push. Other project skills: `verify-ui` (the browser matrix: widths, themes, languages), `add-ui-string` (both locales), `schema-change` (model to docs, end to end), `local-stack` (the containerised stack on a local platform).
-- Hooks (`.claude/settings.json`) enforce the rules, they do not replace them: `git_guard.py` refuses a `git commit` on `main`, a push from or to `main`, a commit that adds a key-shaped string or a file such as `.env` / `*.pem` (a deliberate example line can carry `secret-scan: allow`), and a commit whose changed areas fail the section 6 checks (run by `checks.py`, which remembers a pass per area in `.git/claude-checks/`, so checks already run for the same changes are not repeated); `format_python.py` runs the backend's `ruff format` on every edited `backend/**/*.py`. When a hook blocks, fix the cause; never bypass it.
+- Hooks (`.claude/settings.json`) enforce the rules, they do not replace them: `git_guard.py` refuses a `git commit` on `main`, a push from or to `main`, a commit that adds a key-shaped string or a file such as `.env` / `*.pem` (a deliberate example line can carry `secret-scan: allow`), a commit whose changed areas fail the section 6 checks, and a GitHub MCP write (`push_files`, `create_or_update_file`, `delete_file`) to `main`, without a branch, of such a file or with a secret in it (pull requests and their merge are not affected) (run by `checks.py`, which remembers a pass per area in `.git/claude-checks/`, so checks already run for the same changes are not repeated); `format_python.py` runs the backend's `ruff format` on every edited `backend/**/*.py`. When a hook blocks, fix the cause; never bypass it.
 - `/do_pr` (see `.claude/commands/do_pr.md`): opens a PR from the current branch into `main` via the GitHub MCP server, squash-merges it, and syncs local `main`. The next task then starts a new branch.
 - Merges into `main` trigger automatic deployment to the GCP VM.
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `style:`, `test:`).

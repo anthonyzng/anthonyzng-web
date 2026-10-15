@@ -8,7 +8,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|PowerShell",
+        "matcher": "Bash|PowerShell|mcp__github__push_files|mcp__github__create_or_update_file|mcp__github__delete_file",
         "hooks": [
           {
             "type": "command",
