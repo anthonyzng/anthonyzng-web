@@ -16,21 +16,24 @@ PROJECT = "anthonyzng-web"
 
 
 def harness_path() -> str | None:
-    found = shutil.which("harness")
-    if found:
-        return found
-    candidate = Path.home() / ".local" / "bin" / ("harness.exe" if sys.platform == "win32" else "harness")
-    return str(candidate) if candidate.exists() else None
+    try:
+        found = shutil.which("harness")
+        if found:
+            return found
+        candidate = Path.home() / ".local" / "bin" / ("harness.exe" if sys.platform == "win32" else "harness")
+        return str(candidate) if candidate.exists() else None
+    except Exception:
+        return None
 
 
 def emit(name: str, attributes: Mapping[str, object], *, source: str = "hook", session_id: str | None = None) -> None:
-    exe = harness_path()
-    if exe is None:
-        return
-    payload = {"project": PROJECT, "source": source, "name": name, "attributes": dict(attributes),
-               "session_id": session_id}
     try:
-        subprocess.run([exe, "emit", "--stdin"], input=json.dumps(payload), text=True, capture_output=True,
-                       timeout=2, check=False)
-    except (OSError, subprocess.SubprocessError, ValueError):
+        exe = harness_path()
+        if exe is None:
+            return
+        payload = {"project": PROJECT, "source": source, "name": name, "attributes": dict(attributes),
+                   "session_id": session_id}
+        subprocess.run([exe, "emit", "--stdin"], input=json.dumps(payload), text=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2, check=False)
+    except Exception:
         return
