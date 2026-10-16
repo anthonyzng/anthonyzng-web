@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import checks  # noqa: E402
+import harness_emit  # noqa: E402
 
 GIT_CMD = re.compile(r"\bgit\b(?:\s+-[cC]\s+\S+)*\s+(commit|push)\b([^;&|\n]*)")
 SECRET_PATTERNS = {
@@ -44,7 +45,12 @@ GITHUB_WRITE_TOOLS = {"mcp__github__push_files", "mcp__github__create_or_update_
 MAX_FILE_BYTES = 2_000_000
 
 
-def block(message: str) -> None:
+CONTEXT: dict[str, str | None] = {"session_id": None, "tool_name": None}
+
+
+def block(message: str, reason: str) -> None:
+    harness_emit.emit("harness.guard.blocked", {"guard.reason": reason, "tool.name": CONTEXT["tool_name"] or "?"},
+                      session_id=CONTEXT["session_id"])
     print(message, file=sys.stderr)
     sys.exit(2)
 
@@ -111,16 +117,17 @@ def guard_commit(command: str, cwd: str) -> None:
     root = repo_root(target_dir(command, "commit", cwd))
     if git_in(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() == "main":
         block("Blocked: never commit directly to main (CLAUDE.md 4.2). Create a branch first:\n"
-              '  git checkout -b "$(date +%d%m%Y_%H%M%S)_by_claude_anthony"')
+              '  git checkout -b "$(date +%d%m%Y_%H%M%S)_by_claude_anthony"', "main_commit")
     findings = scan_for_secrets(root)
     if findings:
         block("Blocked: the commit may contain secrets. Remove them (or mark a deliberate example line "
-              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]))
+              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]), "secret")
     # The section 6 checks are this repository's; another repository runs its own.
     if root == checks.ROOT.resolve():
         areas = checks.changed_areas()
         if areas and not checks.run(areas):
-            block("Blocked: the pre-commit checks failed (CLAUDE.md section 6). Fix them, then commit again.")
+            block("Blocked: the pre-commit checks failed (CLAUDE.md section 6). Fix them, then commit again.",
+                  "checks_failed")
 
 
 def push_remote(args: str) -> str:
@@ -153,7 +160,7 @@ def guard_push(args: str, command: str, cwd: str) -> None:
     # The one exception (CLAUDE.md 4.2): a new repository's initial push, while its remote has no main yet.
     if not remote_has_main(target, push_remote(args)):
         return
-    block("Blocked: never push to main; merges into main go through a pull request (/do_pr).")
+    block("Blocked: never push to main; merges into main go through a pull request (/do_pr).", "main_push")
 
 
 def guard_github_write(tool: str, tool_input: dict) -> None:
@@ -161,7 +168,7 @@ def guard_github_write(tool: str, tool_input: dict) -> None:
     if branch in ("", "main"):
         block(f"Blocked: {tool} would commit to {branch or 'the default branch'} of "
               f"{tool_input.get('owner')}/{tool_input.get('repo')}. Never write to main; "
-              "work on a branch and merge through a pull request (/do_pr).")
+              "work on a branch and merge through a pull request (/do_pr).", "mcp_main_write")
     if "files" in tool_input:
         files = [(str(f.get("path", "?")), str(f.get("content", ""))) for f in tool_input.get("files") or []]
     else:
@@ -176,7 +183,7 @@ def guard_github_write(tool: str, tool_input: dict) -> None:
             scan_line(f"{path}:{number}", line, findings)
     if findings:
         block(f"Blocked: {tool} may commit secrets. Remove them (or mark a deliberate example line "
-              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]))
+              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]), "mcp_secret")
 
 
 def main() -> None:
@@ -184,6 +191,9 @@ def main() -> None:
         payload = json.load(sys.stdin)
     except ValueError:
         return
+    session = payload.get("session_id")
+    CONTEXT["session_id"] = session if isinstance(session, str) else None
+    CONTEXT["tool_name"] = str(payload.get("tool_name") or "") or None
     tool = str(payload.get("tool_name") or "")
     if tool.startswith("mcp__github__"):
         if tool in GITHUB_WRITE_TOOLS:
