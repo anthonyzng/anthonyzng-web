@@ -84,7 +84,8 @@ def command_line(area: str, cmd: str, junit_dir: str | None) -> str:
         junit = str(Path(junit_dir) / f"{area}-junit.xml")
         extra = " " + JUNIT_ARGS[cmd].format(junit=f'"{junit}"')
         junit_opt = f' --junit "{junit}"'
-    return f'"{harness}" check --project {harness_emit.PROJECT} --area {area}{junit_opt} -- {cmd}{extra}'
+    # No --project: `harness check` records only when this checkout is registered (`harness project add`).
+    return f'"{harness}" check --area {area}{junit_opt} -- {cmd}{extra}'
 
 
 def run_area(area: str, out=sys.stderr) -> bool:
