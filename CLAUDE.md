@@ -4,19 +4,14 @@ Guidance for Claude Code (and any sub-agent) working in this repository.
 
 > Items marked `TBD` are open decisions. Do not guess them; ask the owner.
 
----
-
 ## 1. Project Overview
 
 **anthonyzng-web** is the personal professional showcase website of Anthony Ng, served at **owwsolution.com**.
 GitHub repo: **`anthonyzng/anthonyzng-web`** (public).
 
-The site must communicate the owner's three roles:
-- Full Stack Software Developer
-- AI Developer
-- Assistant Manager, Software Development
+The site must communicate the owner's three roles: Full Stack Software Developer; AI Developer; Assistant Manager, Software Development.
 
-Features: experience timeline, projects, skills, tools and archive, contact form (Turnstile), CV download, EN + zh-Hant, dark/light worlds, SEO, analytics, admin panel (all content in the database). Detail: `README.md`.
+Features: experience timeline, projects, skills, tools and archive, contact form (Turnstile), CV download, EN + zh-Hant, dark/light worlds, SEO, analytics, admin panel (content in the DB). Detail: `README.md`.
 
 ### Home page requirements (non-negotiable)
 - **Scroll-driven animations**: elements animate in sync with scroll progress, not just a one-time fade-in.
@@ -26,17 +21,12 @@ Features: experience timeline, projects, skills, tools and archive, contact form
 ### Design direction
 Minimal, modern, professional editorial portfolio: generous whitespace, strong grotesk + mono typography, neutral palette with one accent, tasteful scroll motion. Detail: `frontend/CLAUDE.md`.
 
----
-
 ## 2. Architecture
 
 - Three tiers, each in its own Docker container: React SPA (static, nginx), FastAPI backend, one-off `migrate` job.
-- They run on the **Owwsolution platform** (private repo `Owwsolution/platform`): its Caddy and PostgreSQL 17 are shared; this repo brings its own database `anthonyzng_web` and Caddy snippet `deploy/anthonyzng-web.caddy`.
-- Domains: `owwsolution.com` (+ `www`) → frontend, `api.owwsolution.com` → backend.
-- Hosting: GCP Compute Engine VM `anthonyzng-web`, Docker only on the host; CI/CD by GitHub Actions to GHCR and the VM.
-- DNS and edge: Cloudflare (proxied, Full strict, Web Analytics). Details: the `infra` rule (`.claude/rules/infra.md`).
-
----
+- On the **Owwsolution platform** (private repo `Owwsolution/platform`): shared Caddy and PostgreSQL 17; this repo brings its database `anthonyzng_web` and Caddy snippet `deploy/anthonyzng-web.caddy`.
+- Domains: `owwsolution.com` (+ `www`) → frontend, `api.owwsolution.com` → backend; DNS and edge: Cloudflare (proxied, Full strict, Web Analytics).
+- Hosting: GCP VM `anthonyzng-web`, Docker only; CI/CD: GitHub Actions to GHCR and the VM. Details: `.claude/rules/infra.md`.
 
 ## 3. Repository Layout
 
@@ -44,10 +34,7 @@ Minimal, modern, professional editorial portfolio: generous whitespace, strong g
 anthonyzng-web/
 ├── CLAUDE.md                   # what every task needs; section 7 indexes the topic notes below
 ├── README.md
-├── docker-compose.yml          # the site on the platform: migrate (one-off), backend, frontend (no proxy, no db, no `build`)
-├── docker-compose.local.yml    # override: the site on a local platform stack over HTTP (localhost:8080); holds the `build` sections
-├── docker-compose.dev.yml      # the `db` service alone (PostgreSQL 17 on 127.0.0.1:5432) for host-run dev (project anthonyzng-web-dev)
-├── .env.example                # root Compose variables (the platform's database URLs, the dev database), placeholders only
+├── docker-compose*.yml, .env.example   # platform, local and dev-database stacks (infra rule)
 ├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
 ├── db/
@@ -62,7 +49,7 @@ anthonyzng-web/
 └── .github/workflows/
 ```
 
----
+Per-folder detail: `frontend/CLAUDE.md`, `backend/CLAUDE.md`, the rules; CodeGraph answers "where is X".
 
 ## 4. Development Workflow (MUST follow)
 
@@ -109,31 +96,31 @@ Owner assigns a task
 - This repo is **public**. This file is committed, so never put private details in it; use `CLAUDE.local.md` (git-ignored) for those.
 - Never commit secrets. They live in `.env` (git-ignored) or GitHub Actions secrets; keep `.env.example` in sync with placeholders.
 
----
-
 ## 5. Coding Conventions
 
 ### General
 - Code, comments, commit messages, and docs are written in **English**.
 - User-facing content is available in both `en` and `zh-Hant`. Never hard-code UI strings; use i18n keys.
 
----
-
 ## 6. Commands
 
-`python .claude/hooks/checks.py` runs these for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
+Per-area commands: `frontend/CLAUDE.md`, `backend/CLAUDE.md`; the local stack: the `local-stack` skill; production: `.claude/rules/infra.md`.
+
+`python .claude/hooks/checks.py` runs the per-area checks for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
 Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
 Before every commit that touches `backend/`: `ruff check`, `ruff format --check`, `mypy` and `pytest` must all pass (pytest needs the dev database container and `backend/.env`).
----
-
 ## 7. Where the details live
 
 This file holds what every task needs. Topic notes are split out so they load only when relevant:
 
 | File | Loaded | Covers |
 |------|--------|--------|
-| `frontend/CLAUDE.md` | automatically, when working under `frontend/` | routing, i18n, theme, design tokens, fonts, animation rules |
-| `backend/CLAUDE.md` | automatically, when working under `backend/` | layout, API surface and error envelope, settings, seed |
+| `frontend/CLAUDE.md` | automatically, when working under `frontend/` | routing, i18n, theme, design tokens, fonts, animation rules; stack, design direction, conventions, files, commands |
+| `backend/CLAUDE.md` | automatically, when working under `backend/` | layout, API surface and error envelope, settings, seed; stack, conventions, files, commands |
+| `.claude/rules/infra.md` | automatically, with `deploy/`, compose files, workflows, Dockerfiles, `db/`, the two infra docs | architecture, platform, hosting, CI/CD, DNS, backups |
+| `.claude/rules/claude-config.md` | automatically, with `.claude/**` and any `CLAUDE.md` | hooks, skills, plugins |
+| `.claude/skills/local-stack/SKILL.md` | on demand | the full-stack commands on a local platform |
+| `README.md` | on demand | features, roadmap |
 | `docs/frontend/content.md` | on demand | page content sources, snapshot, per-section content rules |
 | `docs/frontend/scenes.md` | on demand | the themed scenes, contact screen, page glass, tags, cats, card light, dock |
 | `docs/frontend/api-client.md` | on demand | env values, fetch client, zod schemas, `useContent`, contact form, test stubs |
@@ -147,11 +134,16 @@ This file holds what every task needs. Topic notes are split out so they load on
 | `docs/containers.md` | on demand | the platform, compose stack, database roles, images, Caddy snippet, local stack |
 | `docs/deployment.md` | on demand | GCP VM, production config, CI/CD, DNS, Cloudflare, backups, operations |
 
-When a change alters a documented behaviour, update the file that documents it in the same commit.
+A rule loads only when a matching file is read or edited; for a question that touches no file, read the rule this table names.
 
----
+When a change alters a documented behaviour, update the file that documents it in the same commit.
 
 ## 8. Installed Claude Code plugins (project scope)
 
-- Plugins: `superpowers`, `ui-ux-pro-max`, `code-review`, `example-skills`.
-- The figma skills are user-invocable only; ask the owner to run one (detail: `.claude/rules/claude-config.md`).
+`superpowers`, `ui-ux-pro-max`, `code-review`, `example-skills`. The figma skills are user-invocable only; ask the owner to run one (detail: `.claude/rules/claude-config.md`).
+
+## Compact instructions
+When compacting, keep: the current task and its acceptance checks; the path of the plan, ledger or harness focus file in use;
+every file modified in this session; the test and check commands run and their last result; open questions for the
+owner; decisions the owner made in this session, quoted. Drop: file contents already written to disk, tool output
+already acted on, superseded attempts.

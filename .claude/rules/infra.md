@@ -52,6 +52,10 @@ Each tier runs in its **own Docker container**. The site runs on the **Owwsoluti
 
 ```
 anthonyzng-web/
+├── docker-compose.yml          # the site on the platform: migrate (one-off), backend, frontend (no proxy, no db, no `build`)
+├── docker-compose.local.yml    # override: the site on a local platform stack over HTTP (localhost:8080); holds the `build` sections
+├── docker-compose.dev.yml      # the `db` service alone (PostgreSQL 17 on 127.0.0.1:5432) for host-run dev (project anthonyzng-web-dev)
+├── .env.example                # root Compose variables (the platform's database URLs, the dev database), placeholders only
 ├── db/
 │   └── init/                   # Postgres init scripts (creates the `*_test` database on first start)
 ├── deploy/
