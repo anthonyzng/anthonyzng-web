@@ -1,6 +1,7 @@
 # Context diet: a smaller CLAUDE.md and path-scoped rules
 
-Status: draft for the owner's review (2026-10-18). Nothing in this spec is implemented yet.
+Status: approved by the owner (2026-10-18), with both decisions in section 7 answered as proposed. Plan:
+`docs/plans/2026-10-18-context-diet.md`. Nothing in this spec is implemented yet.
 
 ## 1. Goal
 
@@ -146,7 +147,7 @@ tokens per turn, which shows the per-turn saving directly. An eval round (`harne
 | A path-scoped rule does not load for a question that touches no file (for example "how do we deploy?") | The root index names each rule, so Claude reads it on demand. The harness shows whether rule loads happen. |
 | Moved text drifts from its source | Each fact has exactly one home; the root index (section 7 of CLAUDE.md) is the map. |
 
-## 7. Decisions for the owner
+## 7. Decisions for the owner (answered 2026-10-18)
 
-1. **Roadmap:** move it to `README.md` (proposed) or drop it?
-2. **Order:** do this before the harness context work (proposed, it is small and independent), or after?
+1. **Roadmap:** moves to `README.md` (as proposed).
+2. **Order:** this work goes first, before the harness context work (as proposed: it is small and independent).
