@@ -1,18 +1,18 @@
-# Context diet: a smaller CLAUDE.md, path-scoped rules, and plan focus that survives compaction
+# Context diet: a smaller CLAUDE.md and path-scoped rules
 
 Status: draft for the owner's review (2026-10-18). Nothing in this spec is implemented yet.
 
 ## 1. Goal
 
-Load less into every session, and stop losing the plan when the context is compacted:
+Load less into every turn. The root `CLAUDE.md` is sent with every turn of every session (about 6.5k tokens; over a
+500-turn session that is about 3.2 million cache-read tokens, all counted against the weekly limit), and long files
+reduce adherence. Instructions that only matter for part of the repository should load only when Claude works on that
+part.
 
-1. **Smaller always-loaded instructions.** Today the root `CLAUDE.md` loads into every session. Instructions that
-   only matter for part of the repository should load only when Claude works on that part.
-2. **Plan focus.** For multi-step tasks, the current plan's key points (goal, decisions, files touched, checks, next
-   step) live in a short file outside the conversation. A hook re-injects that file after compaction, so long tasks
-   do not lose their thread.
+Plan focus, handoff instead of compaction and the reminders are not in this spec: they serve every project, so they
+live in the harness (`Owwsolution/harness`, `docs/specs/2026-10-18-context-management-design.md`).
 
-The owner's harness (`Owwsolution/harness`) measures the result (section 6). It needs no new code for that.
+The owner's harness (`Owwsolution/harness`) measures the result (section 5). It needs no new code for that.
 
 Out of scope: vector RAG, embeddings or a new MCP knowledge server; changes to user-level files (`~/.claude/*`);
 changes to the content of `docs/` topic notes.
@@ -32,17 +32,12 @@ independent posts) found:
   code knowledge bases are structural graphs with keyword search rather than vector RAG. Claude Code's own team
   prefers agentic grep/glob search to embeddings, because indexes go stale and raise privacy problems. Vector RAG
   stays a later, measured option.
-- **Plans belong in a short file outside the chat.** Spec Kit, Kiro, Codex ExecPlans, Cline's Memory Bank and the
-  superpowers ledger all keep plan state in files. Anthropic's long-running-agent guidance uses a progress file plus
-  notes. The compact form that recurs across them is decisions, file paths, interfaces, acceptance checks and next
-  steps, with no narrative and no code bodies.
 - **Compaction loses early detail and file paths.** Anthropic's docs and Factory's compression eval agree on this.
-  The mitigations are a "Compact instructions" section in CLAUDE.md, and a `SessionStart` hook with the `compact`
-  matcher that re-injects the plan. Its plain stdout becomes context, capped at 10,000 characters
-  (https://code.claude.com/docs/en/hooks).
+  A "Compact instructions" section in CLAUDE.md steers what the summary keeps, and the project-root CLAUDE.md is
+  re-read from disk after `/compact` (https://code.claude.com/docs/en/memory).
 - **Evidence for the savings is mostly vendor-reported.** Anthropic's own numbers: tool search cut tool definitions
   by 85%, and context editing plus the memory tool improved an internal eval by 29–39%. No independent study measures
-  plan files. So we measure on our own data (section 6).
+  this. So we measure on our own data (section 5).
 
 ## 3. Current state (measured 2026-10-18)
 
@@ -73,7 +68,7 @@ Root `CLAUDE.md` by section:
 Harness baseline for anthonyzng-web: 77 sessions with a context reading, median peak context 571k tokens, 1.21
 compactions per session (93 in total).
 
-## 4. Part A: a smaller root CLAUDE.md and path-scoped rules
+## 4. A smaller root CLAUDE.md and path-scoped rules
 
 ### 4.1 What stays in the root CLAUDE.md (target: under 150 lines, under 10 KB)
 
@@ -96,7 +91,7 @@ What every task needs, whatever files it touches:
   rule has loaded.
 - **Compact instructions** (new, about 6 lines; see 5.4).
 - **8 Plugins**: 2 lines. **9 Roadmap** and **10 Open questions**: removed from the root (the roadmap is history once
-  its phases are done, and section 10 holds nothing open); the roadmap moves to `README.md` (decision 4).
+  its phases are done, and section 10 holds nothing open); the roadmap moves to `README.md` (decision 1).
 
 ### 4.2 New path-scoped rules in `.claude/rules/`
 
@@ -115,70 +110,19 @@ instead of new rules. They already load on demand the same way, and two places f
 - The root index (section 7) names every rule and nested file, with one line on what it covers.
 - Must-follow rules (workflow, security, account, personal data) never move out of the root.
 
-## 5. Part B: plan focus
-
-### 5.1 The focus file
-
-- **Path:** `.claude/focus.md`, git-ignored, one per checkout (each worktree has its own).
-- **Written by Claude**, as instructed by a root CLAUDE.md rule: for a task with more than about three steps, create
-  it at the start, update it when a step finishes or a decision is made, and clear it when the task is pushed (the
-  `ship` skill's last step).
-- **Shape:** at most 60 lines and 4,000 characters, well under the hook cap of 10,000:
-
-```markdown
-# Focus: <task in one line>  (updated <YYYY-MM-DD HH:MM>)
-Goal: <what done looks like>
-Branch: <branch>
-Decisions:
-- <decision and why, one line each>
-Files touched:
-- <path>: <what changed, a few words>
-Checks: <commands that must pass>
-Done:
-- <step>
-Next:
-- <next step>
-Open questions:
-- <question for the owner>
-```
-
-- **No content that should not leave the conversation:** no secrets and no personal data, the same rule as
-  everywhere else in the repository.
-
-### 5.2 The re-injection hook
-
-`.claude/hooks/plan_focus.py`, registered in `.claude/settings.json`:
-
-| Event | Matcher | What it does |
-|-------|---------|--------------|
-| `SessionStart` | `compact` | prints `.claude/focus.md` (truncated to 9,000 characters) with a one-line header, so it becomes context right after compaction |
-| `SessionStart` | `resume` | the same, for `--resume` / `--continue` |
-| `SessionStart` | `startup` | prints only one line when a focus file exists: its task line and age (for example "Focus file from 2 days ago: <task>; read .claude/focus.md if you are continuing it"). The body is not injected, because a new session is often a new task. |
-
-The hook never fails: on any error it prints nothing and exits 0. It reads only the focus file and takes no input
-from the payload beyond `cwd`. It stays within the repository's hook style: Python, standard library only, run as
-`python "$CLAUDE_PROJECT_DIR/.claude/hooks/plan_focus.py"`.
-
-### 5.3 Relation to existing plans and ledgers
-
-- The superpowers ledger (`.superpowers/sdd/<plan>/progress.md`) and specs and plans in `docs/` stay as they are.
-  For those tasks, the focus file is short and points to them ("Plan: docs/plans/x.md; ledger: …"), and does not
-  copy them.
-- Auto-memory stays for durable facts. The focus file is only for the task in hand, and is cleared when the task ends.
-
-### 5.4 Compact instructions (root CLAUDE.md)
+### 4.4 Compact instructions (root CLAUDE.md)
 
 A short section that Claude Code's compaction follows:
 
 ```markdown
 ## Compact instructions
-When compacting, keep: the current task and its acceptance checks; the path of the focus file, plan or ledger in use;
+When compacting, keep: the current task and its acceptance checks; the path of the plan, ledger or harness focus file in use;
 every file modified in this session; the test and check commands run and their last result; open questions for the
 owner; decisions the owner made in this session, quoted. Drop: file contents already written to disk, tool output
 already acted on, superseded attempts.
 ```
 
-## 6. Measuring it with the harness
+## 5. Measuring it with the harness
 
 Nothing new needs to be built. After the change ships:
 
@@ -189,27 +133,20 @@ Nothing new needs to be built. After the change ships:
 | Median peak context, compactions per session | `session_summaries` | lower or equal |
 | Quality guard: check pass rate, interventions, rework | dashboard cards and before/after | not worse |
 
-The dashboard marks the change automatically, because the new hook appears in the harness inventory. CLAUDE.md
-edits alone change only the session fingerprint, so they are not shown as a notice. The before/after table then compares the 7 days on each side. With fewer than 5 sessions on a side it says so, so
-the owner reads it after about a week of normal use. An eval round (`harness eval`) is optional, needs the owner's
+CLAUDE.md and rule edits change only the session fingerprint, which the dashboard does not show as a notice, so the
+owner picks the change date in the before/after table, which compares the 7 days on each side. With fewer than 5
+sessions on a side it says so, so the owner reads it after about a week of normal use. The harness context spec adds
+tokens per turn, which shows the per-turn saving directly. An eval round (`harness eval`) is optional, needs the owner's
 `yes`, and is not part of this work.
 
-## 7. Risks and mitigations
+## 6. Risks and mitigations
 
 | Risk | Mitigation |
 |------|------------|
 | A path-scoped rule does not load for a question that touches no file (for example "how do we deploy?") | The root index names each rule, so Claude reads it on demand. The harness shows whether rule loads happen. |
-| The focus file goes stale and misleads a later session | Only `compact` and `resume` inject the body; `startup` shows one line with the file's age; the `ship` skill clears it. |
-| Claude forgets to update the focus file | A root CLAUDE.md rule plus the `ship` skill step. The harness cannot see the file's content, so the owner spot-checks. |
-| Moved text drifts from its source | Each fact has exactly one home; section 7's index is the map. |
-| The cap truncates a long focus file | A hard 60-line, 4,000-character shape; the hook truncates at 9,000 characters with a marker. |
+| Moved text drifts from its source | Each fact has exactly one home; the root index (section 7 of CLAUDE.md) is the map. |
 
-## 8. Decisions for the owner
+## 7. Decisions for the owner
 
-1. **Scope:** anthonyzng-web only for now (proposed). Or also add the focus hook at user level for every project, or
-   offer it from `harness setup`?
-2. **Focus file name and location:** `.claude/focus.md`, git-ignored (proposed). Or a committed file, so the plan
-   travels with the branch? It is public, so it must never hold private details.
-3. **`startup` behaviour:** a one-line notice (proposed), nothing, or the full body?
-4. **Roadmap:** move it to `README.md` (proposed) or drop it?
-5. **Who clears the focus file:** the `ship` skill at push (proposed), or `/do_pr` at merge?
+1. **Roadmap:** move it to `README.md` (proposed) or drop it?
+2. **Order:** do this before the harness context work (proposed, it is small and independent), or after?
