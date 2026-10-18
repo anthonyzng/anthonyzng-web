@@ -16,18 +16,7 @@ The site must communicate the owner's three roles:
 - AI Developer
 - Assistant Manager, Software Development
 
-### Features
-- Work experience timeline
-- Projects portfolio (details, tech stack, links, images)
-- Skills / tech stack
-- Contact form (with bot protection)
-- Downloadable CV (PDF): in the hero, the section dock and the contact screen
-- Tools the owner built (cards linking to each tool) and an archive of earlier portfolio versions, blog posts and other links
-- **Bilingual: English + Traditional Chinese** (language switcher, content stored per locale)
-- **Dark / light mode** (follows system by default, user toggle persisted): two worlds, a black hole and a night sky in dark mode, an ink-wash bamboo grove on paper in light mode
-- SEO (meta tags, Open Graph, sitemap, `hreflang`, structured data)
-- Analytics
-- **Admin panel** to manage experience, projects, skills, tools, the archive, the home page's hero and "In brief" texts, and the CV (content lives in the database)
+Features: experience timeline, projects, skills, tools and archive, contact form (Turnstile), CV download, EN + zh-Hant, dark/light worlds, SEO, analytics, admin panel (all content in the database). Detail: `README.md`.
 
 ### Home page requirements (non-negotiable)
 - **Scroll-driven animations**: elements animate in sync with scroll progress, not just a one-time fade-in.
@@ -132,25 +121,6 @@ Owner assigns a task
 
 ## 6. Commands
 
-```bash
-# Full stack on a local platform (Git Bash, from the repo root). Once: the platform repo checked out next to
-# this one (../platform) as a local platform (its CLAUDE.md section 6 "Locally": its .env with the two COMPOSE_*
-# lines), with this repo's deploy/local-caddy.env copied to its caddy.env; then this site's networks, database
-# and addresses (the database URLs go into this repo's root .env; the stack also needs backend/.env, the compose
-# `env_file`, see backend/.env.example):
-P=$(cd ../platform && pwd); export PLATFORM_DIR=$P
-(cd "$P" && scripts/app-networks sync && docker compose up -d --wait)
-"$P/scripts/provision-app" anthonyzng-web --scheme postgresql+asyncpg --write-env "$PWD/.env"   # db-anthonyzng-web + the database
-"$P/scripts/app-networks" add anthonyzng-web edge                                                 # edge-anthonyzng-web
-"$P/scripts/app-hosts" set anthonyzng-web localhost,www.localhost,api.localhost,:8080            # what the snippet may serve
-docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build   # http://localhost:8080, API also http://api.localhost:8080
-"$P/scripts/install-site" anthonyzng-web deploy/anthonyzng-web.caddy             # after the first up, and after each snippet change
-(cd "$P" && docker compose up -d caddy)                                            # after any edit of the platform's caddy.env (install-site refuses until then)
-docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f backend  # follow one service
-docker compose -f docker-compose.yml -f docker-compose.local.yml run --rm -T backend python -m app.seed </dev/null   # seed inside the stack
-docker compose -f docker-compose.yml -f docker-compose.local.yml down            # stop (the data stays in the platform's database)
-```
-
 `python .claude/hooks/checks.py` runs these for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
 Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
 Before every commit that touches `backend/`: `ruff check`, `ruff format --check`, `mypy` and `pytest` must all pass (pytest needs the dev database container and `backend/.env`).
@@ -185,25 +155,3 @@ When a change alters a documented behaviour, update the file that documents it i
 
 - Plugins: `superpowers`, `ui-ux-pro-max`, `code-review`, `example-skills`.
 - The figma skills are user-invocable only; ask the owner to run one (detail: `.claude/rules/claude-config.md`).
-
----
-
-## 9. Roadmap
-
-| Phase | Scope |
-|-------|-------|
-| 0 | Repo init, CLAUDE.md, README, `.gitignore`, GitHub remote, GitHub MCP |
-| 1 | Frontend scaffold (Vite + React + TS + Tailwind + i18n + theme), design tokens |
-| 2 | Home page: parallax hero, scroll-driven section transitions |
-| 3 | Experience, Projects, Skills, Contact, CV download (static data first) |
-| 4 | FastAPI + PostgreSQL: content API, contact endpoint, admin auth |
-| 5 | Admin panel (CRUD for bilingual content) |
-| 6 | Dockerize all tiers + Caddy, full-stack local run |
-| 7 | GCP VM + DNS + HTTPS, GitHub Actions auto-deploy |
-| 8 | SEO, analytics, performance and accessibility pass |
-
----
-
-## 10. Open Questions (TBD)
-
-- None at the moment. (The localised content storage model was decided in Phase 4: one JSONB `translations` column per row, see section 5.)
