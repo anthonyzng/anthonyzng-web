@@ -1,6 +1,6 @@
 # Backend notes
 
-Loaded when working under `backend/`. The rules every backend change must follow; the root `CLAUDE.md` holds the project overview, workflow and commands. Details by topic live in `docs/backend/`:
+Loaded when working under `backend/`. The rules every backend change must follow; the root `CLAUDE.md` holds the project overview, workflow and the pre-commit checks. Details by topic live in `docs/backend/`:
 
 - `docs/backend/auth.md`: admin auth, cookie, CORS, CSRF layers, client IP, rate limiting, two-factor sign-in (TOTP)
 - `docs/backend/contact.md`: the contact flow and email providers
@@ -15,3 +15,62 @@ Loaded when working under `backend/`. The rules every backend change must follow
 - **Settings** (`core/config.py`; field name = env var; `backend/.env` is read automatically; keep `backend/.env.example` in sync): `APP_ENV` (`development` | `test` | `production`), `DATABASE_URL`, `TEST_DATABASE_URL` (pytest only), `JWT_SECRET` (at least 32 characters), `IP_HASH_SECRET` (at least 32 characters; the HMAC key for contact-message IP hashes; changing it makes old hashes unmatchable), `TOTP_ENCRYPTION_KEY` (at least 32 characters; encrypts the admin's TOTP secret; changing it makes a stored secret unreadable, which the shell reset recovers from), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CONTACT_TO_EMAIL`, `EMAIL_FROM` (default `noreply@owwsolution.com`), `EMAIL_PROVIDER` (`console` | `resend`; `resend` requires `RESEND_API_KEY`), `TURNSTILE_SECRET_KEY`, `CORS_ORIGINS` (comma-separated exact origins, `*` rejected), `TRUSTED_PROXY` (default `false`). For a one-off run, override in the environment instead of editing `.env` (environment variables win). Settings errors never echo input values (`hide_input_in_errors=True`), so a failed start cannot print a secret. With `APP_ENV=production` the process refuses to start (`_refuse_unsafe_production`, every problem listed, no value shown) on a `change-me` placeholder in `JWT_SECRET`, `IP_HASH_SECRET`, `TOTP_ENCRYPTION_KEY` or `ADMIN_PASSWORD`, an `ADMIN_PASSWORD` under 12 characters, any two of `JWT_SECRET`, `IP_HASH_SECRET`, `TOTP_ENCRYPTION_KEY` equal, a Cloudflare test Turnstile secret, any `EMAIL_PROVIDER` but `resend`, or an empty `CORS_ORIGINS`.
 
 - **Seed** (`app/seed/`): `content.json` is the site's initial content in the storage shapes (`translations` objects, tag strings or `{"en","zh-Hant"}` term objects, `YYYY-MM` dates); rows are validated by the write models and mapped by the collection registry. `seed_content` upserts every row by slug in one transaction (`INSERT … ON CONFLICT (slug) DO UPDATE`, `updated_at = now()`; a row without `sortOrder` takes its position in the file), never deletes a row and keeps a project's image, unless the file makes that project a placeholder (which cannot have one): then the image is dropped, and cover images no project points at are deleted. The admin panel is the source of truth, so `content.json` is not kept in step with it and only bootstraps an empty database (development, a new server): `python -m app.seed` refuses a database that already holds content, because it would put the file's version back over every edited row; `--force` seeds anyway.
+
+## Stack
+
+| Layer      | Choice |
+|------------|--------|
+| Backend    | Python 3.13 + FastAPI, SQLAlchemy 2.x (async, asyncpg), Alembic migrations, Pydantic v2; dependencies managed with uv (`pyproject.toml` + committed `uv.lock`) |
+| Database   | PostgreSQL 17, the platform's shared instance: database `anthonyzng_web`, roles `anthonyzng_web_owner` (migrations) and `anthonyzng_web_app` (the backend); bilingual content stored as one JSONB `translations` column per row (see Conventions below) |
+| Admin auth | Single admin account, Argon2 password hash, JWT in httpOnly cookie, login rate limiting, optional TOTP second factor (authenticator app; `docs/backend/auth.md`). Admin UI at `owwsolution.com/admin` |
+| Contact    | Cloudflare Turnstile (bot protection) + Resend (email from `noreply@owwsolution.com`). Every message is also stored in the DB. Recipient comes from env var `CONTACT_TO_EMAIL` (value kept in `CLAUDE.local.md`, never committed) |
+
+## Conventions
+
+- Type hints everywhere (`mypy --strict` must pass); Pydantic schemas for all request/response bodies, camelCase on the wire (`CamelModel` in `app/schemas/common.py`), snake_case in Python.
+- All schema changes go through Alembic migrations (`alembic revision --autogenerate`); `tests/test_migrations.py` fails when the models and the migrations drift apart.
+- Config comes from environment variables only (pydantic-settings, `app/core/config.py`); secrets are `SecretStr` and never logged.
+- Localised content storage model: every translatable row carries one JSONB column `translations` shaped `{"en": {...}, "zh-Hant": {...}}`; both locales are required and validated by the Pydantic generic `Localized[T]`. Tag chips are a JSONB array whose items are either a plain string (a proper noun, never translated) or a `{"en": "...", "zh-Hant": "..."}` object (a translated term). Untranslated facts (company, company_url, school, certification name, the `url` of a school, certification, tool or archive entry, tool name, archive month, href, display) are ordinary columns. Dates are `YYYY-MM` strings (`end_month` NULL = present). Slugs (`^[a-z][a-zA-Z0-9_-]{0,63}$`) are the frontend's ids and the natural key of every content table.
+- Async everywhere (SQLAlchemy async sessions, asyncpg, httpx.AsyncClient); `ruff check` and `ruff format --check` must pass; tests run against a real PostgreSQL, never SQLite.
+
+## Files
+
+```
+anthonyzng-web/
+├── backend/
+│   ├── CLAUDE.md               # backend rules, loaded when working under backend/
+│   ├── Dockerfile              # multi-stage: uv sync → slim runtime, non-root, uvicorn on :8000
+│   ├── pyproject.toml          # uv-managed project; uv.lock is committed
+│   ├── .env.example            # every backend env var, placeholder values only
+│   ├── alembic.ini
+│   ├── alembic/                # async env.py + versions/
+│   ├── tests/                  # pytest against a real PostgreSQL (TEST_DATABASE_URL)
+│   └── app/
+│       ├── main.py             # create_app() + lifespan; `app` for uvicorn (built on first access)
+│       ├── db_roles.py         # `python -m app.db_roles`: checks the backend's least-privilege database role (run by `migrate`)
+│       ├── admin_totp.py       # `python -m app.admin_totp status|reset`: the admin's two-factor sign-in from a shell
+│       ├── api/                # deps.py + v1/ routers (health, content, contact, auth, files, admin)
+│       ├── models/             # SQLAlchemy models (content, contact_message, admin_user, stored_file)
+│       ├── schemas/            # Pydantic schemas (public payload, write models, admin, requests, errors)
+│       ├── services/           # content, content_admin, collections, files, messages, contact, turnstile, email, auth
+│       ├── seed/               # content.json + `python -m app.seed` (bootstraps an empty database)
+│       └── core/               # config, db, security, rate_limit, client_ip, errors, middleware
+```
+
+## Commands
+
+```bash
+# Dev database (from the repo root; credentials in the git-ignored root .env, see .env.example)
+docker compose -f docker-compose.dev.yml up -d db   # PostgreSQL 17 on 127.0.0.1:5432, plus the *_test database (project anthonyzng-web-dev, volume anthonyzng-web_pgdata: never `down -v`)
+
+# Backend (run inside backend/; uv is invoked as `python -m uv`, plain `uv` may not be on PATH)
+python -m uv sync --all-groups                 # create .venv from uv.lock (runtime + dev tools)
+python -m uv run alembic upgrade head          # apply migrations to DATABASE_URL (never run at startup)
+python -m uv run python -m app.seed            # load app/seed/content.json into an empty DATABASE_URL (refuses one with content; --force overwrites)
+python -m uv run uvicorn app.main:app --reload --port 8000   # http://localhost:8000/api/v1, docs at /api/v1/docs (the "backend" entry in .claude/launch.json runs it too)
+python -m uv run ruff check .                  # lint
+python -m uv run ruff format --check .         # formatting
+python -m uv run mypy .                        # strict type check
+python -m uv run pytest -q                     # tests against TEST_DATABASE_URL (schema rebuilt by the session fixture)
+python -m uv run alembic revision --autogenerate -m "describe change"   # after a model change
+```
