@@ -13,7 +13,10 @@ from __future__ import annotations
 import hashlib
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+import harness_emit
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -25,6 +28,10 @@ AREAS: dict[str, list[str]] = {
         "python -m uv run mypy .",
         "python -m uv run pytest -q",
     ],
+}
+JUNIT_ARGS = {
+    "npm test": "-- --reporter=default --reporter=junit --outputFile={junit}",
+    "python -m uv run pytest -q": "--junitxml={junit}",
 }
 TIMEOUT_S = 600
 TAIL_LINES = 60
@@ -67,21 +74,36 @@ def passed_already(area: str) -> bool:
         return False
 
 
+def command_line(area: str, cmd: str, junit_dir: str | None) -> str:
+    """The command as run: through `harness check` when the harness is installed, else unchanged."""
+    harness = harness_emit.harness_path()
+    if harness is None or junit_dir is None:
+        return cmd
+    extra, junit_opt = "", ""
+    if cmd in JUNIT_ARGS:
+        junit = str(Path(junit_dir) / f"{area}-junit.xml")
+        extra = " " + JUNIT_ARGS[cmd].format(junit=f'"{junit}"')
+        junit_opt = f' --junit "{junit}"'
+    # No --project: `harness check` records only when this checkout is registered (`harness project add`).
+    return f'"{harness}" check --area {area}{junit_opt} -- {cmd}{extra}'
+
+
 def run_area(area: str, out=sys.stderr) -> bool:
-    for cmd in AREAS[area]:
-        print(f"[checks] {area}: {cmd}", file=out, flush=True)
-        try:
-            proc = subprocess.run(
-                cmd, cwd=ROOT / area, shell=True, capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=TIMEOUT_S,
-            )
-        except subprocess.TimeoutExpired:
-            print(f"[checks] {area}: `{cmd}` timed out after {TIMEOUT_S}s", file=out)
-            return False
-        if proc.returncode != 0:
-            tail = (proc.stdout + proc.stderr).strip().splitlines()[-TAIL_LINES:]
-            print(f"[checks] {area}: `{cmd}` FAILED (exit {proc.returncode})\n" + "\n".join(tail), file=out)
-            return False
+    with tempfile.TemporaryDirectory() as junit_dir:
+        for cmd in AREAS[area]:
+            print(f"[checks] {area}: {cmd}", file=out, flush=True)
+            try:
+                proc = subprocess.run(
+                    command_line(area, cmd, junit_dir), cwd=ROOT / area, shell=True, capture_output=True,
+                    text=True, encoding="utf-8", errors="replace", timeout=TIMEOUT_S,
+                )
+            except subprocess.TimeoutExpired:
+                print(f"[checks] {area}: `{cmd}` timed out after {TIMEOUT_S}s", file=out)
+                return False
+            if proc.returncode != 0:
+                tail = (proc.stdout + proc.stderr).strip().splitlines()[-TAIL_LINES:]
+                print(f"[checks] {area}: `{cmd}` FAILED (exit {proc.returncode})\n" + "\n".join(tail), file=out)
+                return False
     path = stamp_path(area)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(fingerprint(area))
@@ -94,6 +116,9 @@ def run(areas: list[str], out=sys.stderr, skip_passed: bool = True) -> bool:
     for area in areas:
         if skip_passed and passed_already(area):
             print(f"[checks] {area}: already passed for these changes", file=out)
+            harness_emit.emit("checks.run", {"check.area": area, "check.command": "(all)", "check.status": "pass",
+                                             "check.cached": True, "duration_ms": 0, "tests.failed": 0,
+                                             "tests.failed_names": []}, source="checks")
             continue
         ok = run_area(area, out) and ok
     return ok

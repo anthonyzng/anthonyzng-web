@@ -3,7 +3,8 @@ write commits straight to a remote branch (push_files, create_or_update_file, de
 
 - No commit on `main`, and no push from or to `main` (CLAUDE.md section 4.2), except a new repository's
   initial push: `main` may be pushed while the remote has no `main` yet (checked with `git ls-remote`; a failed
-  check blocks). The push's repository is `git -C <dir>`, a leading `cd <dir> &&`, or the session's cwd.
+  check blocks). The repository a commit or push acts on is `git -C <dir>`, a leading `cd <dir> &&`, or
+  the session's cwd; the main-branch and secret rules apply to it, the section 6 checks only to this one.
 - No commit that adds a secret: key-shaped strings in the added lines and untracked files, or a file
   such as `.env` or `*.pem`. A line that is a deliberate example can carry `secret-scan: allow`.
 - No commit until the checks of every changed area pass (checks.py; skipped when they already
@@ -24,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import checks  # noqa: E402
+import harness_emit  # noqa: E402
 
 GIT_CMD = re.compile(r"\bgit\b(?:\s+-[cC]\s+\S+)*\s+(commit|push)\b([^;&|\n]*)")
 SECRET_PATTERNS = {
@@ -43,13 +45,34 @@ GITHUB_WRITE_TOOLS = {"mcp__github__push_files", "mcp__github__create_or_update_
 MAX_FILE_BYTES = 2_000_000
 
 
-def block(message: str) -> None:
+CONTEXT: dict[str, str | None] = {"session_id": None, "tool_name": None}
+
+
+def block(message: str, reason: str) -> None:
+    harness_emit.emit("harness.guard.blocked", {"guard.reason": reason, "tool.name": CONTEXT["tool_name"] or "?"},
+                      session_id=CONTEXT["session_id"])
     print(message, file=sys.stderr)
     sys.exit(2)
 
 
-def current_branch() -> str:
-    return checks.git("rev-parse", "--abbrev-ref", "HEAD").decode().strip()
+def target_dir(command: str, verb: str, cwd: str) -> Path:
+    """The directory a `git <verb>` acts in: `git -C <dir> <verb>`, else a leading `cd <dir> &&`, else cwd."""
+    match = re.search(rf"\bgit\s+-C\s+(\"[^\"]+\"|'[^']+'|\S+)\s+(?:-\S+\s+)*{verb}\b", command)
+    if not match:
+        match = re.search(rf"\bcd\s+(\"[^\"]+\"|'[^']+'|[^\s;&|]+)\s*&&[^;|]*\bgit\b[^;|]*\b{verb}\b", command)
+    raw = match.group(1).strip("\"'") if match else ""
+    # Git Bash paths (/c/Users/...) as Windows paths.
+    raw = re.sub(r"^/([a-zA-Z])/", r"\1:/", raw)
+    base = Path(cwd) if cwd else checks.ROOT
+    return (base / raw).resolve() if raw else base
+
+
+def git_in(repo: Path, *args: str) -> bytes:
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, check=True).stdout
+
+
+def repo_root(directory: Path) -> Path:
+    return Path(git_in(directory, "rev-parse", "--show-toplevel").decode().strip()).resolve()
 
 
 def scan_line(where: str, line: str, findings: list[str]) -> None:
@@ -60,21 +83,22 @@ def scan_line(where: str, line: str, findings: list[str]) -> None:
             findings.append(f"{where}: looks like a {name}")
 
 
-def scan_for_secrets() -> list[str]:
+def scan_for_secrets(root: Path) -> list[str]:
     findings: list[str] = []
-    paths = checks.git("diff", "HEAD", "--name-only", "-z").decode("utf-8").split("\0")
-    new_files = checks.untracked(".")
+    paths = git_in(root, "diff", "HEAD", "--name-only", "-z").decode("utf-8").split("\0")
+    untracked = git_in(root, "ls-files", "--others", "--exclude-standard", "-z").decode("utf-8").split("\0")
+    new_files = sorted(p for p in untracked if p)
     for path in [p for p in paths if p] + new_files:
-        if FORBIDDEN_FILE.search(path) and not ALLOWED_FILE.search(path) and (checks.ROOT / path).exists():
+        if FORBIDDEN_FILE.search(path) and not ALLOWED_FILE.search(path) and (root / path).exists():
             findings.append(f"{path}: this kind of file must never be committed")
     current = "?"
-    for raw in checks.git("diff", "HEAD", "-U0", "--no-color").decode("utf-8", "replace").splitlines():
+    for raw in git_in(root, "diff", "HEAD", "-U0", "--no-color").decode("utf-8", "replace").splitlines():
         if raw.startswith("+++ "):
             current = raw[6:] if raw.startswith("+++ b/") else raw[4:]
         elif raw.startswith("+"):
             scan_line(current, raw[1:], findings)
     for path in new_files:
-        file = checks.ROOT / path
+        file = root / path
         try:
             if file.stat().st_size > MAX_FILE_BYTES:
                 continue
@@ -88,29 +112,22 @@ def scan_for_secrets() -> list[str]:
     return findings
 
 
-def guard_commit() -> None:
-    if current_branch() == "main":
+def guard_commit(command: str, cwd: str) -> None:
+    # A repository without commits fails rev-parse (CalledProcessError): its initial commit is allowed.
+    root = repo_root(target_dir(command, "commit", cwd))
+    if git_in(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() == "main":
         block("Blocked: never commit directly to main (CLAUDE.md 4.2). Create a branch first:\n"
-              '  git checkout -b "$(date +%d%m%Y_%H%M%S)_by_claude_anthony"')
-    findings = scan_for_secrets()
+              '  git checkout -b "$(date +%d%m%Y_%H%M%S)_by_claude_anthony"', "main_commit")
+    findings = scan_for_secrets(root)
     if findings:
         block("Blocked: the commit may contain secrets. Remove them (or mark a deliberate example line "
-              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]))
-    areas = checks.changed_areas()
-    if areas and not checks.run(areas):
-        block("Blocked: the pre-commit checks failed (CLAUDE.md section 6). Fix them, then commit again.")
-
-
-def push_target_dir(command: str, cwd: str) -> Path:
-    """The repository a `git push` acts on: `git -C <dir> push`, else a leading `cd <dir> &&`, else cwd."""
-    match = re.search(r"\bgit\s+-C\s+(\"[^\"]+\"|'[^']+'|\S+)\s+(?:-\S+\s+)*push\b", command)
-    if not match:
-        match = re.search(r"\bcd\s+(\"[^\"]+\"|'[^']+'|[^\s;&|]+)\s*&&[^;|]*\bgit\b[^;|]*\bpush\b", command)
-    raw = match.group(1).strip("\"'") if match else ""
-    # Git Bash paths (/c/Users/...) as Windows paths.
-    raw = re.sub(r"^/([a-zA-Z])/", r"\1:/", raw)
-    base = Path(cwd) if cwd else checks.ROOT
-    return (base / raw).resolve() if raw else base
+              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]), "secret")
+    # The section 6 checks are this repository's; another repository runs its own.
+    if root == checks.ROOT.resolve():
+        areas = checks.changed_areas()
+        if areas and not checks.run(areas):
+            block("Blocked: the pre-commit checks failed (CLAUDE.md section 6). Fix them, then commit again.",
+                  "checks_failed")
 
 
 def push_remote(args: str) -> str:
@@ -134,7 +151,7 @@ def remote_has_main(target: Path, remote: str) -> bool:
 
 
 def guard_push(args: str, command: str, cwd: str) -> None:
-    target = push_target_dir(command, cwd)
+    target = target_dir(command, "push", cwd)
     branch = subprocess.run(
         ["git", "-C", str(target), "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, check=False
     ).stdout.strip()
@@ -143,7 +160,7 @@ def guard_push(args: str, command: str, cwd: str) -> None:
     # The one exception (CLAUDE.md 4.2): a new repository's initial push, while its remote has no main yet.
     if not remote_has_main(target, push_remote(args)):
         return
-    block("Blocked: never push to main; merges into main go through a pull request (/do_pr).")
+    block("Blocked: never push to main; merges into main go through a pull request (/do_pr).", "main_push")
 
 
 def guard_github_write(tool: str, tool_input: dict) -> None:
@@ -151,7 +168,7 @@ def guard_github_write(tool: str, tool_input: dict) -> None:
     if branch in ("", "main"):
         block(f"Blocked: {tool} would commit to {branch or 'the default branch'} of "
               f"{tool_input.get('owner')}/{tool_input.get('repo')}. Never write to main; "
-              "work on a branch and merge through a pull request (/do_pr).")
+              "work on a branch and merge through a pull request (/do_pr).", "mcp_main_write")
     if "files" in tool_input:
         files = [(str(f.get("path", "?")), str(f.get("content", ""))) for f in tool_input.get("files") or []]
     else:
@@ -166,7 +183,7 @@ def guard_github_write(tool: str, tool_input: dict) -> None:
             scan_line(f"{path}:{number}", line, findings)
     if findings:
         block(f"Blocked: {tool} may commit secrets. Remove them (or mark a deliberate example line "
-              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]))
+              f"with `{ALLOW_MARK}`):\n  " + "\n  ".join(findings[:20]), "mcp_secret")
 
 
 def main() -> None:
@@ -174,6 +191,9 @@ def main() -> None:
         payload = json.load(sys.stdin)
     except ValueError:
         return
+    session = payload.get("session_id")
+    CONTEXT["session_id"] = session if isinstance(session, str) else None
+    CONTEXT["tool_name"] = str(payload.get("tool_name") or "") or None
     tool = str(payload.get("tool_name") or "")
     if tool.startswith("mcp__github__"):
         if tool in GITHUB_WRITE_TOOLS:
@@ -186,7 +206,7 @@ def main() -> None:
     try:
         for verb, args in matches:
             if verb == "commit":
-                guard_commit()
+                guard_commit(command, str(payload.get("cwd") or ""))
             else:
                 guard_push(args, command, str(payload.get("cwd") or ""))
     except subprocess.CalledProcessError:
