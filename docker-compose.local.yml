@@ -4,8 +4,8 @@
 #
 #   site  http://localhost:8080        API  http://localhost:8080/api/v1 (also http://api.localhost:8080/api/v1)
 #
-# Needs the platform running locally with this site's database and snippet (CLAUDE.md section 6,
-# "Full stack"). Browsers take localhost and api.localhost for two different sites, so the
+# Needs the platform running locally with this site's database and snippet (the local-stack
+# skill, "Commands"). Browsers take localhost and api.localhost for two different sites, so the
 # admin's SameSite=Lax cookie would not reach api.localhost: the local build calls the API on the
 # site's own origin (deploy/local-caddy.env turns that route on in the snippet). The backend keeps
 # its development settings from backend/.env; CORS allows the site's origin (used by the

@@ -11,7 +11,7 @@ GitHub repo: **`anthonyzng/anthonyzng-web`** (public).
 
 The site must communicate the owner's three roles: Full Stack Software Developer; AI Developer; Assistant Manager, Software Development.
 
-Features: experience timeline, projects, skills, tools and archive, contact form (Turnstile), CV download, EN + zh-Hant, dark/light worlds, SEO, analytics, admin panel (content in the DB). Detail: `README.md`.
+Features: experience timeline, projects, skills, tools, archive, contact form (Turnstile), CV, EN + zh-Hant, dark/light worlds, SEO, analytics, admin panel (content in the DB). Detail: `README.md`.
 
 ### Home page requirements (non-negotiable)
 - **Scroll-driven animations**: elements animate in sync with scroll progress, not just a one-time fade-in.
@@ -19,11 +19,11 @@ Features: experience timeline, projects, skills, tools and archive, contact form
 - Smooth (target 60fps), honours `prefers-reduced-motion`, degrades gracefully on mobile and older browsers.
 
 ### Design direction
-Minimal, modern, professional editorial portfolio: generous whitespace, strong grotesk + mono typography, neutral palette with one accent, tasteful scroll motion. Detail: `frontend/CLAUDE.md`.
+Minimal, modern, professional editorial portfolio: generous whitespace, grotesk + mono type, neutral palette + one accent, tasteful scroll motion. Detail: `frontend/CLAUDE.md`.
 
 ## 2. Architecture
 
-- Three tiers, each in its own Docker container: React SPA (static, nginx), FastAPI backend, one-off `migrate` job.
+- Three tiers, one Docker container each: React SPA (nginx), FastAPI backend, one-off `migrate` job.
 - On the **Owwsolution platform** (private repo `Owwsolution/platform`): shared Caddy and PostgreSQL 17; this repo brings its database `anthonyzng_web` and Caddy snippet `deploy/anthonyzng-web.caddy`.
 - Domains: `owwsolution.com` (+ `www`) → frontend, `api.owwsolution.com` → backend; DNS and edge: Cloudflare (proxied, Full strict, Web Analytics).
 - Hosting: GCP VM `anthonyzng-web`, Docker only; CI/CD: GitHub Actions to GHCR and the VM. Details: `.claude/rules/infra.md`.
@@ -49,7 +49,7 @@ anthonyzng-web/
 └── .github/workflows/
 ```
 
-Per-folder detail: `frontend/CLAUDE.md`, `backend/CLAUDE.md`, the rules; CodeGraph answers "where is X".
+Per-folder detail: the nested CLAUDE.md files and the rules; CodeGraph answers "where is X".
 
 ## 4. Development Workflow (MUST follow)
 
@@ -77,7 +77,7 @@ Owner assigns a task
 - The same branch keeps receiving commits and pushes across tasks until the owner runs **`/do_pr`**.
 - Skills: `ship` walks the steps from the checks to the push; also `verify-ui`, `add-ui-string`, `schema-change`, `local-stack`.
 - Hooks enforce these rules, they do not replace them (detail: `.claude/rules/claude-config.md`). When a hook blocks, fix the cause; never bypass it.
-  - `git_guard.py`: no commit on `main`, no push from or to `main`, no secrets or key files, no commit whose changed areas fail the section 6 checks, no GitHub MCP file write to `main`.
+  - `git_guard.py`: no commit on `main`; no push from or to `main` (except a new repository's initial push); no commit adding a secret or key file, or failing the section 6 checks; no GitHub MCP file write to `main` or without a branch, of a key file or with a secret.
   - `checks.py`: runs the section 6 checks per changed area and remembers a pass.
   - `format_python.py`: `ruff format` on every edited `backend/**/*.py`.
 - `/do_pr` (see `.claude/commands/do_pr.md`): opens a PR from the current branch into `main` via the GitHub MCP server, squash-merges it, and syncs local `main`. The next task then starts a new branch.
@@ -104,7 +104,7 @@ Owner assigns a task
 
 ## 6. Commands
 
-Per-area commands: `frontend/CLAUDE.md`, `backend/CLAUDE.md`; the local stack: the `local-stack` skill; production: `.claude/rules/infra.md`.
+Per-area commands: `frontend/CLAUDE.md`, `backend/CLAUDE.md`; local stack: the `local-stack` skill; production: `.claude/rules/infra.md`.
 
 `python .claude/hooks/checks.py` runs the per-area checks for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
 Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
@@ -117,7 +117,7 @@ This file holds what every task needs. Topic notes are split out so they load on
 |------|--------|--------|
 | `frontend/CLAUDE.md` | automatically, when working under `frontend/` | routing, i18n, theme, design tokens, fonts, animation rules; stack, design direction, conventions, files, commands |
 | `backend/CLAUDE.md` | automatically, when working under `backend/` | layout, API surface and error envelope, settings, seed; stack, conventions, files, commands |
-| `.claude/rules/infra.md` | automatically, with `deploy/`, compose files, workflows, Dockerfiles, `db/`, the two infra docs | architecture, platform, hosting, CI/CD, DNS, backups |
+| `.claude/rules/infra.md` | with `deploy/`, compose files, workflows, Dockerfiles, `db/`, infra docs | architecture, platform, hosting, CI/CD, DNS, backups |
 | `.claude/rules/claude-config.md` | automatically, with `.claude/**` and any `CLAUDE.md` | hooks, skills, plugins |
 | `.claude/skills/local-stack/SKILL.md` | on demand | the full-stack commands on a local platform |
 | `README.md` | on demand | features, roadmap |

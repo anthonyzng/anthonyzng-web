@@ -6,7 +6,7 @@
 #            (the platform's scripts/receive-incoming, each on stdin) and runs the platform's
 #            scripts/deploy-app (this commit's images, `up -d`, the snippet)
 #   locally  docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
-#            on a local platform stack (CLAUDE.md section 6, "Full stack")
+#            on a local platform stack (the local-stack skill, "Commands")
 #
 # Production runs the images CI pushed to GHCR (private packages): IMAGE_TAG is the commit SHA the
 # deploy passes, `latest` otherwise (the last deployed build). This file has no `build` section:
