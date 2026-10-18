@@ -45,30 +45,11 @@ Minimal, modern, professional. Reference style: editorial portfolios such as tho
 
 ## 2. Architecture
 
-Each tier runs in its **own Docker container**. The site runs on the **Owwsolution platform** (the private repo `Owwsolution/platform`): the VM's edge proxy and its PostgreSQL instance belong to the platform and are shared with the other Owwsolution apps. This repo brings its frontend, backend and migration job, its Caddy site snippet and its own database (one database, two roles).
-
-```
-                       Internet
-                          │
-          owwsolution.com │ api.owwsolution.com
-                ┌─────────▼──────────┐
-                │ platform Caddy      │  auto-HTTPS; this site's routes: deploy/anthonyzng-web.caddy
-                └───┬────────────┬───┘
-                    │ edge       │ edge          (edge-anthonyzng-web: this site's own)
-        ┌───────────▼──┐   ┌─────▼─────────┐
-        │  frontend     │   │  backend       │
-        │  React SPA    │   │  FastAPI       │
-        │  (static)     │   │                │
-        └──────────────┘   └─────┬─────────┘
-                                 │ db (db-anthonyzng-web: this site's own)
-                     ┌───────────▼──────────┐
-                     │ platform PostgreSQL   │  database anthonyzng_web
-                     └──────────────────────┘
-```
-
-- Hosting: **GCP Compute Engine VM** `anthonyzng-web` (`vm-1` in the platform's inventory, e2-small) running Docker + Docker Compose. **Every service runs in its own container**; nothing is installed directly on the host besides Docker. The platform lives in `/opt/platform`, this site's compose project in `/opt/apps/anthonyzng-web` (`docs/containers.md`).
-- Domains: `owwsolution.com` + `www` (redirects to the apex) → frontend; `api.owwsolution.com` → backend. DNS: Cloudflare (nameservers `adele.ns.cloudflare.com`, `owen.ns.cloudflare.com`, registrar Namecheap), the three A records proxied (orange cloud), SSL/TLS mode Full (strict): Cloudflare in front gives DDoS protection, the CDN and Web Analytics; the platform's Caddy still holds the Let's Encrypt certificates (`docs/containers.md`, `docs/deployment.md`).
-- Backups: a daily snapshot of the VM's disk (databases, Caddy certificates, `.env` files), kept 7 days, plus the platform's nightly `pg_dump` of `anthonyzng_web` in `/opt/platform/backups`, kept 7 days (`docs/deployment.md`).
+- Three tiers, each in its own Docker container: React SPA (static, nginx), FastAPI backend, one-off `migrate` job.
+- They run on the **Owwsolution platform** (private repo `Owwsolution/platform`): its Caddy and PostgreSQL 17 are shared; this repo brings its own database `anthonyzng_web` and Caddy snippet `deploy/anthonyzng-web.caddy`.
+- Domains: `owwsolution.com` (+ `www`) → frontend, `api.owwsolution.com` → backend.
+- Hosting: GCP Compute Engine VM `anthonyzng-web`, Docker only on the host; CI/CD by GitHub Actions to GHCR and the VM.
+- DNS and edge: Cloudflare (proxied, Full strict, Web Analytics). Details: the `infra` rule (`.claude/rules/infra.md`).
 
 ### Tech stack
 
@@ -81,11 +62,8 @@ Each tier runs in its **own Docker container**. The site runs on the **Owwsoluti
 | Routing    | React Router |
 | Backend    | Python 3.13 + FastAPI, SQLAlchemy 2.x (async, asyncpg), Alembic migrations, Pydantic v2; dependencies managed with uv (`pyproject.toml` + committed `uv.lock`) |
 | Database   | PostgreSQL 17, the platform's shared instance: database `anthonyzng_web`, roles `anthonyzng_web_owner` (migrations) and `anthonyzng_web_app` (the backend); bilingual content stored as one JSONB `translations` column per row (see section 5) |
-| Proxy/TLS  | The Owwsolution platform's Caddy (automatic Let's Encrypt certificates); this site's hosts are `deploy/anthonyzng-web.caddy` |
-| CI/CD      | GitHub Actions: lint/test → build images → push to GHCR → deploy to the platform VM over SSH (the platform's `scripts/deploy-app`) |
 | Admin auth | Single admin account, Argon2 password hash, JWT in httpOnly cookie, login rate limiting, optional TOTP second factor (authenticator app; `docs/backend/auth.md`). Admin UI at `owwsolution.com/admin` |
 | Contact    | Cloudflare Turnstile (bot protection) + Resend (email from `noreply@owwsolution.com`). Every message is also stored in the DB. Recipient comes from env var `CONTACT_TO_EMAIL` (value kept in `CLAUDE.local.md`, never committed) |
-| Analytics  | Cloudflare Web Analytics (owner decision, Phase 8: no cookie, no container on the 1 GiB VM; enabled in the Cloudflare dashboard with automatic setup, which injects the beacon at the edge into HTML answers (`static.cloudflareinsights.com/beacon.min.js`, reporting to `cloudflareinsights.com`), both allowed by the CSP; verified in production 2026-09-25) |
 
 ---
 
@@ -106,7 +84,6 @@ anthonyzng-web/
 │   ├── skills/                 # ship, verify-ui, add-ui-string, schema-change, local-stack
 │   └── commands/do_pr.md       # /do_pr command
 ├── db/
-│   └── init/                   # Postgres init scripts (creates the `*_test` database on first start)
 ├── frontend/
 │   ├── CLAUDE.md               # frontend rules, loaded when working under frontend/
 │   ├── Dockerfile              # multi-stage: npm build → unprivileged nginx on :8080
@@ -147,12 +124,7 @@ anthonyzng-web/
 │   ├── containers.md           # the platform, compose stack, images, Caddy snippet
 │   └── deployment.md           # VM, CI/CD, DNS, Cloudflare, backups, operations
 ├── deploy/
-│   ├── anthonyzng-web.caddy    # the site's hosts on the platform's Caddy: CSP and headers, www redirect, API host, body cap
-│   ├── local-caddy.env         # the snippet's local addresses (a local platform's caddy.env)
-│   └── ci/Caddyfile            # a copy of the platform's global Caddyfile, for CI's snippet check
 └── .github/workflows/
-    ├── ci-cd.yml               # CI on every PR / push; images to GHCR and deploy on main
-    └── content-sync.yml        # daily: the content snapshot from production, as a pull request
 ```
 
 ---
@@ -268,7 +240,6 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build  
 docker compose -f docker-compose.yml -f docker-compose.local.yml logs -f backend  # follow one service
 docker compose -f docker-compose.yml -f docker-compose.local.yml run --rm -T backend python -m app.seed </dev/null   # seed inside the stack
 docker compose -f docker-compose.yml -f docker-compose.local.yml down            # stop (the data stays in the platform's database)
-# Production: CI deploys (docs/deployment.md); on the VM: cd /opt/apps/anthonyzng-web && docker compose ps
 ```
 
 `python .claude/hooks/checks.py` runs these for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
