@@ -52,22 +52,22 @@ Minimal, modern, professional. Reference style: editorial portfolios such as tho
 
 ```
 anthonyzng-web/
-├── frontend/
-│   ├── CLAUDE.md               # frontend rules, loaded when working under frontend/
-│   ├── Dockerfile              # multi-stage: npm build → unprivileged nginx on :8080
-│   ├── nginx.conf              # SPA fallback, asset caching, /healthz
-│   ├── .env.example            # VITE_API_BASE_URL, VITE_TURNSTILE_SITE_KEY (public build-time values)
-│   ├── scripts/                # sync-content.mjs (`npm run content:sync`)
-│   └── src/
-│       ├── api/                # fetch client, zod schemas, /content and /contact calls, file URLs
-│       ├── components/         # incl. ContactForm + ContactDialog, ProjectCard, TagList + EdgeCat, SectionDock, PageBackdrop
-│       ├── content/            # resolved shape, snapshot/<locale>.json (saved API payload), useContent + ContentProvider
-│       ├── sections/           # Hero, Statement, Experience, Projects, Skills, Tools, Closing (the contact screen), Archive
-│       ├── assets/             # images bundled by Vite (the statement photo)
-│       ├── animations/         # scroll / parallax hooks, the canvas scenes (black hole, ink stream, sky, bamboo, contact)
-│       ├── i18n/               # UI string translations, formatMonth, formatFileSize
-│       ├── admin/              # admin panel (Phase 5)
-│       └── pages/
+└── frontend/
+    ├── CLAUDE.md               # frontend rules, loaded when working under frontend/
+    ├── Dockerfile              # multi-stage: npm build → unprivileged nginx on :8080
+    ├── nginx.conf              # SPA fallback, asset caching, /healthz
+    ├── .env.example            # VITE_API_BASE_URL, VITE_TURNSTILE_SITE_KEY (public build-time values)
+    ├── scripts/                # sync-content.mjs (`npm run content:sync`)
+    └── src/
+        ├── api/                # fetch client, zod schemas, /content and /contact calls, file URLs
+        ├── components/         # incl. ContactForm + ContactDialog, ProjectCard, TagList + EdgeCat, SectionDock, PageBackdrop
+        ├── content/            # resolved shape, snapshot/<locale>.json (saved API payload), useContent + ContentProvider
+        ├── sections/           # Hero, Statement, Experience, Projects, Skills, Tools, Closing (the contact screen), Archive
+        ├── assets/             # images bundled by Vite (the statement photo)
+        ├── animations/         # scroll / parallax hooks, the canvas scenes (black hole, ink stream, sky, bamboo, contact)
+        ├── i18n/               # UI string translations, formatMonth, formatFileSize
+        ├── admin/              # admin panel (Phase 5)
+        └── pages/
 ```
 
 ## Commands

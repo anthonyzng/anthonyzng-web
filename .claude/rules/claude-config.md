@@ -13,11 +13,11 @@ Loaded when working on `.claude/` or any `CLAUDE.md`. The must-follow workflow s
 
 ```
 anthonyzng-web/
-├── .claude/
-│   ├── settings.json           # project plugins and hooks (hooks/git_guard.py before git commit/push and GitHub MCP file writes, hooks/format_python.py after edits)
-│   ├── hooks/                  # git_guard.py (no commit/push on main, secret scan, checks), checks.py (section 6 checks), format_python.py
-│   ├── skills/                 # ship, verify-ui, add-ui-string, schema-change, local-stack
-│   └── commands/do_pr.md       # /do_pr command
+└── .claude/
+    ├── settings.json           # project plugins and hooks (hooks/git_guard.py before git commit/push and GitHub MCP file writes, hooks/format_python.py after edits)
+    ├── hooks/                  # git_guard.py (no commit/push on main, secret scan, checks), checks.py (section 6 checks), format_python.py
+    ├── skills/                 # ship, verify-ui, add-ui-string, schema-change, local-stack
+    └── commands/do_pr.md       # /do_pr command
 ```
 
 ## Hooks
@@ -26,7 +26,7 @@ anthonyzng-web/
 
 ## Skills
 
-- The `ship` skill (`.claude/skills/ship/SKILL.md`) walks these steps from the checks to the push. Other project skills: `verify-ui` (the browser matrix: widths, themes, languages), `add-ui-string` (both locales), `schema-change` (model to docs, end to end), `local-stack` (the containerised stack on a local platform).
+- The `ship` skill (`.claude/skills/ship/SKILL.md`) walks the root `CLAUDE.md` 4.2 steps from the checks to the push. Other project skills: `verify-ui` (the browser matrix: widths, themes, languages), `add-ui-string` (both locales), `schema-change` (model to docs, end to end), `local-stack` (the containerised stack on a local platform).
 
 ## Plugins
 
