@@ -35,11 +35,7 @@ The site must communicate the owner's three roles:
 - Smooth (target 60fps), honours `prefers-reduced-motion`, degrades gracefully on mobile and older browsers.
 
 ### Design direction
-Minimal, modern, professional. Reference style: editorial portfolios such as those collected on Awwwards and a1.gallery.
-- Generous whitespace, strong typography (grotesk sans such as Inter / Neue Montreal, plus a mono accent such as IBM Plex Mono)
-- Restrained palette: neutral base plus one accent colour
-- Motion is tasteful: layered parallax on individual elements, text reveals tied to scroll, pinned sections for storytelling (e.g. the experience timeline)
-- Use the `ui-ux-pro-max` skill for design system decisions
+Minimal, modern, professional editorial portfolio: generous whitespace, strong grotesk + mono typography, neutral palette with one accent, tasteful scroll motion. Detail: `frontend/CLAUDE.md`.
 
 ---
 
@@ -55,11 +51,6 @@ Minimal, modern, professional. Reference style: editorial portfolios such as tho
 
 | Layer      | Choice |
 |------------|--------|
-| Frontend   | React + TypeScript + Vite |
-| Styling    | Tailwind CSS |
-| Animation  | GSAP + ScrollTrigger (scroll-driven, pinning, parallax), Lenis (smooth scroll) |
-| i18n       | react-i18next; locales `en`, `zh-Hant` |
-| Routing    | React Router |
 | Backend    | Python 3.13 + FastAPI, SQLAlchemy 2.x (async, asyncpg), Alembic migrations, Pydantic v2; dependencies managed with uv (`pyproject.toml` + committed `uv.lock`) |
 | Database   | PostgreSQL 17, the platform's shared instance: database `anthonyzng_web`, roles `anthonyzng_web_owner` (migrations) and `anthonyzng_web_app` (the backend); bilingual content stored as one JSONB `translations` column per row (see section 5) |
 | Admin auth | Single admin account, Argon2 password hash, JWT in httpOnly cookie, login rate limiting, optional TOTP second factor (authenticator app; `docs/backend/auth.md`). Admin UI at `owwsolution.com/admin` |
@@ -81,21 +72,6 @@ anthonyzng-web/
 ├── .claude/
 ├── db/
 ├── frontend/
-│   ├── CLAUDE.md               # frontend rules, loaded when working under frontend/
-│   ├── Dockerfile              # multi-stage: npm build → unprivileged nginx on :8080
-│   ├── nginx.conf              # SPA fallback, asset caching, /healthz
-│   ├── .env.example            # VITE_API_BASE_URL, VITE_TURNSTILE_SITE_KEY (public build-time values)
-│   ├── scripts/                # sync-content.mjs (`npm run content:sync`)
-│   └── src/
-│       ├── api/                # fetch client, zod schemas, /content and /contact calls, file URLs
-│       ├── components/         # incl. ContactForm + ContactDialog, ProjectCard, TagList + EdgeCat, SectionDock, PageBackdrop
-│       ├── content/            # resolved shape, snapshot/<locale>.json (saved API payload), useContent + ContentProvider
-│       ├── sections/           # Hero, Statement, Experience, Projects, Skills, Tools, Closing (the contact screen), Archive
-│       ├── assets/             # images bundled by Vite (the statement photo)
-│       ├── animations/         # scroll / parallax hooks, the canvas scenes (black hole, ink stream, sky, bamboo, contact)
-│       ├── i18n/               # UI string translations, formatMonth, formatFileSize
-│       ├── admin/              # admin panel (Phase 5)
-│       └── pages/
 ├── backend/
 │   ├── CLAUDE.md               # backend rules, loaded when working under backend/
 │   ├── Dockerfile              # multi-stage: uv sync → slim runtime, non-root, uvicorn on :8000
@@ -178,15 +154,6 @@ Owner assigns a task
 - Code, comments, commit messages, and docs are written in **English**.
 - User-facing content is available in both `en` and `zh-Hant`. Never hard-code UI strings; use i18n keys.
 
-### Frontend
-- TypeScript strict mode. Function components + hooks, one component per file, PascalCase filenames.
-- Animation logic lives in `src/animations/` as reusable hooks (`useParallax`, `useScrollReveal`, ...). Sections consume hooks rather than wiring GSAP inline.
-- Use `gsap.context()` / `useGSAP` and always clean up ScrollTriggers on unmount.
-- Always honour `prefers-reduced-motion`.
-- Animate only `transform` and `opacity`.
-- Mobile-first; verify at 375px, 768px, 1280px+ (use the `webapp-testing` skill).
-- Accessibility: semantic HTML, alt text, keyboard navigation, WCAG AA contrast in both themes.
-
 ### Backend
 - Type hints everywhere (`mypy --strict` must pass); Pydantic schemas for all request/response bodies, camelCase on the wire (`CamelModel` in `app/schemas/common.py`), snake_case in Python.
 - All schema changes go through Alembic migrations (`alembic revision --autogenerate`); `tests/test_migrations.py` fails when the models and the migrations drift apart.
@@ -199,16 +166,6 @@ Owner assigns a task
 ## 6. Commands
 
 ```bash
-# Frontend (run inside frontend/)
-npm install
-npm run dev          # http://localhost:5173 (also the "frontend" entry in .claude/launch.json)
-npm run typecheck    # tsc -b
-npm run lint         # oxlint
-npm test             # vitest (jsdom + Testing Library)
-npm run build        # typecheck + production build to dist/
-npm run preview      # serve dist/ on http://localhost:4173 (the "frontend-preview" entry in .claude/launch.json; for Lighthouse runs against a production build)
-npm run content:sync # save GET /content (both locales) as src/content/snapshot/*.json; default http://localhost:8000, or `-- <api origin>`
-
 # Dev database (from the repo root; credentials in the git-ignored root .env, see .env.example)
 docker compose -f docker-compose.dev.yml up -d db   # PostgreSQL 17 on 127.0.0.1:5432, plus the *_test database (project anthonyzng-web-dev, volume anthonyzng-web_pgdata: never `down -v`)
 
