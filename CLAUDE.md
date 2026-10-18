@@ -79,10 +79,6 @@ anthonyzng-web/
 ├── .env.example                # root Compose variables (the platform's database URLs, the dev database), placeholders only
 ├── .mcp.json                   # GitHub MCP server (token read from env var GITHUB_PAT)
 ├── .claude/
-│   ├── settings.json           # project plugins and hooks (hooks/git_guard.py before git commit/push and GitHub MCP file writes, hooks/format_python.py after edits)
-│   ├── hooks/                  # git_guard.py (no commit/push on main, secret scan, checks), checks.py (section 6 checks), format_python.py
-│   ├── skills/                 # ship, verify-ui, add-ui-string, schema-change, local-stack
-│   └── commands/do_pr.md       # /do_pr command
 ├── db/
 ├── frontend/
 │   ├── CLAUDE.md               # frontend rules, loaded when working under frontend/
@@ -153,8 +149,11 @@ Owner assigns a task
   PowerShell: `git checkout -b "$(Get-Date -Format 'ddMMyyyy_HHmmss')_by_claude_anthony"`
 - **Never commit directly to `main`** (the one exception is the initial repository commit).
 - The same branch keeps receiving commits and pushes across tasks until the owner runs **`/do_pr`**.
-- The `ship` skill (`.claude/skills/ship/SKILL.md`) walks these steps from the checks to the push. Other project skills: `verify-ui` (the browser matrix: widths, themes, languages), `add-ui-string` (both locales), `schema-change` (model to docs, end to end), `local-stack` (the containerised stack on a local platform).
-- Hooks (`.claude/settings.json`) enforce the rules, they do not replace them: `git_guard.py` refuses a `git commit` on `main`, a push from or to `main` (except a new repository's initial push, while its remote has no `main` yet), a commit that adds a key-shaped string or a file such as `.env` / `*.pem` (a deliberate example line can carry `secret-scan: allow`), a commit whose changed areas fail the section 6 checks (this repository only; for any repository the guard acts on the one the command targets: `git -C <dir>`, a leading `cd <dir> &&` or the session's folder), and a GitHub MCP write (`push_files`, `create_or_update_file`, `delete_file`) to `main`, without a branch, of such a file or with a secret in it (pull requests and their merge are not affected) (run by `checks.py`, which remembers a pass per area in `.git/claude-checks/`, so checks already run for the same changes are not repeated); `format_python.py` runs the backend's `ruff format` on every edited `backend/**/*.py`. When the harness (`Owwsolution/harness`) is installed, `git_guard.py` reports its blocks and `checks.py` runs its checks through `harness check`, via `.claude/hooks/harness_emit.py`; without it nothing changes. When a hook blocks, fix the cause; never bypass it.
+- Skills: `ship` walks the steps from the checks to the push; also `verify-ui`, `add-ui-string`, `schema-change`, `local-stack`.
+- Hooks enforce these rules, they do not replace them (detail: `.claude/rules/claude-config.md`). When a hook blocks, fix the cause; never bypass it.
+  - `git_guard.py`: no commit on `main`, no push from or to `main`, no secrets or key files, no commit whose changed areas fail the section 6 checks, no GitHub MCP file write to `main`.
+  - `checks.py`: runs the section 6 checks per changed area and remembers a pass.
+  - `format_python.py`: `ruff format` on every edited `backend/**/*.py`.
 - `/do_pr` (see `.claude/commands/do_pr.md`): opens a PR from the current branch into `main` via the GitHub MCP server, squash-merges it, and syncs local `main`. The next task then starts a new branch.
 - Merges into `main` trigger automatic deployment to the GCP VM.
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `style:`, `test:`).
@@ -274,12 +273,8 @@ When a change alters a documented behaviour, update the file that documents it i
 
 ## 8. Installed Claude Code plugins (project scope)
 
-- `superpowers`: planning / TDD / debugging workflows
-- `ui-ux-pro-max`: UI/UX design system guidance
-- `code-review`: pre-commit review
-- `example-skills` (Anthropic): includes `webapp-testing` and `mcp-builder`
-
-The figma skills (synced from claude.ai) are `user-invocable-only` here (`skillOverrides` in `.claude/settings.json`): they are not offered to the model; when a task needs one, ask the owner, who runs it as a slash command.
+- Plugins: `superpowers`, `ui-ux-pro-max`, `code-review`, `example-skills`.
+- The figma skills are user-invocable only; ask the owner to run one (detail: `.claude/rules/claude-config.md`).
 
 ---
 
