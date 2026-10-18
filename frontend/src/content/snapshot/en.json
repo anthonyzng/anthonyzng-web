@@ -6,28 +6,28 @@
     "nameLast": "Ng",
     "roles": [
       {
+        "id": "manager",
+        "text": "Assistant Manager, Software Development"
+      },
+      {
         "id": "fullStack",
         "text": "Full Stack Software Developer"
       },
       {
         "id": "ai",
-        "text": "AI Developer"
-      },
-      {
-        "id": "manager",
-        "text": "Assistant Manager, Software Development"
+        "text": "AI Application Engineer / Forward Deployed Engineer"
       }
     ]
   },
   "statement": {
     "label": "In brief",
-    "intro": "I design and build end-to-end software — from scalable backends and AI-powered features to polished interfaces — and lead teams that ship them."
+    "intro": "8 years in software, building web, mobile, and cloud systems for aviation logistics, travel, and SaaS. I write front-end and back-end code, help set technical direction, and lead a team. I like practical problems and systems that just work."
   },
   "experience": [
     {
       "id": "sksys",
       "company": "BABYSOFT o/a SKSYS Corporation",
-      "companyUrl": null,
+      "companyUrl": "https://www.babysoft.ca/site.php",
       "role": "Software Developer / Assistant Manager",
       "location": "Markham, ON, Canada",
       "start": "2023-11",
@@ -52,7 +52,7 @@
     {
       "id": "hactl",
       "company": "Hong Kong Air Cargo Terminals Limited (HACTL)",
-      "companyUrl": null,
+      "companyUrl": "https://www.hactl.com/en",
       "role": "Senior IT Coordinator",
       "location": "Hong Kong",
       "start": "2021-08",
@@ -72,7 +72,7 @@
     {
       "id": "ivc",
       "company": "IVC Consulting Group",
-      "companyUrl": null,
+      "companyUrl": "https://www.ivcsol.com/",
       "role": "ABAP Programmer",
       "location": "Hong Kong",
       "start": "2020-08",
@@ -85,26 +85,169 @@
         "ABAP",
         "SAP ERP"
       ]
+    },
+    {
+      "id": "microsoft-hong-kong",
+      "company": "Microsoft Hong Kong",
+      "companyUrl": null,
+      "role": "Internship",
+      "location": "Hong Kong",
+      "start": "2018-06",
+      "end": "2018-07",
+      "bullets": [
+        "Using Microsoft Azure platform to build an object classification mobile application with computer vision technology",
+        "Teamwork Cooperation skill",
+        "Training Computer vision model"
+      ],
+      "tech": []
     }
   ],
   "projects": [
     {
-      "id": "slotOne",
-      "placeholder": true,
-      "title": null,
-      "summary": null,
-      "tech": [],
+      "id": "ucruising-pwa-application",
+      "placeholder": false,
+      "title": "UCruising PWA Application",
+      "summary": "Designed, built, and shipped UCruising end-to-end as a single-codebase Progressive Web App deployed across iOS, Android, Windows, and WeChat.",
+      "tech": [
+        "Progressive Web App",
+        "Javascript",
+        "Multi-platform Deployment (IOS,Android,MS Store,WeChat)"
+      ],
+      "url": "https://app.ucruising.com/ucapp/index.html?",
+      "image": {
+        "url": "/api/v1/files/8c0f1d93-3b56-4801-aa88-326c49a279d8",
+        "width": 1344,
+        "height": 863
+      }
+    },
+    {
+      "id": "ucruising-cms-erp",
+      "placeholder": false,
+      "title": "UCruising - CMS & ERP",
+      "summary": "Developed a web-based back-office system to manage app content and users, implement core business logic for [bookings / pricing / orders], and handle accounting functions including [invoicing, payment reconciliation, and financial reporting].",
+      "tech": [
+        "Javscript",
+        "Cross Department Communication",
+        "Project management"
+      ],
       "url": null,
-      "image": null
+      "image": {
+        "url": "/api/v1/files/8c68dfb9-a5da-4cc2-a706-fe34445ca5f1",
+        "width": 1600,
+        "height": 805
+      }
+    },
+    {
+      "id": "cosac-plus-air-cargo-management-system-hactl-solutions",
+      "placeholder": false,
+      "title": "COSAC-Plus: Air Cargo Management System (HACTL Solutions)",
+      "summary": "Migrated COSAC-Plus, HACTL's enterprise air cargo management system, from vanilla JavaScript to AngularJS; developed and debugged core functions in Java and SQL on Docker, Kubernetes, and Azure; and provided 24/7 on-call production support.",
+      "tech": [
+        "Docker",
+        "Kubernetes",
+        "Azure Cloud",
+        "Java",
+        "Typescript",
+        "Javascript"
+      ],
+      "url": "https://www.hactlsolutions.com/en/services-cosac.php.html",
+      "image": {
+        "url": "/api/v1/files/23f162f2-3378-4827-b94c-eff96f22e1f5",
+        "width": 1447,
+        "height": 1087
+      }
+    },
+    {
+      "id": "offisky-app",
+      "placeholder": false,
+      "title": "Offisky App",
+      "summary": "Revamped the UI, built new features, and provided customer support for Offisky, a cloud virtual office SaaS platform delivering hosted PBX, virtual phone, and messaging services to Canadian SMBs.",
+      "tech": [
+        "PHP",
+        "Javascript",
+        "UI Revamped",
+        "Application & Network Technical Support"
+      ],
+      "url": "https://www.offisky.com/site.php",
+      "image": {
+        "url": "/api/v1/files/6d2c236c-d747-4bb1-aa0b-b07dbfa83b4e",
+        "width": 1600,
+        "height": 681
+      }
+    },
+    {
+      "id": "uob-art-central-2022-the-bloom-of-water-lilies-virtual-panorama",
+      "placeholder": false,
+      "title": "UOB | ART CENTRAL 2022 – The Bloom of Water Lilies - Virtual Panorama Web Application",
+      "summary": "Built a serverless photo pipeline (Node.js, AWS Lambda, API Gateway, S3) for a UOB-commissioned interactive art installation at Art Central Hong Kong, stitching multi-camera shots into panoramas for visitors to download.",
+      "tech": [
+        "AWS Lambda",
+        "Node.js",
+        "AWS API Gateway",
+        "Node.js"
+      ],
+      "url": "https://www.aho.art/the-bloom-of-water-lilies",
+      "image": {
+        "url": "/api/v1/files/b2be2b10-5cc3-4594-8069-1592f70706f8",
+        "width": 300,
+        "height": 224
+      }
+    },
+    {
+      "id": "slotOne",
+      "placeholder": false,
+      "title": "Academic Project - Dog Breed Image Classification: CNN vs. R-CNN Performance Study",
+      "summary": "Built and benchmarked CNN and R-CNN models in TensorFlow for dog breed classification, comparing accuracy and inference performance, and deployed the selected model to an Android app.\n\n- a demo video for short description and demo the application in Cantonese",
+      "tech": [
+        "Google Cloud Vision",
+        "TensorFlow",
+        "Python",
+        "android studio"
+      ],
+      "url": null,
+      "image": {
+        "url": "/api/v1/files/569badf2-ea26-452d-832e-df48c6ed69c6",
+        "width": 1152,
+        "height": 864
+      }
     },
     {
       "id": "slotTwo",
-      "placeholder": true,
-      "title": null,
-      "summary": null,
-      "tech": [],
+      "placeholder": false,
+      "title": "Academic Project - Full-Stack Web Application: Multi-Paradigm Development",
+      "summary": "Built a PHP RESTful API with parallel Angular and Elm front ends to compare object-oriented and functional approaches on maintainability, type safety, and productivity.\n\n- a demo video for short description and demo the application in English",
+      "tech": [
+        "PHP",
+        "Restful API",
+        "Angular CLI",
+        "ELM functional programming",
+        "Project Management",
+        "mongo db",
+        "sql database"
+      ],
       "url": null,
-      "image": null
+      "image": {
+        "url": "/api/v1/files/167717e2-3f13-4f71-8b51-1667b3545172",
+        "width": 1472,
+        "height": 704
+      }
+    },
+    {
+      "id": "test",
+      "placeholder": false,
+      "title": "Academic Project - Household Task Management Mobile App",
+      "summary": "Developed a household task management mobile app enabling employers to assign tasks to domestic helpers, with completion tracking and automated SMS notifications to reduce errors and missed work.\n\n- a demo video for short description and demo the application in Cantonese",
+      "tech": [
+        "android studio",
+        "java",
+        "nodejs"
+      ],
+      "url": null,
+      "image": {
+        "url": "/api/v1/files/d05b79d3-1186-4def-84cd-95fb158f4674",
+        "width": 720,
+        "height": 1280
+      }
     }
   ],
   "skills": {
@@ -191,7 +334,7 @@
         "id": "uwe",
         "degree": "BSc (Hons) Information Technology — First Class Honours",
         "school": "University of the West of England, Bristol",
-        "url": null,
+        "url": "https://www.uwe.ac.uk/",
         "year": "2020"
       }
     ],
@@ -201,12 +344,6 @@
         "name": "CCNA Routing & Switching",
         "url": null,
         "inProgress": false
-      },
-      {
-        "id": "pmp",
-        "name": "PMP",
-        "url": null,
-        "inProgress": true
       }
     ],
     "languages": [
@@ -224,7 +361,36 @@
       }
     ]
   },
-  "tools": [],
+  "tools": [
+    {
+      "id": "claude-mods-sub-agent-dashboard",
+      "name": "Claude Mods - sub-agent dashboard",
+      "kind": "Claude Mods - sub-agent dashboard",
+      "summary": "A simple claude mods agent dashboard - which provide each sub-agent status and you can switch skill to each agent.",
+      "tech": [],
+      "url": "https://github.com/anthonyzng/agent-cats"
+    },
+    {
+      "id": "bmi-calculator",
+      "name": "BMI Calculator",
+      "kind": "BMI Calculator",
+      "summary": "BMI, or Body Mass Index, is a measure of body fat based on a person's weight and height. It is commonly used to determine if a person is underweight, normal weight, overweight, or obese. BMI can help individuals assess their overall health and potential risks for diseases associated with excess weight",
+      "tech": [
+        "Typescript"
+      ],
+      "url": "https://anthonyzng.github.io/BMI-Calculator"
+    },
+    {
+      "id": "snake-game",
+      "name": "snake game",
+      "kind": "Snake game",
+      "summary": "just a sample Snake game",
+      "tech": [
+        "Typescript"
+      ],
+      "url": "https://anthonyzng.github.io/my-snake-game"
+    }
+  ],
   "contact": {
     "links": [
       {
@@ -246,8 +412,46 @@
         "display": "github.com/anthonyzng"
       }
     ],
-    "location": "Ontario, Canada"
+    "location": "Canada / Hong Kong"
   },
-  "archive": [],
-  "cv": null
+  "archive": [
+    {
+      "id": "portfolio-2025",
+      "kind": "Portfolio",
+      "title": "Portfolio - 2025",
+      "summary": null,
+      "month": "2025-12",
+      "url": "https://anthonyzngportfolio.lovable.app/"
+    },
+    {
+      "id": "blog",
+      "kind": "Blog",
+      "title": "Blog",
+      "summary": null,
+      "month": "2022-08",
+      "url": "https://tungzgg.wordpress.com/"
+    },
+    {
+      "id": "leetcode",
+      "kind": "Leetcode",
+      "title": "Leetcode",
+      "summary": null,
+      "month": "2022-08",
+      "url": "https://leetcode.com/u/anthonyzng075/"
+    },
+    {
+      "id": "portfolio-2023",
+      "kind": "Portfolio",
+      "title": "Portfolio - 2023",
+      "summary": null,
+      "month": "2023-02",
+      "url": "https://anthonyzng.github.io/anthonyzngweb/"
+    }
+  ],
+  "cv": {
+    "url": "/api/v1/files/6d6e0606-1996-4d62-8497-8d7fc857a2d8",
+    "filename": "Anthony_Ng_Resume_v1.pdf",
+    "size": 6046,
+    "updatedAt": "2026-09-29T05:02:41.357494Z"
+  }
 }
