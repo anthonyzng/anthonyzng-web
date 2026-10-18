@@ -37,24 +37,24 @@ Loaded when working under `backend/`. The rules every backend change must follow
 
 ```
 anthonyzng-web/
-├── backend/
-│   ├── CLAUDE.md               # backend rules, loaded when working under backend/
-│   ├── Dockerfile              # multi-stage: uv sync → slim runtime, non-root, uvicorn on :8000
-│   ├── pyproject.toml          # uv-managed project; uv.lock is committed
-│   ├── .env.example            # every backend env var, placeholder values only
-│   ├── alembic.ini
-│   ├── alembic/                # async env.py + versions/
-│   ├── tests/                  # pytest against a real PostgreSQL (TEST_DATABASE_URL)
-│   └── app/
-│       ├── main.py             # create_app() + lifespan; `app` for uvicorn (built on first access)
-│       ├── db_roles.py         # `python -m app.db_roles`: checks the backend's least-privilege database role (run by `migrate`)
-│       ├── admin_totp.py       # `python -m app.admin_totp status|reset`: the admin's two-factor sign-in from a shell
-│       ├── api/                # deps.py + v1/ routers (health, content, contact, auth, files, admin)
-│       ├── models/             # SQLAlchemy models (content, contact_message, admin_user, stored_file)
-│       ├── schemas/            # Pydantic schemas (public payload, write models, admin, requests, errors)
-│       ├── services/           # content, content_admin, collections, files, messages, contact, turnstile, email, auth
-│       ├── seed/               # content.json + `python -m app.seed` (bootstraps an empty database)
-│       └── core/               # config, db, security, rate_limit, client_ip, errors, middleware
+└── backend/
+    ├── CLAUDE.md               # backend rules, loaded when working under backend/
+    ├── Dockerfile              # multi-stage: uv sync → slim runtime, non-root, uvicorn on :8000
+    ├── pyproject.toml          # uv-managed project; uv.lock is committed
+    ├── .env.example            # every backend env var, placeholder values only
+    ├── alembic.ini
+    ├── alembic/                # async env.py + versions/
+    ├── tests/                  # pytest against a real PostgreSQL (TEST_DATABASE_URL)
+    └── app/
+        ├── main.py             # create_app() + lifespan; `app` for uvicorn (built on first access)
+        ├── db_roles.py         # `python -m app.db_roles`: checks the backend's least-privilege database role (run by `migrate`)
+        ├── admin_totp.py       # `python -m app.admin_totp status|reset`: the admin's two-factor sign-in from a shell
+        ├── api/                # deps.py + v1/ routers (health, content, contact, auth, files, admin)
+        ├── models/             # SQLAlchemy models (content, contact_message, admin_user, stored_file)
+        ├── schemas/            # Pydantic schemas (public payload, write models, admin, requests, errors)
+        ├── services/           # content, content_admin, collections, files, messages, contact, turnstile, email, auth
+        ├── seed/               # content.json + `python -m app.seed` (bootstraps an empty database)
+        └── core/               # config, db, security, rate_limit, client_ip, errors, middleware
 ```
 
 ## Commands

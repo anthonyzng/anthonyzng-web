@@ -6,8 +6,7 @@ Guidance for Claude Code (and any sub-agent) working in this repository.
 
 ## 1. Project Overview
 
-**anthonyzng-web** is the personal professional showcase website of Anthony Ng, served at **owwsolution.com**.
-GitHub repo: **`anthonyzng/anthonyzng-web`** (public).
+**anthonyzng-web** is the personal professional showcase website of Anthony Ng, served at **owwsolution.com**. GitHub repo: **`anthonyzng/anthonyzng-web`** (public).
 
 The site must communicate the owner's three roles: Full Stack Software Developer; AI Developer; Assistant Manager, Software Development.
 
@@ -109,6 +108,7 @@ Per-area commands: `frontend/CLAUDE.md`, `backend/CLAUDE.md`; local stack: the `
 `python .claude/hooks/checks.py` runs the per-area checks for each changed area (or `checks.py frontend|backend` for one); the commit hook runs it too.
 Before every commit that touches `frontend/`: `typecheck`, `lint`, `test`, and `build` must all pass.
 Before every commit that touches `backend/`: `ruff check`, `ruff format --check`, `mypy` and `pytest` must all pass (pytest needs the dev database container and `backend/.env`).
+
 ## 7. Where the details live
 
 This file holds what every task needs. Topic notes are split out so they load only when relevant:
