@@ -19,7 +19,8 @@ RUN for name in VITE_API_BASE_URL VITE_TURNSTILE_SITE_KEY; do \
     && npm run build
 
 # --- runtime --------------------------------------------------------------------------------
-FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
+# Pinned to 1.31.7 or later: the fix for the October 2026 nginx advisories (CVE-2026-15176 and others).
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
