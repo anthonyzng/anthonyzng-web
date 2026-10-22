@@ -3,7 +3,7 @@
 # VITE_* values are compiled into the bundle, so they are build arguments (public values only).
 
 # --- build ----------------------------------------------------------------------------------
-FROM node:24-alpine AS build
+FROM node:24.22.1-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
