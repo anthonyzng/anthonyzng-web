@@ -21,6 +21,11 @@ RUN for name in VITE_API_BASE_URL VITE_TURNSTILE_SITE_KEY; do \
 # --- runtime --------------------------------------------------------------------------------
 # Pinned to 1.31.7 or later: the fix for the October 2026 nginx advisories (CVE-2026-15176 and others).
 FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e AS runtime
+# CVE-2026-111497 (HTTP2Shell): the base image still ships brotli-libs 1.2.0; take Alpine's
+# fixed package until the upstream image is rebuilt.
+USER root
+RUN apk upgrade --no-cache brotli-libs
+USER 101
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
