@@ -18,7 +18,7 @@ dependencies = [
   "pyjwt>=2.10",
   "httpx>=0.28",
   "python-multipart>=0.0.32",
-  "pillow>=12.3.0",
+  "pillow>=13.0.0",
   "cryptography>=46",
 ]
 
