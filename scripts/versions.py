@@ -329,7 +329,9 @@ def cargo_deps(path: str, files: set[str]) -> list[list[str]]:
 def render(previous: str, refresh_os: bool) -> str:
     files = tracked()
     fileset = set(files)
-    base = lambda p: p.rsplit("/", 1)[-1]
+
+    def base(p: str) -> str:
+        return p.rsplit("/", 1)[-1]
 
     images: list[dict[str, str]] = []
     for p in files:
