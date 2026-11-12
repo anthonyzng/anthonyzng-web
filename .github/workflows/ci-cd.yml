@@ -28,6 +28,17 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # VERSIONS.md lists every pinned image, runtime, action and direct dependency; it must match the
+  # repository (python scripts/versions.py rewrites it).
+  versions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/versions.py --check
+
   frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -95,7 +106,7 @@ jobs:
     timeout-minutes: 10
     env:
       # The platform's Caddy image (Owwsolution/platform docker-compose.yml): bump them together.
-      CADDY_IMAGE: caddy:2.11-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+      CADDY_IMAGE: caddy:2.11-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

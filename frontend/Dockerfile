@@ -3,7 +3,7 @@
 # VITE_* values are compiled into the bundle, so they are build arguments (public values only).
 
 # --- build ----------------------------------------------------------------------------------
-FROM node:24.22.1-alpine AS build
+FROM node:24.22.3-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
@@ -21,10 +21,10 @@ RUN for name in VITE_API_BASE_URL VITE_TURNSTILE_SITE_KEY; do \
 # --- runtime --------------------------------------------------------------------------------
 # Pinned to 1.31.7 or later: the fix for the October 2026 nginx advisories (CVE-2026-15176 and others).
 FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e AS runtime
-# CVE-2026-111497 (HTTP2Shell): the base image still ships brotli-libs 1.2.0; take Alpine's
-# fixed package until the upstream image is rebuilt.
+# The base image is still on Alpine 3.24.2: take every package of the current 3.24 release (3.24.4,
+# which includes the brotli-libs fix for CVE-2026-111497 (HTTP2Shell)) until it is rebuilt.
 USER root
-RUN apk upgrade --no-cache brotli-libs
+RUN apk upgrade --no-cache
 USER 101
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html

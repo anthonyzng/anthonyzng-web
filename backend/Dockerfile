@@ -24,6 +24,12 @@ FROM python:3.14-slim AS runtime
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
+# Debian's security updates the base image may not have yet (apt, zlib in November 2026), and no
+# pip: the app runs from /opt/venv, and pip's vendored packages (msgpack, setuptools) only add CVEs.
+RUN apt-get update \
+    && apt-get upgrade --yes --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip uninstall --yes pip
 RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
