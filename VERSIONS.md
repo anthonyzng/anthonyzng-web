@@ -16,7 +16,7 @@ visitor's browser, not on the server).
 |---|---|---|---|---|---|
 | backend/Dockerfile | build | build only | `python:3.14-slim` |  | Debian GNU/Linux 13 (trixie) (13.7); Python 3.14.9 |
 | backend/Dockerfile | runtime | runtime (shipped image) | `python:3.14-slim` |  | Debian GNU/Linux 13 (trixie) (13.7); Python 3.14.9 |
-| docker-compose.dev.yml | db | dev / test | `postgres:17-alpine` |  | Alpine Linux v3.24 (3.24.3); PostgreSQL 17.11 |
+| docker-compose.dev.yml | db | dev / test | `postgres:17-alpine` |  | Alpine Linux v3.24 (3.24.4); PostgreSQL 17.11 |
 | frontend/Dockerfile | build | build only | `node:24.22.3-alpine` |  | Alpine Linux v3.24 (3.24.4); Node 24.22.3 |
 | frontend/Dockerfile | runtime | runtime (shipped image) | `nginxinc/nginx-unprivileged:1.31.7-alpine` | b5047b9b7684 | Alpine Linux v3.24 (3.24.2); nginx 1.31.7 |
 
@@ -111,4 +111,4 @@ Versions are the locked ones where a lockfile exists.
 | vite | 8.3.4 | dev |
 | vitest | 5.0.4 | dev |
 
-<!-- os-cache: {"nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e": "Alpine Linux v3.24 (3.24.2); nginx 1.31.7", "node:24.22.3-alpine": "Alpine Linux v3.24 (3.24.4); Node 24.22.3", "postgres:17-alpine": "Alpine Linux v3.24 (3.24.3); PostgreSQL 17.11", "python:3.14-slim": "Debian GNU/Linux 13 (trixie) (13.7); Python 3.14.9"} -->
+<!-- os-cache: {"nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e": "Alpine Linux v3.24 (3.24.2); nginx 1.31.7", "node:24.22.3-alpine": "Alpine Linux v3.24 (3.24.4); Node 24.22.3", "postgres:17-alpine": "Alpine Linux v3.24 (3.24.4); PostgreSQL 17.11", "python:3.14-slim": "Debian GNU/Linux 13 (trixie) (13.7); Python 3.14.9"} -->
