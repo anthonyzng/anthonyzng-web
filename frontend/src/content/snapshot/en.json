@@ -248,6 +248,28 @@
         "width": 720,
         "height": 1280
       }
+    },
+    {
+      "id": "dasiuyan",
+      "placeholder": false,
+      "title": "dasiuyan",
+      "summary": "dasiuyan",
+      "tech": [],
+      "url": "https://dasiuyan.owwsolution.com",
+      "image": {
+        "url": "/api/v1/files/3d09b15c-7b7e-474f-824a-13359445fe4e",
+        "width": 456,
+        "height": 786
+      }
+    },
+    {
+      "id": "justamoneybook",
+      "placeholder": false,
+      "title": "JustAmoneybook",
+      "summary": "Just a simple Money Book",
+      "tech": [],
+      "url": "https://moneybook.owwsolution.com/app",
+      "image": null
     }
   ],
   "skills": {
