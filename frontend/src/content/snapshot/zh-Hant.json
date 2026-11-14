@@ -248,6 +248,28 @@
         "width": 720,
         "height": 1280
       }
+    },
+    {
+      "id": "dasiuyan",
+      "placeholder": false,
+      "title": "打小人",
+      "summary": "打小人",
+      "tech": [],
+      "url": "https://dasiuyan.owwsolution.com",
+      "image": {
+        "url": "/api/v1/files/3d09b15c-7b7e-474f-824a-13359445fe4e",
+        "width": 456,
+        "height": 786
+      }
+    },
+    {
+      "id": "justamoneybook",
+      "placeholder": false,
+      "title": "記帳app",
+      "summary": "只是個記帳app",
+      "tech": [],
+      "url": "https://moneybook.owwsolution.com/app",
+      "image": null
     }
   ],
   "skills": {
