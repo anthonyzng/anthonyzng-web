@@ -146,7 +146,7 @@ When a change alters a documented behaviour, update the file that documents it i
 `superpowers`, `ui-ux-pro-max`, `code-review`, `example-skills`. The figma skills are user-invocable only; ask the owner to run one (detail: `.claude/rules/claude-config.md`).
 
 ## Compact instructions
-When compacting, keep: the current task and its acceptance checks; the path of the plan, ledger or harness focus file in use;
+When compacting, keep: the current task and its acceptance checks; the path of the plan or ledger file in use;
 every file modified in this session; the test and check commands run and their last result; open questions for the
 owner; decisions the owner made in this session, quoted. Drop: file contents already written to disk, tool output
 already acted on, superseded attempts.
